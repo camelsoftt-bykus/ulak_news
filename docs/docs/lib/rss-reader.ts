@@ -13,6 +13,25 @@ export type CollectedNews = {
   publishedAt: string | null;
 };
 
+function cleanText(value: string): string {
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isValidNews(item: CollectedNews): boolean {
+  return (
+    item.title.length > 10 &&
+    item.link.startsWith("http") &&
+    !item.title.toLowerCase().includes("untitled")
+  );
+}
+
 export async function collectRssNews(): Promise<CollectedNews[]> {
   const sources = newsSources.filter(
     (source) => source.enabled && source.rssUrl
@@ -37,18 +56,44 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
       const xml = await response.text();
       const feed = await parser.parseString(xml);
 
-      return feed.items.slice(0, 10).map((item) => ({
+      return feed.items.slice(0, 15).map((item) => ({
         sourceId: source.id,
         sourceName: source.name,
-        title: item.title?.trim() || "Başlıksız haber",
+        title: cleanText(item.title || ""),
         link: item.link || source.url,
-        summary: item.contentSnippet || item.content || "",
+        summary: cleanText(
+          item.contentSnippet || item.content || item.summary || ""
+        ),
         publishedAt: item.isoDate || item.pubDate || null
       }));
     })
   );
 
-  return results.flatMap((result) =>
+  const collected = results.flatMap((result) =>
     result.status === "fulfilled" ? result.value : []
   );
+
+  const uniqueNews = new Map<string, CollectedNews>();
+
+  for (const item of collected) {
+    if (!isValidNews(item)) continue;
+
+    const key = item.link.replace(/\/$/, "").toLowerCase();
+
+    if (!uniqueNews.has(key)) {
+      uniqueNews.set(key, item);
+    }
+  }
+
+  return Array.from(uniqueNews.values()).sort((a, b) => {
+    const dateA = a.publishedAt
+      ? new Date(a.publishedAt).getTime()
+      : 0;
+    const dateB = b.publishedAt
+      ? new Date(b.publishedAt).getTime()
+      : 0;
+
+    return dateB - dateA;
+  });
 }
+ 
