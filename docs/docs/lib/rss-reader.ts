@@ -11,6 +11,7 @@ export type CollectedNews = {
   link: string;
   summary: string;
   publishedAt: string | null;
+  sourcePriority: number;
 };
 
 function cleanText(value: string): string {
@@ -24,11 +25,29 @@ function cleanText(value: string): string {
     .trim();
 }
 
+// Günlük haber bültenine uygun olmayan rutin duyurular
+function isRoutineAnnouncement(title: string): boolean {
+  const patterns = [
+    /başvuru(ları|ların| süresi| tarihi)?/i,
+    /çağrısı yayınlandı/i,
+    /destek programı/i,
+    /etkinlik takvimi/i,
+    /bilim söyleşileri/i,
+    /son başvuru tarihi/i,
+    /başvuru süresi uzatıldı/i,
+    /bilimfest/i,
+    /proje başvuruları/i
+  ];
+
+  return patterns.some((pattern) => pattern.test(title));
+}
+
 function isValidNews(item: CollectedNews): boolean {
   return (
     item.title.length > 10 &&
     item.link.startsWith("http") &&
-    !item.title.toLowerCase().includes("untitled")
+    !item.title.toLowerCase().includes("untitled") &&
+    !isRoutineAnnouncement(item.title)
   );
 }
 
@@ -56,7 +75,7 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
       const xml = await response.text();
       const feed = await parser.parseString(xml);
 
-      return feed.items.slice(0, 15).map((item) => ({
+      return feed.items.slice(0, 20).map((item) => ({
         sourceId: source.id,
         sourceName: source.name,
         title: cleanText(item.title || ""),
@@ -64,7 +83,8 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
         summary: cleanText(
           item.contentSnippet || item.content || item.summary || ""
         ),
-        publishedAt: item.isoDate || item.pubDate || null
+        publishedAt: item.isoDate || item.pubDate || null,
+        sourcePriority: source.priority
       }));
     })
   );
@@ -85,15 +105,20 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
     }
   }
 
-  return Array.from(uniqueNews.values()).sort((a, b) => {
-    const dateA = a.publishedAt
-      ? new Date(a.publishedAt).getTime()
-      : 0;
-    const dateB = b.publishedAt
-      ? new Date(b.publishedAt).getTime()
-      : 0;
+  return Array.from(uniqueNews.values())
+    .sort((a, b) => {
+      if (a.sourcePriority !== b.sourcePriority) {
+        return a.sourcePriority - b.sourcePriority;
+      }
 
-    return dateB - dateA;
-  });
+      const dateA = a.publishedAt
+        ? new Date(a.publishedAt).getTime()
+        : 0;
+      const dateB = b.publishedAt
+        ? new Date(b.publishedAt).getTime()
+        : 0;
+
+      return dateB - dateA;
+    })
+    .slice(0, 5);
 }
- 
