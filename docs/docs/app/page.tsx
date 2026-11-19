@@ -62,23 +62,11 @@ export default function Home() {
 
         <div className="mascot-stage">
           <div className="sun-shape" />
-          <div className="mascot-placeholder">
-            <div className="mascot-antenna" />
-            <div className="mascot-head">
-              <div className="mascot-face">
-                <span />
-                <span />
-                <i />
-              </div>
-            </div>
-            <div className="mascot-body">
-              <div className="mascot-emblem">U</div>
-            </div>
-            <div className="mascot-foot">
-              <span />
-              <span />
-            </div>
-          </div>
+          <img
+            className="ulak-character"
+            src="/ulak-character.png"
+            alt="ULAK'ın sevimli turuncu ve krem renkli maskotu"
+          />
           <div className="mascot-caption">
             <strong>Ben Ulak!</strong>
             <span>Günün gündemini birlikte keşfedelim.</span>
@@ -98,7 +86,12 @@ export default function Home() {
         </div>
 
         <div className="video-panel">
-          <div className="video-art">
+          <div className="video-art studio-art">
+            <img
+              src="/ulak-studio.png"
+              alt="Ulak'ın haber stüdyosu"
+              className="ulak-studio"
+            />
             <div className="play-circle">▶</div>
             <span className="video-label">ULAK · GÜNLÜK BÜLTEN</span>
           </div>
