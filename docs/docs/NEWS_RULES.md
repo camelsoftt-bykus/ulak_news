@@ -84,3 +84,43 @@ Yayın öncesinde şu kontroller yapılır:
 10. Hata durumunda
 
 Doğruluğu teyit edilemeyen haber yayımlanmaz. Üretim başarısız olursa hatalı bülten gönderilmez.
+
+# ULAK - Haber Kaynakları
+
+## 1. Yerel Haberler
+
+### Sincan
+- https://www.sincan.bel.tr/haberler
+- https://www.sincan.bel.tr/duyurular
+
+### Etimesgut
+- https://www.etimesgut.bel.tr/haberler
+- https://www.etimesgut.bel.tr/duyurular/1
+
+## 2. Ankara
+- https://www.ankara.bel.tr/
+
+## 3. Türkiye
+- Güvenilir ulusal haber ajansları
+- Resmî bakanlık ve kamu kurumu açıklamaları
+- Doğrulanabilir birincil kaynaklar
+
+## 4. Dünya
+- Güvenilir uluslararası haber kuruluşları
+- Resmî kurum ve kuruluş açıklamaları
+
+## 5. Bilim ve Uzay
+- NASA
+- ESA
+- Üniversiteler ve bilimsel araştırma kurumları
+
+## Yayın Kuralları
+- En fazla 5 önemli haber yayınlanır.
+- Öncelik Sincan ve Etimesgut haberlerindedir.
+- Aynı gelişme tekrar yayınlanmaz.
+- Haberler mümkün olduğunca birincil kaynaklardan doğrulanır.
+- Her haberde kaynak bağlantısı bulunur.
+- Doğrulanamayan iddialar kesin bilgi gibi sunulmaz.
+- Önemli haber yoksa sırf sayı tamamlamak için haber eklenmez.
+- Otomatik yayın öncesinde kaynak ve içerik kontrolleri yapılır.
+
