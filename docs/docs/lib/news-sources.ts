@@ -35,21 +35,29 @@ export const newsSources: NewsSource[] = [
     enabled: true
   },
   {
-    id: "nasa",
-    name: "NASA",
+    id: "tubitak",
+    name: "TÜBİTAK",
     region: "science",
-    url: "https://www.nasa.gov/news/",
-    rssUrl: "https://www.nasa.gov/news-release/feed/",
+    url: "https://tubitak.gov.tr/tr/haberler",
+    rssUrl: "https://www.tubitak.gov.tr/rss.xml",
     priority: 5,
     enabled: true
   },
   {
-    id: "esa",
-    name: "European Space Agency",
+    id: "tubitak-uzay",
+    name: "TÜBİTAK UZAY",
     region: "science",
-    url: "https://www.esa.int/Newsroom",
-    rssUrl: "https://www.esa.int/rssfeed/TopNews",
+    url: "https://uzay.tubitak.gov.tr/gundem/haberler/",
+    priority: 5,
+    enabled: true
+  },
+  {
+    id: "trt-uzay",
+    name: "TRT Haber - Uzay",
+    region: "science",
+    url: "https://www.trthaber.com/etiket/uzay/",
     priority: 5,
     enabled: true
   }
 ];
+ 
