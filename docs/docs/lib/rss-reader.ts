@@ -49,7 +49,7 @@ function isRoutineAnnouncement(title: string): boolean {
 function isValidNews(item: CollectedNews): boolean {
   return (
     item.title.length > 10 &&
-    item.link.startsWith("http") &&
+    item.link.startsWith("https://") &&
     !item.title.toLowerCase().includes("untitled") &&
     !isRoutineAnnouncement(item.title)
   );
@@ -94,31 +94,47 @@ function getMetaContent(html: string, name: string): string {
   return "";
 }
 
-async function collectPageNews(source: (typeof newsSources)[number]): Promise<CollectedNews[]> {
+function getArticlePathPattern(sourceId: string): RegExp | null {
+  const patterns: Record<string, RegExp> = {
+    sincan: /^\/haberler\/[^/]+\/?$/,
+    etimesgut: /^\/haber\/[^/]+\/?$/,
+    ankara: /^\/haberler\/[^/]+\/?$/
+  };
+
+  return patterns[sourceId] ?? null;
+}
+
+async function collectPageNews(
+  source: (typeof newsSources)[number]
+): Promise<CollectedNews[]> {
   if (!source.pageUrl) return [];
 
   const html = await fetchPage(source.pageUrl);
   const baseUrl = new URL(source.pageUrl);
+  const allowedPath = getArticlePathPattern(source.id);
+
+  if (!allowedPath) return [];
 
   const links = Array.from(
-    html.matchAll(/<a\b[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi)
+    html.matchAll(
+      /<a\b[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi
+    )
   );
 
   const candidates = new Map<string, string>();
 
   for (const match of links) {
     const rawLink = match[1];
-    const title = cleanText(match[2]);
-
-    if (title.length < 15 || title.length > 180) continue;
+    const linkTitle = cleanText(match[2]);
 
     try {
-      const absoluteUrl = new URL(rawLink, baseUrl).toString();
+      const articleUrl = new URL(rawLink, baseUrl);
 
-      if (new URL(absoluteUrl).hostname !== baseUrl.hostname) continue;
-      if (absoluteUrl === source.pageUrl) continue;
+      if (articleUrl.hostname !== baseUrl.hostname) continue;
+      if (!allowedPath.test(articleUrl.pathname)) continue;
+      if (linkTitle.length < 10 || linkTitle.length > 200) continue;
 
-      candidates.set(absoluteUrl, title);
+      candidates.set(articleUrl.toString(), linkTitle);
     } catch {
       continue;
     }
@@ -142,7 +158,6 @@ async function collectPageNews(source: (typeof newsSources)[number]): Promise<Co
 
       const publishedAt =
         getMetaContent(articleHtml, "article:published_time") ||
-        getMetaContent(articleHtml, "datePublished") ||
         null;
 
       return {
@@ -231,6 +246,7 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
       const dateA = a.publishedAt
         ? new Date(a.publishedAt).getTime()
         : 0;
+
       const dateB = b.publishedAt
         ? new Date(b.publishedAt).getTime()
         : 0;
