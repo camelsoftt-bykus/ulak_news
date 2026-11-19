@@ -1,31 +1,12 @@
 
+import NewsFeed from "./news-feed";
+
 const newsCategories = [
   "Sincan & Etimesgut",
   "Ankara",
   "Türkiye",
   "Dünya",
   "Bilim & Uzay"
-];
-
-const newsPlaceholders = [
-  {
-    number: "01",
-    category: "YEREL GÜNDEM",
-    title: "Sincan ve Etimesgut'tan önemli gelişmeler",
-    description: "Bölgenin günlük yaşamını etkileyen gelişmeler burada yer alacak."
-  },
-  {
-    number: "02",
-    category: "ANKARA",
-    title: "Başkentte günün öne çıkan gelişmeleri",
-    description: "Ankara genelindeki önemli haberler ve duyurular burada sunulacak."
-  },
-  {
-    number: "03",
-    category: "TÜRKİYE & DÜNYA",
-    title: "Türkiye ve dünyadan önemli haberler",
-    description: "Günün en önemli ulusal ve uluslararası gelişmeleri burada olacak."
-  }
 ];
 
 export default function Home() {
@@ -42,13 +23,17 @@ export default function Home() {
             <a href="#gundem">Gündem</a>
             <a href="#arsiv">Arşiv</a>
           </nav>
-          <a href="#gundem" className="nav-button">Güne başla <span>→</span></a>
+          <a href="#gundem" className="nav-button">
+            Güne başla <span>→</span>
+          </a>
         </div>
       </header>
 
       <section className="hero container">
         <div className="hero-copy">
-          <div className="eyebrow"><span className="status-dot" /> KİŞİSEL SABAH BÜLTENİN</div>
+          <div className="eyebrow">
+            <span className="status-dot" /> KİŞİSEL SABAH BÜLTENİN
+          </div>
           <h1>Günaydın!<br />Güne <span>hazır ol.</span></h1>
           <p>
             Şehrinden dünyaya, günün önemli gelişmeleri.
@@ -57,7 +42,9 @@ export default function Home() {
           <a href="#video" className="primary-button">
             Günün bültenini keşfet <span>→</span>
           </a>
-          <div className="hero-note">Her sabah 08.00 · Yaklaşık 90 saniye</div>
+          <div className="hero-note">
+            Her sabah 08.00 · Yaklaşık 90 saniye
+          </div>
         </div>
 
         <div className="mascot-stage">
@@ -65,7 +52,7 @@ export default function Home() {
           <img
             className="ulak-character"
             src="/ulak-character.png"
-            alt="ULAK'ın sevimli turuncu ve krem renkli maskotu"
+            alt="ULAK'ın maskotu"
           />
           <div className="mascot-caption">
             <strong>Ben Ulak!</strong>
@@ -102,7 +89,9 @@ export default function Home() {
               Ulak'ın sıcak anlatımıyla yerelden dünyaya
               günün gündemini 90 saniyede takip et.
             </p>
-            <span className="muted">İlk video yayınlandığında burada görünecek.</span>
+            <span className="muted">
+              İlk video yayınlandığında burada görünecek.
+            </span>
           </div>
         </div>
       </section>
@@ -113,28 +102,20 @@ export default function Home() {
             <div className="eyebrow">ÖNCE YAKININDAN BAŞLAYALIM</div>
             <h2 className="section-title">Günün gündemi</h2>
           </div>
-          <span className="muted news-limit">En fazla 5 önemli haber</span>
+          <span className="muted news-limit">
+            En fazla 5 önemli haber
+          </span>
         </div>
 
         <div className="category-list">
           {newsCategories.map((category) => (
-            <span className="category-chip" key={category}>{category}</span>
+            <span className="category-chip" key={category}>
+              {category}
+            </span>
           ))}
         </div>
 
-        <div className="news-grid">
-          {newsPlaceholders.map((item) => (
-            <article className="news-card" key={item.number}>
-              <div className="news-card-top">
-                <span className="news-number">{item.number}</span>
-                <span className="news-category">{item.category}</span>
-              </div>
-              <h3>{item.title}</h3>
-              <p>{item.description}</p>
-              <span className="news-coming">Haber akışı bağlandığında yayınlanacak</span>
-            </article>
-          ))}
-        </div>
+        <NewsFeed />
       </section>
 
       <section className="container archive-section" id="arsiv">
@@ -142,7 +123,9 @@ export default function Home() {
           <div className="archive-icon">▤</div>
           <div>
             <h2>Günün gündemi geçip gitmesin.</h2>
-            <p>Geçmiş sabah bültenlerin ve haber arşivin burada saklanacak.</p>
+            <p>
+              Geçmiş sabah bültenlerin ve haber arşivin burada saklanacak.
+            </p>
           </div>
           <span className="archive-coming">Arşiv yakında</span>
         </div>
@@ -150,7 +133,10 @@ export default function Home() {
 
       <footer className="footer">
         <div className="container footer-inner">
-          <a href="/" className="brand"><span className="brand-mark">U</span><span>ULAK</span></a>
+          <a href="/" className="brand">
+            <span className="brand-mark">U</span>
+            <span>ULAK</span>
+          </a>
           <span>Şehrinden dünyaya, güne hazır ol.</span>
           <span>© ULAK</span>
         </div>
