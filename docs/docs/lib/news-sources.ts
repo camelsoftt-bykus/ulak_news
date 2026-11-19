@@ -34,7 +34,7 @@ export const newsSources: NewsSource[] = [
     name: "Ankara Büyükşehir Belediyesi",
     region: "ankara",
     url: "https://www.ankara.bel.tr/tr/haberler",
-    pageUrl: "https://www.ankara.bel.tr/tr/haberler",
+    pageUrl: "https://www.ankara.bel.tr/haberler",
     priority: 2,
     enabled: true
   },
