@@ -210,6 +210,54 @@ async function collectRssSource(
   }));
 }
 
+function balanceSources(items: CollectedNews[]): CollectedNews[] {
+  const groups = new Map<string, CollectedNews[]>();
+
+  for (const item of items) {
+    const group = groups.get(item.sourceId) || [];
+    group.push(item);
+    groups.set(item.sourceId, group);
+  }
+
+  const orderedGroups = Array.from(groups.values()).map((group) =>
+    group.sort((a, b) => {
+      const dateA = a.publishedAt
+        ? new Date(a.publishedAt).getTime()
+        : 0;
+      const dateB = b.publishedAt
+        ? new Date(b.publishedAt).getTime()
+        : 0;
+
+      return dateB - dateA;
+    })
+  );
+
+  orderedGroups.sort(
+    (a, b) => a[0].sourcePriority - b[0].sourcePriority
+  );
+
+  const balanced: CollectedNews[] = [];
+  let index = 0;
+
+  while (balanced.length < 5) {
+    let added = false;
+
+    for (const group of orderedGroups) {
+      if (group[index]) {
+        balanced.push(group[index]);
+        added = true;
+
+        if (balanced.length === 5) break;
+      }
+    }
+
+    if (!added) break;
+    index++;
+  }
+
+  return balanced;
+}
+
 export async function collectRssNews(): Promise<CollectedNews[]> {
   const sources = newsSources.filter((source) => source.enabled);
 
@@ -237,21 +285,5 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
     }
   }
 
-  return Array.from(uniqueNews.values())
-    .sort((a, b) => {
-      if (a.sourcePriority !== b.sourcePriority) {
-        return a.sourcePriority - b.sourcePriority;
-      }
-
-      const dateA = a.publishedAt
-        ? new Date(a.publishedAt).getTime()
-        : 0;
-
-      const dateB = b.publishedAt
-        ? new Date(b.publishedAt).getTime()
-        : 0;
-
-      return dateB - dateA;
-    })
-    .slice(0, 5);
+  return balanceSources(Array.from(uniqueNews.values()));
 }
