@@ -1177,3 +1177,38 @@ a {
   }
 }
 
+/* ULAK görsel boyut ayarları */
+
+.mascot-stage .ulak-character {
+  display: block;
+  width: min(100%, 300px);
+  max-height: 330px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+.video-art.studio-art {
+  position: relative;
+  overflow: hidden;
+}
+
+.video-art .ulak-studio {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 340px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  .mascot-stage .ulak-character {
+    width: min(100%, 240px);
+    max-height: 270px;
+  }
+
+  .video-art .ulak-studio {
+    max-height: 230px;
+  }
+}
+
