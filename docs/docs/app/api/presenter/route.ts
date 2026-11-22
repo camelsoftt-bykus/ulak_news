@@ -74,11 +74,13 @@ ${newsText}
               parts: [{ text: prompt }]
             }
           ],
+          
           generationConfig: {
             temperature: 0.4,
             maxOutputTokens: 1800
           }
         }),
+        signal: AbortSignal.timeout(25000),
         cache: "no-store"
       }
     );
@@ -86,11 +88,15 @@ ${newsText}
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Gemini API hatası:", errorText);
-return Response.json({
-  error: "Gemini hatası",
-  geminiStatus: response.status,
-  details: errorText
-}, { status: 502 });
+
+      return Response.json(
+        {
+          error: "Gemini hatası",
+          geminiStatus: response.status,
+          details: errorText
+        },
+        { status: 502 }
+      );
     }
 
     const data = await response.json();
