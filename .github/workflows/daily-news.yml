@@ -11,10 +11,27 @@ permissions:
 jobs:
   daily-news:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Depoyu indir
         uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: FFmpeg kur
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Playwright ve Chromium kur
+        working-directory: docs/docs
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
 
       - name: Günlük sunumu hazırla
         run: |
@@ -49,18 +66,21 @@ jobs:
 
           test -s docs/docs/public/data/daily.mp3
 
-          echo "Ahmet ses dosyası başarıyla üretildi."
+      - name: Robot sunum videosunu üret
+        working-directory: docs/docs
+        run: |
+          node scripts/render-video.mjs
 
-      - name: Günlük bülteni ve sesi kaydet
+      - name: Günlük haber, ses ve videoyu kaydet
         run: |
           git config user.name "ULAK News Bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add docs/docs/public/data/daily.json
           git add docs/docs/public/data/daily.mp3
+          git add docs/docs/public/data/daily.mp4
 
           if ! git diff --cached --quiet; then
-            git commit -m "Günlük ULAK bültenini ve sesini güncelle"
+            git commit -m "Günlük ULAK haber, ses ve video bülteni"
             git push
           fi
- 
