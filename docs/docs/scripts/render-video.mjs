@@ -1,3 +1,4 @@
+
 import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
@@ -52,20 +53,29 @@ try {
 
   await page.locator("#audInput").setInputFiles(audioPath);
 
+  // Sesin yükleme olayı gerçekleştiğini sayfadaki durum yazısından doğrula.
   await page.waitForFunction(
-    () => {
-      const audio = document.querySelector("audio");
-      return audio && audio.readyState >= 2;
-    },
+    () => document.querySelector("#status")?.textContent.startsWith("Ses yüklendi:"),
     null,
-    { timeout: 120000 }
+    { timeout: 30000 }
   );
+
+  console.log("MP3 animasyon sayfasına yüklendi.");
 
   const downloadPromise = page.waitForEvent("download", {
     timeout: 300000
   });
 
   await page.locator("#recBtn").click();
+
+  // Kaydın gerçekten başladığını doğrula.
+  await page.waitForFunction(
+    () => document.querySelector("#status")?.textContent.startsWith("Kaydediliyor"),
+    null,
+    { timeout: 60000 }
+  );
+
+  console.log("ULAK video kaydı başladı.");
 
   const download = await downloadPromise;
   const filename = download.suggestedFilename();
