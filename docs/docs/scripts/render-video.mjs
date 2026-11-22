@@ -1,4 +1,3 @@
-
 import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
@@ -40,7 +39,8 @@ try {
 
   await page.waitForFunction(
     () => document.querySelector("#cv")?.width > 0,
-    { timeout: 60000 }
+    null,
+    { timeout: 120000 }
   );
 
   await page.locator("#newsScript").evaluate(
@@ -57,7 +57,8 @@ try {
       const audio = document.querySelector("audio");
       return audio && audio.readyState >= 2;
     },
-    { timeout: 60000 }
+    null,
+    { timeout: 120000 }
   );
 
   const downloadPromise = page.waitForEvent("download", {
