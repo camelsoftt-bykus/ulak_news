@@ -86,11 +86,11 @@ ${newsText}
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Gemini API hatası:", errorText);
-
-      return Response.json(
-        { error: "Gemini sunum metnini oluşturamadı." },
-        { status: 502 }
-      );
+return Response.json({
+  error: "Gemini hatası",
+  geminiStatus: response.status,
+  details: errorText
+}, { status: 502 });
     }
 
     const data = await response.json();
