@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -10,6 +9,13 @@ type NewsItem = {
   link: string;
   summary: string;
   publishedAt: string | null;
+};
+
+type DailyBulletin = {
+  count: number;
+  script: string;
+  news: NewsItem[];
+  generatedAt?: string;
 };
 
 const categoryInfo: Record<string, { label: string; section: string }> = {
@@ -43,42 +49,175 @@ function formatDate(value: string | null): string {
   return date.toLocaleDateString("tr-TR");
 }
 
+function formatGeneratedAt(value?: string): string {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleString("tr-TR", {
+    timeZone: "Europe/Istanbul",
+    dateStyle: "long",
+    timeStyle: "short",
+  });
+}
+
 export default function NewsFeed() {
-  const [news, setNews] = useState<NewsItem[]>([]);
+  const [bulletin, setBulletin] = useState<DailyBulletin | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
 
   useEffect(() => {
-    fetch("/api/news")
-      .then((response) => {
-        if (!response.ok) throw new Error("Haberler alınamadı");
-        return response.json();
-      })
-      .then((data) => {
-        setNews(Array.isArray(data.news) ? data.news.slice(0, 5) : []);
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
+    let active = true;
+
+    async function loadBulletin() {
+      try {
+        const response = await fetch(
+          `/data/daily.json?t=${Date.now()}`,
+          { cache: "no-store" }
+        );
+
+        if (!response.ok) {
+          throw new Error("Günlük bülten alınamadı.");
+        }
+
+        const data = await response.json();
+
+        if (!data.script || !Array.isArray(data.news)) {
+          throw new Error("Günlük bülten dosyası geçersiz.");
+        }
+
+        if (active) {
+          setBulletin(data);
+        }
+      } catch {
+        if (active) setError(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadBulletin();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function getSpokenScript() {
+    return (bulletin?.script || "")
+      .split(/\n\s*Kaynaklar:\s*\n/i)[0]
+      .trim();
+  }
+
+  function toggleSpeaking() {
+    if (!("speechSynthesis" in window)) {
+      alert("Tarayıcın sesli okumayı desteklemiyor.");
+      return;
+    }
+
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+
+    const text = getSpokenScript();
+
+    if (!text) return;
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "tr-TR";
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+
+    const voice = window.speechSynthesis
+      .getVoices()
+      .find((item) => item.lang.toLowerCase().startsWith("tr"));
+
+    if (voice) utterance.voice = voice;
+
+    utterance.onstart = () => setSpeaking(true);
+    utterance.onend = () => setSpeaking(false);
+    utterance.onerror = () => setSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+  useEffect(() => {
+    return () => {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
 
   if (loading) {
-    return <p className="muted">Günün haberleri yükleniyor...</p>;
+    return <p className="muted">ULAK'ın günlük bülteni yükleniyor...</p>;
   }
 
-  if (error) {
+  if (error || !bulletin) {
     return (
       <p className="muted">
-        Haberler şu anda alınamıyor. Lütfen daha sonra tekrar dene.
+        Günlük bülten şu anda yüklenemiyor. Lütfen daha sonra tekrar dene.
       </p>
     );
   }
 
+  const spokenScript = getSpokenScript();
+
   return (
     <div>
+      <section
+        style={{
+          marginBottom: "36px",
+          padding: "24px",
+          borderRadius: "18px",
+          background: "#fff8ed",
+          border: "1px solid #f1dfc5",
+        }}
+      >
+        <div className="eyebrow">ULAK'IN GÜNLÜK SUNUMU</div>
+
+        <h2 style={{ marginTop: "10px", marginBottom: "8px" }}>
+          Günün haberlerini Ulak anlatıyor
+        </h2>
+
+        <p className="muted">
+          {formatGeneratedAt(bulletin.generatedAt)}
+          {bulletin.count > 0 && ` · ${bulletin.count} haber`}
+        </p>
+
+        <div
+          style={{
+            whiteSpace: "pre-wrap",
+            lineHeight: 1.8,
+            marginTop: "20px",
+          }}
+        >
+          {spokenScript}
+        </div>
+
+        <button
+          type="button"
+          className="primary-button"
+          onClick={toggleSpeaking}
+          style={{ marginTop: "20px" }}
+        >
+          {speaking ? "■ Dinlemeyi durdur" : "▶ ULAK'ı dinle"}
+        </button>
+      </section>
+
       {sections.map((section) => {
-        const items = news.filter(
-          (item) => categoryInfo[item.sourceId]?.section === section.name
-        );
+        const items = bulletin.news
+          .slice(0, 5)
+          .filter(
+            (item) => categoryInfo[item.sourceId]?.section === section.name
+          );
 
         return (
           <section
@@ -93,7 +232,7 @@ export default function NewsFeed() {
 
             {items.length === 0 ? (
               <p className="muted">
-                Şu anda bu kategoride yayınlanacak yeni haber bulunamadı.
+                Şu anda bu kategoride yayınlanacak haber bulunamadı.
               </p>
             ) : (
               <div className="news-grid">
