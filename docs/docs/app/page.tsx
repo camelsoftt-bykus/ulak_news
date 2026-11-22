@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -14,74 +13,6 @@ const newsCategories = [
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState("yerel-gundem");
-  const [script, setScript] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [speaking, setSpeaking] = useState(false);
-  const [error, setError] = useState("");
-
-  async function prepareAndSpeak() {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      setError("Bu tarayıcı sesli okumayı desteklemiyor.");
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-    setSpeaking(false);
-    setError("");
-    setLoading(true);
-
-    try {
-      const response = await fetch("/api/presenter", {
-        cache: "no-store",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.script) {
-        throw new Error(data.error || "Sunum metni alınamadı.");
-      }
-
-      setScript(data.script);
-
-      const utterance = new SpeechSynthesisUtterance(data.script);
-      utterance.lang = "tr-TR";
-      utterance.rate = 0.95;
-      utterance.pitch = 1;
-
-      const voices = window.speechSynthesis.getVoices();
-      const turkishVoice = voices.find(
-        (voice) => voice.lang.toLowerCase().startsWith("tr")
-      );
-
-      if (turkishVoice) {
-        utterance.voice = turkishVoice;
-      }
-
-      utterance.onstart = () => setSpeaking(true);
-      utterance.onend = () => setSpeaking(false);
-      utterance.onerror = () => {
-        setSpeaking(false);
-        setError("Seslendirme sırasında bir sorun oluştu.");
-      };
-
-      window.speechSynthesis.speak(utterance);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Sunum hazırlanırken bir hata oluştu."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function stopSpeaking() {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-    setSpeaking(false);
-  }
 
   return (
     <main>
@@ -91,12 +22,14 @@ export default function Home() {
             <span className="brand-mark">U</span>
             <span>ULAK</span>
           </a>
+
           <nav className="nav-links">
             <a href="#video">Günün videosu</a>
             <a href="#gundem">Gündem</a>
             <a href="#arsiv">Arşiv</a>
           </nav>
-          <a href="#gundem" className="nav-button">
+
+          <a href="#video" className="nav-button">
             Güne başla <span>→</span>
           </a>
         </div>
@@ -107,14 +40,22 @@ export default function Home() {
           <div className="eyebrow">
             <span className="status-dot" /> KİŞİSEL SABAH BÜLTENİN
           </div>
-          <h1>Günaydın!<br />Güne <span>hazır ol.</span></h1>
+
+          <h1>
+            Günaydın!
+            <br />
+            Güne <span>hazır ol.</span>
+          </h1>
+
           <p>
             Şehrinden dünyaya, günün önemli gelişmeleri.
             Lafı uzatmadan, güvenilir kaynaklarla.
           </p>
+
           <a href="#video" className="primary-button">
             Günün bültenini keşfet <span>→</span>
           </a>
+
           <div className="hero-note">
             Her sabah 08.00 · Yaklaşık 90 saniye
           </div>
@@ -122,15 +63,18 @@ export default function Home() {
 
         <div className="mascot-stage">
           <div className="sun-shape" />
+
           <img
             className="ulak-character"
             src="/ulak-character.png"
             alt="ULAK'ın maskotu"
           />
+
           <div className="mascot-caption">
-            <strong>Ben Ulak!</strong>
+            <strong>Ben ULAK!</strong>
             <span>Günün gündemini birlikte keşfedelim.</span>
           </div>
+
           <span className="floating-star star-one">✳</span>
           <span className="floating-star star-two">✦</span>
         </div>
@@ -139,107 +83,62 @@ export default function Home() {
       <section className="container video-section" id="video">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">GÜNÜN ÖZETİ</div>
-            <h2 className="section-title">Sabah bültenin</h2>
+            <div className="eyebrow">ULAK ANİMASYON STÜDYOSU</div>
+            <h2 className="section-title">Günün bültenini hazırla</h2>
           </div>
-          <span className="duration-pill">ULAK · VİDEO</span>
+
+          <span className="duration-pill">AHMET SESİ · VİDEO</span>
         </div>
 
         <div className="video-panel">
-          <div className="video-art studio-art">
-            <video
-              controls
-              playsInline
-              preload="metadata"
-              poster="/ulak-studio.png"
-              style={{
-                display: "block",
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                background: "#171717",
-                borderRadius: "16px",
-              }}
-            >
-              <source
-                src="/freelipsync-19841f7c-b07c-4086-ab74-451f857e3e2c-original.mp4"
-                type="video/mp4"
-              />
-              Tarayıcınız video oynatmayı desteklemiyor.
-            </video>
-          </div>
-
           <div className="video-info">
             <span className="content-tag">ULAK YAYINDA</span>
-            <h3>Günün önemli gelişmeleri tek videoda.</h3>
+
+            <h3>Artık ULAK senin için konuşuyor.</h3>
+
             <p>
-              Ulak'ın sıcak anlatımıyla yerelden dünyaya
-              günün gündemini takip et.
+              Günün haberlerini getir, Ahmet sesiyle dinle
+              ve konuşan ULAK videosunu oluştur.
             </p>
-            <span className="muted">
-              İlk ULAK sunum videosu burada.
-            </span>
+
+            <a
+              href="/animasyon.html"
+              target="_blank"
+              rel="noreferrer"
+              className="primary-button"
+            >
+              Stüdyoyu ayrı pencerede aç →
+            </a>
           </div>
         </div>
 
-        <div className="archive-card" style={{ marginTop: "24px" }}>
-          <div className="archive-icon">🔊</div>
-          <div style={{ flex: 1 }}>
-            <h2>ULAK'ın bugünkü haberlerini dinle</h2>
-            <p>
-              Güncel haberlerden yeni bir sunum metni hazırlanır
-              ve cihazının Türkçe sesiyle okunur.
-            </p>
-
-            <div style={{ marginTop: "16px" }}>
-              <strong>ULAK'ın yeni sesi: Kerem</strong>
-              <audio
-                controls
-                preload="metadata"
-                style={{ display: "block", width: "100%", marginTop: "10px" }}
-              >
-                <source
-                  src="/speechma_audio_Kerem_at_5_24_44%20PM_on_November_22nd_2026.mp3"
-                  type="audio/mpeg"
-                />
-                Tarayıcınız ses oynatmayı desteklemiyor.
-              </audio>
-            </div>
-
-            {script && (
-              <div style={{ marginTop: "16px", whiteSpace: "pre-wrap" }}>
-                {script}
-              </div>
-            )}
-
-            {error && (
-              <p role="alert" style={{ color: "#b42318", marginTop: "12px" }}>
-                {error}
-              </p>
-            )}
-
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "16px" }}>
-              <button
-                type="button"
-                className="primary-button"
-                onClick={prepareAndSpeak}
-                disabled={loading}
-              >
-                {loading ? "Haberler hazırlanıyor..." : "▶ Haberi hazırla ve dinle"}
-              </button>
-
-              {speaking && (
-                <button
-                  type="button"
-                  className="nav-button"
-                  onClick={stopSpeaking}
-                >
-                  ■ Durdur
-                </button>
-              )}
-            </div>
-          </div>
+        <div
+          style={{
+            marginTop: "18px",
+            borderRadius: "16px",
+            overflow: "hidden",
+            background: "#1d1a17",
+            border: "1px solid #4a423b",
+          }}
+        >
+          <iframe
+            src="/animasyon.html"
+            title="ULAK Animasyon Stüdyosu"
+            style={{
+              display: "block",
+              width: "100%",
+              height: "1600px",
+              border: "0",
+              background: "#1d1a17",
+            }}
+            allow="autoplay"
+          />
         </div>
+
+        <p className="muted" style={{ marginTop: "12px", fontSize: "13px" }}>
+          Videoyu oluşturduğunda cihazına indirebilirsin.
+          Stüdyo ayrı pencerede de kullanılabilir.
+        </p>
       </section>
 
       <section className="container news-section" id="gundem">
@@ -248,6 +147,7 @@ export default function Home() {
             <div className="eyebrow">ÖNCE YAKININDAN BAŞLAYALIM</div>
             <h2 className="section-title">Günün gündemi</h2>
           </div>
+
           <span className="muted news-limit">
             En fazla 5 önemli haber
           </span>
@@ -284,12 +184,14 @@ export default function Home() {
       <section className="container archive-section" id="arsiv">
         <div className="archive-card">
           <div className="archive-icon">▤</div>
+
           <div>
             <h2>Günün gündemi geçip gitmesin.</h2>
             <p>
               Geçmiş sabah bültenlerin ve haber arşivin burada saklanacak.
             </p>
           </div>
+
           <span className="archive-coming">Arşiv yakında</span>
         </div>
       </section>
@@ -300,6 +202,7 @@ export default function Home() {
             <span className="brand-mark">U</span>
             <span>ULAK</span>
           </a>
+
           <span>Şehrinden dünyaya, güne hazır ol.</span>
           <span>© ULAK</span>
         </div>
