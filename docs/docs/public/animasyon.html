@@ -125,6 +125,9 @@ let ttsSpeaking=false;
 let ttsMouthUntil=0;
 let ttsLastBoundary=0;
 let ttsStartedAt=0;
+let ttsBoundarySeen=false;
+let ttsWordStart=0;
+let ttsWordDuration=180;
 let newsUtterance=null;
 
 const audio=new Audio();
@@ -179,6 +182,9 @@ function stopNewsSpeech(){
  ttsMouthUntil=0;
  ttsLastBoundary=0;
  ttsStartedAt=0;
+ ttsBoundarySeen=false;
+ ttsWordStart=0;
+ ttsWordDuration=180;
  level=0;
  newsUtterance=null;
 
@@ -240,22 +246,35 @@ $('speakNewsBtn').addEventListener('click',()=>{
  newsUtterance.onstart=()=>{
   ttsSpeaking=true;
   ttsMouthUntil=0;
-  ttsLastBoundary=performance.now();
+  ttsLastBoundary=0;
   ttsStartedAt=performance.now();
+  ttsBoundarySeen=false;
+  ttsWordStart=0;
+  ttsWordDuration=180;
+
   btn.textContent='■ Sunumu durdur';
   setStatus('ULAK günlük haberleri seslendiriyor...');
  };
 
- // KELİME SINIRLARINDAN AĞIZ HAREKETİ
+ // KELİME SINIRI OLAYLARI
  newsUtterance.onboundary=(event)=>{
   if(!ttsSpeaking)return;
 
   const now=performance.now();
-  const gap=ttsLastBoundary?now-ttsLastBoundary:180;
-  const duration=Math.max(90,Math.min(360,gap*.72));
 
-  ttsMouthUntil=now+duration;
+  // Bazı tarayıcılar kelime ve cümle sınırlarını ayrı bildirir.
+  if(event.name&&event.name!=='word')return;
+
+  ttsBoundarySeen=true;
   ttsLastBoundary=now;
+  ttsWordStart=now;
+
+  // Kelimenin uzunluğuna göre yaklaşık konuşma süresi.
+  const chars=Math.max(1,event.charLength||4);
+  const duration=(chars*55)/newsUtterance.rate;
+
+  ttsWordDuration=Math.max(110,Math.min(420,duration));
+  ttsMouthUntil=now+ttsWordDuration;
  };
 
  newsUtterance.onend=()=>{
@@ -263,7 +282,9 @@ $('speakNewsBtn').addEventListener('click',()=>{
   ttsMouthUntil=0;
   ttsLastBoundary=0;
   ttsStartedAt=0;
+  ttsBoundarySeen=false;
   level=0;
+
   btn.textContent='▶ ULAK Haberi Seslendir';
   setStatus('ULAK sunumu tamamlandı.');
  };
@@ -273,7 +294,9 @@ $('speakNewsBtn').addEventListener('click',()=>{
   ttsMouthUntil=0;
   ttsLastBoundary=0;
   ttsStartedAt=0;
+  ttsBoundarySeen=false;
   level=0;
+
   btn.textContent='▶ ULAK Haberi Seslendir';
 
   if(event.error!=='canceled'&&event.error!=='interrupted'){
@@ -862,20 +885,35 @@ function frame(){
   if(target<.05)target=0;
  }
 
- // TARAYICI SESLENDİRMESİ: KELİME SENKRONU + YEDEK HAREKET
+ // TELEFONUN TARAYICI SESLENDİRMESİ
  else if(ttsSpeaking){
   const now=performance.now();
 
-  // 900 ms boyunca kelime olayı gelmezse yedek animasyon
-  if(now-ttsLastBoundary>900){
-   const elapsed=now-ttsStartedAt;
-   const phase=(elapsed%300)/300;
+  if(ttsBoundarySeen){
+   // Kelime sınırından itibaren yaklaşık ağız hareketi
+   if(now<ttsMouthUntil){
+    const progress=Math.max(0,Math.min(1,
+     (now-ttsWordStart)/ttsWordDuration
+    ));
 
-   // Düzenli açılıp kapanma
-   target=phase<.48?.68:0;
+    const syllable=Math.abs(Math.sin(progress*Math.PI*3));
+    const envelope=Math.sin(progress*Math.PI);
+
+    target=(.20+.65*syllable)*envelope;
+   }else{
+    // Kelimeler arasındaki duraklamada ağız kapanır
+    target=0;
+   }
   }else{
-   // Kelime olayları geliyorsa onları kullan
-   target=now<ttsMouthUntil?.72:0;
+   // Tarayıcı kelime sınırı olayı göndermiyorsa yedek hareket
+   const elapsed=now-ttsStartedAt;
+
+   if(elapsed>1200){
+    const phase=(elapsed%360)/360;
+    target=phase<.42
+     ? .55*Math.sin(Math.PI*phase/.42)
+     : 0;
+   }
   }
  }
 
