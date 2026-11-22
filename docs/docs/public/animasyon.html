@@ -33,7 +33,7 @@ small{color:#b9ab9a;font-size:12px;line-height:1.5;display:block;margin-top:6px}
 <button class="btn" id="newsBtn" style="width:100%">Günün Haberlerini Getir</button>
 <button class="btn alt" id="speakNewsBtn" style="width:100%">▶ ULAK Haberi Seslendir</button>
 <div id="newsScript">Günün sunum metni henüz alınmadı.</div>
-<small>Haber metni ULAK sunum servisinden alınır.</small>
+<small>Haber metni ULAK sunum servisinden alınır. Ses Ahmet sesiyle üretilir.</small>
 </div>
 
 <div class="card">
@@ -120,18 +120,12 @@ let gain=1.2;
 let maxOpen=.55;
 let level=0;
 
-// TARAYICI SESLENDİRME DURUMU
-let ttsSpeaking=false;
-let ttsMouthUntil=0;
-let ttsLastBoundary=0;
-let ttsStartedAt=0;
-let ttsBoundarySeen=false;
-let ttsWordStart=0;
-let ttsWordDuration=180;
-let newsUtterance=null;
-
 const audio=new Audio();
 audio.preload='auto';
+
+let audioSourceType='none';
+let generatedSpeechText='';
+let generatedAudioUrl=null;
 
 let actx=null;
 let analyser=null;
@@ -142,6 +136,12 @@ let recChunks=[];
 
 function setStatus(msg){
  statusEl.textContent=msg;
+}
+
+function getNewsText(){
+ return $('newsScript').textContent
+  .split(/\n\s*Kaynaklar:\s*\n/i)[0]
+  .trim();
 }
 
 // HABERLERİ GETİR
@@ -159,9 +159,14 @@ $('newsBtn').addEventListener('click',async()=>{
    throw new Error(data.error||'Sunum metni alınamadı.');
   }
 
-  stopNewsSpeech();
   $('newsScript').textContent=data.script;
-  setStatus('Günün haber sunumu alındı.');
+
+  // Yeni haber geldiğinde önceki üretilmiş ses artık güncel değildir.
+  if(audioSourceType==='generated'){
+   generatedSpeechText='';
+  }
+
+  setStatus('Günün haber sunumu alındı. Ahmet sesi hazır olduğunda seslendirilebilir.');
 
  }catch(err){
   $('newsScript').textContent='Haberler alınamadı: '+err.message;
@@ -172,47 +177,76 @@ $('newsBtn').addEventListener('click',async()=>{
  }
 });
 
-// HABERLERİ SESLENDİR
-function stopNewsSpeech(){
- if('speechSynthesis' in window){
-  window.speechSynthesis.cancel();
+// GÜNLÜK METNİ AHMET SESİNE DÖNÜŞTÜR
+async function generateNewsAudio(text){
+ const btn=$('speakNewsBtn');
+ btn.disabled=true;
+ btn.textContent='Ahmet sesi hazırlanıyor...';
+ setStatus('Günlük haber metni Ahmet sesine dönüştürülüyor. Lütfen bekleyin...');
+
+ try{
+  audio.pause();
+
+  const response=await fetch('/api/tts',{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({text})
+  });
+
+  if(!response.ok){
+   let message='Ahmet sesi üretilemedi.';
+   try{
+    const data=await response.json();
+    if(data.error)message=data.error;
+   }catch(e){}
+   throw new Error(message);
+  }
+
+  const blob=await response.blob();
+
+  if(!blob.size){
+   throw new Error('Ses dosyası boş geldi.');
+  }
+
+  if(generatedAudioUrl){
+   URL.revokeObjectURL(generatedAudioUrl);
+  }
+
+  generatedAudioUrl=URL.createObjectURL(blob);
+  audio.src=generatedAudioUrl;
+  audio.load();
+
+  audioSourceType='generated';
+  generatedSpeechText=text;
+
+  setStatus('Ahmet sesi hazır. ULAK konuşmaya başlayabilir.');
+  return true;
+
+ }catch(err){
+  setStatus('Ses hazırlanamadı: '+err.message);
+  return false;
+
+ }finally{
+  btn.disabled=false;
+  btn.textContent='▶ ULAK Haberi Seslendir';
  }
-
- ttsSpeaking=false;
- ttsMouthUntil=0;
- ttsLastBoundary=0;
- ttsStartedAt=0;
- ttsBoundarySeen=false;
- ttsWordStart=0;
- ttsWordDuration=180;
- level=0;
- newsUtterance=null;
-
- $('speakNewsBtn').textContent='▶ ULAK Haberi Seslendir';
 }
 
-$('speakNewsBtn').addEventListener('click',()=>{
- const btn=$('speakNewsBtn');
-
- if(!('speechSynthesis' in window)){
-  setStatus('Bu tarayıcı sesli okumayı desteklemiyor.');
-  return;
- }
-
- if(ttsSpeaking||window.speechSynthesis.speaking){
-  stopNewsSpeech();
-  setStatus('Sesli sunum durduruldu.');
-  return;
- }
-
+// AHMET SESİNİ OYNAT
+async function speakNews(){
  if(isRecording){
-  setStatus('Video kaydı sırasında sesli sunum başlatılamaz.');
+  setStatus('Video kaydı sırasında yeni ses başlatılamaz.');
   return;
  }
 
- const text=$('newsScript').textContent
-  .split(/\n\s*Kaynaklar:\s*\n/i)[0]
-  .trim();
+ if(!audio.paused){
+  audio.pause();
+  $('speakNewsBtn').textContent='▶ ULAK Haberi Seslendir';
+  setStatus('Sesli sunum duraklatıldı.');
+  return;
+ }
+
+ const text=getNewsText();
 
  if(
   !text||
@@ -223,89 +257,16 @@ $('speakNewsBtn').addEventListener('click',()=>{
   return;
  }
 
- audio.pause();
- stopNewsSpeech();
-
- newsUtterance=new SpeechSynthesisUtterance(text);
- newsUtterance.lang='tr-TR';
- newsUtterance.rate=0.95;
- newsUtterance.pitch=1;
-
- function selectTurkishVoice(){
-  const voices=window.speechSynthesis.getVoices();
-  return voices.find(v=>
-   v.lang&&v.lang.toLowerCase().startsWith('tr')
-  );
+ if(audioSourceType!=='generated'||generatedSpeechText!==text){
+  const ok=await generateNewsAudio(text);
+  if(!ok)return;
  }
 
- const turkishVoice=selectTurkishVoice();
- if(turkishVoice){
-  newsUtterance.voice=turkishVoice;
- }
+ audio.currentTime=0;
+ await play();
+}
 
- newsUtterance.onstart=()=>{
-  ttsSpeaking=true;
-  ttsMouthUntil=0;
-  ttsLastBoundary=0;
-  ttsStartedAt=performance.now();
-  ttsBoundarySeen=false;
-  ttsWordStart=0;
-  ttsWordDuration=180;
-
-  btn.textContent='■ Sunumu durdur';
-  setStatus('ULAK günlük haberleri seslendiriyor...');
- };
-
- // KELİME SINIRI OLAYLARI
- newsUtterance.onboundary=(event)=>{
-  if(!ttsSpeaking)return;
-
-  const now=performance.now();
-
-  // Bazı tarayıcılar kelime ve cümle sınırlarını ayrı bildirir.
-  if(event.name&&event.name!=='word')return;
-
-  ttsBoundarySeen=true;
-  ttsLastBoundary=now;
-  ttsWordStart=now;
-
-  // Kelimenin uzunluğuna göre yaklaşık konuşma süresi.
-  const chars=Math.max(1,event.charLength||4);
-  const duration=(chars*55)/newsUtterance.rate;
-
-  ttsWordDuration=Math.max(110,Math.min(420,duration));
-  ttsMouthUntil=now+ttsWordDuration;
- };
-
- newsUtterance.onend=()=>{
-  ttsSpeaking=false;
-  ttsMouthUntil=0;
-  ttsLastBoundary=0;
-  ttsStartedAt=0;
-  ttsBoundarySeen=false;
-  level=0;
-
-  btn.textContent='▶ ULAK Haberi Seslendir';
-  setStatus('ULAK sunumu tamamlandı.');
- };
-
- newsUtterance.onerror=(event)=>{
-  ttsSpeaking=false;
-  ttsMouthUntil=0;
-  ttsLastBoundary=0;
-  ttsStartedAt=0;
-  ttsBoundarySeen=false;
-  level=0;
-
-  btn.textContent='▶ ULAK Haberi Seslendir';
-
-  if(event.error!=='canceled'&&event.error!=='interrupted'){
-   setStatus('Sesli sunum sırasında bir hata oluştu.');
-  }
- };
-
- window.speechSynthesis.speak(newsUtterance);
-});
+$('speakNewsBtn').addEventListener('click',speakNews);
 
 // DOSYA SEÇİMİ
 $('pickImgBtn').onclick=()=>$('imgInput').click();
@@ -370,7 +331,6 @@ function setupImage(im){
  base.getContext('2d').drawImage(im,0,0,imgW,imgH);
 
  resetMouthPosition();
-
  setStatus('ULAK görseli yüklendi. Ağız konumu hazır.');
 }
 
@@ -478,7 +438,6 @@ sliderMap.forEach(([sid,oid,fn])=>{
   clampRect();
 
   $(oid).textContent=parseFloat(e.target.value).toFixed(1);
-
   makePatch();
  });
 });
@@ -496,13 +455,7 @@ function syncSliders(){
  for(const id in vals){
   $(id).value=vals[id].toFixed(1);
 
-  const output={
-   sx:'ox',
-   sy:'oy',
-   sw:'ow',
-   sh:'oh'
-  }[id];
-
+  const output={sx:'ox',sy:'oy',sw:'ow',sh:'oh'}[id];
   $(output).textContent=vals[id].toFixed(1);
  }
 }
@@ -613,8 +566,12 @@ $('audInput').addEventListener('change',e=>{
  const f=e.target.files[0];
  if(!f)return;
 
+ audio.pause();
  audio.src=URL.createObjectURL(f);
  audio.load();
+
+ audioSourceType='file';
+ generatedSpeechText='';
 
  $('pickInfo').textContent='Ses: '+f.name;
  setStatus('Ses yüklendi: '+f.name);
@@ -632,7 +589,6 @@ function ensureAudioGraph(){
  analyser.fftSize=1024;
 
  sampleBuf=new Uint8Array(analyser.fftSize);
-
  streamDest=actx.createMediaStreamDestination();
 
  src.connect(analyser);
@@ -642,18 +598,18 @@ function ensureAudioGraph(){
 
 async function play(){
  if(!audio.src){
-  setStatus('Önce MP3 seçin.');
+  setStatus('Önce haberleri seslendirin veya MP3 seçin.');
   return;
  }
 
- stopNewsSpeech();
  ensureAudioGraph();
 
  if(actx.state==='suspended')await actx.resume();
 
  try{
   await audio.play();
-  setStatus('Oynatılıyor...');
+  $('speakNewsBtn').textContent='■ Sunumu duraklat';
+  setStatus('ULAK Ahmet sesiyle konuşuyor...');
  }catch(err){
   setStatus('Ses oynatılamadı: '+err.message);
  }
@@ -663,10 +619,12 @@ $('playBtn').onclick=play;
 
 $('pauseBtn').onclick=()=>{
  audio.pause();
+ $('speakNewsBtn').textContent='▶ ULAK Haberi Seslendir';
  setStatus('Duraklatıldı.');
 };
 
 $('restartBtn').onclick=()=>{
+ if(!audio.src)return;
  audio.currentTime=0;
 };
 
@@ -760,8 +718,27 @@ async function startRecording(){
   return;
  }
 
+ // MP3 elle seçilmediyse güncel haber metninin Ahmet sesini üret.
+ if(audioSourceType!=='file'){
+  const text=getNewsText();
+
+  if(
+   !text||
+   text.includes('henüz alınmadı')||
+   text.startsWith('Haberler alınamadı:')
+  ){
+   setStatus('Önce Günün Haberlerini Getir düğmesine basın.');
+   return;
+  }
+
+  if(audioSourceType!=='generated'||generatedSpeechText!==text){
+   const ok=await generateNewsAudio(text);
+   if(!ok)return;
+  }
+ }
+
  if(!audio.src){
-  setStatus('Video kaydı için önce MP3 seçin.');
+  setStatus('Video kaydı için önce ses hazırlayın.');
   return;
  }
 
@@ -769,8 +746,6 @@ async function startRecording(){
   setStatus('Tarayıcı video kaydını desteklemiyor.');
   return;
  }
-
- stopNewsSpeech();
 
  const mime=pickMime();
  if(!mime){
@@ -836,7 +811,7 @@ async function startRecording(){
 
  try{
   await audio.play();
-  setStatus('Kaydediliyor... Ses bitince kayıt otomatik durur.');
+  setStatus('Kaydediliyor... Ahmet sesi bitince kayıt otomatik durur.');
  }catch(err){
   stopRecording();
   setStatus('Kayıt başlatılamadı: '+err.message);
@@ -851,7 +826,13 @@ function stopRecording(){
 }
 
 audio.addEventListener('ended',()=>{
- if(isRecording)stopRecording();
+ $('speakNewsBtn').textContent='▶ ULAK Haberi Seslendir';
+
+ if(isRecording){
+  stopRecording();
+ }else{
+  setStatus('ULAK sesli sunumu tamamlandı.');
+ }
 });
 
 $('recBtn').onclick=startRecording;
@@ -869,7 +850,7 @@ defaultImage.src='/ulak-studio.png';
 function frame(){
  let target=0;
 
- // MP3 SESİNDEN AĞIZ HAREKETİ
+ // AHMET SESİNİN GERÇEK SES DALGASINDAN AĞIZ HAREKETİ
  if(analyser&&!audio.paused&&!audio.ended){
   analyser.getByteTimeDomainData(sampleBuf);
 
@@ -885,38 +866,6 @@ function frame(){
   if(target<.05)target=0;
  }
 
- // TELEFONUN TARAYICI SESLENDİRMESİ
- else if(ttsSpeaking){
-  const now=performance.now();
-
-  if(ttsBoundarySeen){
-   // Kelime sınırından itibaren yaklaşık ağız hareketi
-   if(now<ttsMouthUntil){
-    const progress=Math.max(0,Math.min(1,
-     (now-ttsWordStart)/ttsWordDuration
-    ));
-
-    const syllable=Math.abs(Math.sin(progress*Math.PI*3));
-    const envelope=Math.sin(progress*Math.PI);
-
-    target=(.20+.65*syllable)*envelope;
-   }else{
-    // Kelimeler arasındaki duraklamada ağız kapanır
-    target=0;
-   }
-  }else{
-   // Tarayıcı kelime sınırı olayı göndermiyorsa yedek hareket
-   const elapsed=now-ttsStartedAt;
-
-   if(elapsed>1200){
-    const phase=(elapsed%360)/360;
-    target=phase<.42
-     ? .55*Math.sin(Math.PI*phase/.42)
-     : 0;
-   }
-  }
- }
-
  level+=(target>level?.48:.20)*(target-level);
 
  render();
@@ -927,3 +876,4 @@ requestAnimationFrame(frame);
 </script>
 </body>
 </html>
+ 
