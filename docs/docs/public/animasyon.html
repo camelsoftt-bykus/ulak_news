@@ -176,15 +176,16 @@ $('imgInput').addEventListener('change',e=>{
  im.src=URL.createObjectURL(f);
 });
 
-// KÜÇÜK AĞIZ ALANI BAŞLANGIÇ KONUMU
+// ROBOT AĞZINA TAM OTURAN BAŞLANGIÇ KONUMU
 function detectMouthPosition(){
  if(!base)return null;
 
- const w=Math.round(imgW*.08);
- const h=Math.round(imgH*.05);
+ const w=Math.round(imgW*.075);
+ const h=Math.round(imgH*.055);
 
- const centerX=imgW*.41;
- const centerY=imgH*.425;
+ // Sol üst köşe ~%39.8 X, ~%43.8 Y -> Merkez tam ağzın üstünde
+ const centerX=imgW*.435;
+ const centerY=imgH*.465;
 
  return {
   x:Math.round(centerX-w/2),
@@ -225,7 +226,7 @@ function setupImage(im){
 
  resetMouthPosition();
 
- setStatus('ULAK görseli yüklendi. Küçük ağız alanı hazır.');
+ setStatus('ULAK görseli yüklendi. Ağız konumu ayarlandı.');
 }
 
 $('detectBtn').addEventListener('click',()=>{
@@ -246,17 +247,18 @@ function clampRect(){
  mouth.y=Math.max(0,Math.min(mouth.y,imgH-mouth.h));
 }
 
-// DAR AĞIZ ALANI MASKESİ
+// KENARLARI YUMUŞATILMIŞ (KARARTISIZ) AĞIZ MASKESİ
 function makePatch(){
  patchLayer=null;
 
  if(!base||mouth.w<4||mouth.h<4)return;
 
- const pw=Math.max(4,Math.round(mouth.w)+2);
- const ph=Math.max(4,Math.round(mouth.h)+2);
+ const pad=Math.max(4,Math.round(Math.min(mouth.w,mouth.h)*.25));
+ const pw=Math.round(mouth.w)+pad*2;
+ const ph=Math.round(mouth.h)+pad*2;
 
- patchX=Math.max(0,Math.round(mouth.x)-1);
- patchY=Math.max(0,Math.round(mouth.y)-1);
+ patchX=Math.max(0,Math.round(mouth.x)-pad);
+ patchY=Math.max(0,Math.round(mouth.y)-pad);
 
  const patch=document.createElement('canvas');
  patch.width=pw;
@@ -265,26 +267,26 @@ function makePatch(){
  const pctx=patch.getContext('2d');
  const baseCtx=base.getContext('2d');
 
- function averageColor(y){
+ // Sadece ağzın orta %50 genişliğinden (gözlerden uzak) yüz rengi örnekle
+ function sampleFaceColor(y){
   y=Math.max(0,Math.min(imgH-1,Math.round(y)));
 
-  const sx=Math.max(0,Math.round(mouth.x));
-  const sw=Math.max(1,Math.min(
-   Math.round(mouth.w),
-   imgW-sx
-  ));
+  const sx=Math.max(0,Math.round(mouth.x+mouth.w*.25));
+  const sw=Math.max(1,Math.min(Math.round(mouth.w*.5),imgW-sx));
 
   const data=baseCtx.getImageData(sx,y,sw,1).data;
 
   let r=0,g=0,b=0,n=0;
-
   for(let i=0;i<data.length;i+=4){
+   // Çok koyu pikselleri (göz/çizgi kenarı) ortalamaya katma
+   if(data[i]<90&&data[i+1]<90&&data[i+2]<90)continue;
    r+=data[i];
    g+=data[i+1];
    b+=data[i+2];
    n++;
   }
 
+  if(n===0)return {r:245,g:215,b:185};
   return {
    r:Math.round(r/n),
    g:Math.round(g/n),
@@ -292,21 +294,28 @@ function makePatch(){
   };
  }
 
- const top=averageColor(mouth.y-mouth.h*.7);
- const bottom=averageColor(mouth.y+mouth.h*1.7);
+ const top=sampleFaceColor(mouth.y-Math.max(3,mouth.h*.25));
+ const bottom=sampleFaceColor(mouth.y+mouth.h+Math.max(3,mouth.h*.25));
 
- const gradient=pctx.createLinearGradient(0,0,0,ph);
+ const midR=Math.round((top.r+bottom.r)/2);
+ const midG=Math.round((top.g+bottom.g)/2);
+ const midB=Math.round((top.b+bottom.b)/2);
 
- gradient.addColorStop(0,`rgb(${top.r},${top.g},${top.b})`);
- gradient.addColorStop(1,`rgb(${bottom.r},${bottom.g},${bottom.b})`);
+ // Dış kenarlara doğru tamamen saydamlaşan yumuşak elips gradyanı
+ pctx.save();
+ pctx.translate(pw/2,ph/2);
+ pctx.scale(pw/2,ph/2);
 
- pctx.fillStyle=gradient;
+ const rad=pctx.createRadialGradient(0,0,0.45,0,0,1);
+ rad.addColorStop(0,`rgba(${midR},${midG},${midB},1)`);
+ rad.addColorStop(0.75,`rgba(${midR},${midG},${midB},0.92)`);
+ rad.addColorStop(1,`rgba(${midR},${midG},${midB},0)`);
 
- const radius=Math.max(1,Math.min(3,ph*.08));
-
+ pctx.fillStyle=rad;
  pctx.beginPath();
- pctx.roundRect(0,0,pw,ph,radius);
+ pctx.arc(0,0,1,0,Math.PI*2);
  pctx.fill();
+ pctx.restore();
 
  patchLayer=patch;
 }
@@ -631,7 +640,6 @@ function drawOverlay(){
 function pickMime(){
  const list=[
   'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
-  'video/mp4',
   'video/mp4',
   'video/webm;codecs=vp9,opus',
   'video/webm;codecs=vp8,opus',
