@@ -1217,3 +1217,20 @@ a {
   }
 }
 
+/* ULAK video oynatıcı düzeltmesi */
+.video-art.studio-art {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #171717;
+}
+
+.video-art video {
+  display: block;
+  width: 100%;
+  height: auto !important;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: #171717;
+}
