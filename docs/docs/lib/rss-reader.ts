@@ -1,4 +1,3 @@
-
 import Parser from "rss-parser";
 import { newsSources } from "./news-sources";
 
@@ -13,6 +12,19 @@ export type CollectedNews = {
   publishedAt: string | null;
   sourcePriority: number;
 };
+
+export type SourceStatus = {
+  sourceId: string;
+  sourceName: string;
+  count: number;
+  error?: string;
+};
+
+let lastSourceStatus: SourceStatus[] = [];
+
+export function getNewsSourceStatus(): SourceStatus[] {
+  return lastSourceStatus;
+}
 
 function cleanText(value: string): string {
   return value
@@ -184,7 +196,8 @@ async function collectRssSource(
 
   const response = await fetch(source.rssUrl, {
     headers: {
-      "User-Agent": "ULAK-News/1.0"
+      "User-Agent": "ULAK-News/1.0",
+      Accept: "application/rss+xml, application/xml, text/xml"
     },
     signal: AbortSignal.timeout(12000),
     cache: "no-store"
@@ -211,68 +224,90 @@ async function collectRssSource(
 }
 
 function balanceSources(items: CollectedNews[]): CollectedNews[] {
-  const groups = new Map<string, CollectedNews[]>();
+  const regions = ["local", "ankara", "turkey", "world", "science"] as const;
 
-  for (const item of items) {
-    const group = groups.get(item.sourceId) || [];
-    group.push(item);
-    groups.set(item.sourceId, group);
-  }
+  const selected: CollectedNews[] = [];
+  const usedLinks = new Set<string>();
 
-  const orderedGroups = Array.from(groups.values()).map((group) =>
-    group.sort((a, b) => {
-      const dateA = a.publishedAt
-        ? new Date(a.publishedAt).getTime()
-        : 0;
-      const dateB = b.publishedAt
-        ? new Date(b.publishedAt).getTime()
-        : 0;
+  // Önce her bölgeden en az bir haber seçmeyi dene.
+  for (const region of regions) {
+    const sourceIds = newsSources
+      .filter((source) => source.enabled && source.region === region)
+      .map((source) => source.id);
 
-      return dateB - dateA;
-    })
-  );
+    const candidate = items
+      .filter((item) => sourceIds.includes(item.sourceId))
+      .sort((a, b) => {
+        const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+        const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+        return dateB - dateA;
+      })[0];
 
-  orderedGroups.sort(
-    (a, b) => a[0].sourcePriority - b[0].sourcePriority
-  );
-
-  const balanced: CollectedNews[] = [];
-  let index = 0;
-
-  while (balanced.length < 5) {
-    let added = false;
-
-    for (const group of orderedGroups) {
-      if (group[index]) {
-        balanced.push(group[index]);
-        added = true;
-
-        if (balanced.length === 5) break;
-      }
+    if (candidate && !usedLinks.has(candidate.link)) {
+      selected.push(candidate);
+      usedLinks.add(candidate.link);
     }
 
-    if (!added) break;
-    index++;
+    if (selected.length === 5) return selected;
   }
 
-  return balanced;
+  // Kalan yerleri öncelik ve tarihe göre doldur.
+  const remaining = items
+    .filter((item) => !usedLinks.has(item.link))
+    .sort((a, b) => {
+      if (a.sourcePriority !== b.sourcePriority) {
+        return a.sourcePriority - b.sourcePriority;
+      }
+
+      const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+      const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+
+  for (const item of remaining) {
+    if (selected.length >= 5) break;
+    selected.push(item);
+    usedLinks.add(item.link);
+  }
+
+  return selected;
 }
 
 export async function collectRssNews(): Promise<CollectedNews[]> {
   const sources = newsSources.filter((source) => source.enabled);
 
-  const results = await Promise.allSettled(
-    sources.map((source) =>
-      source.rssUrl
-        ? collectRssSource(source)
-        : collectPageNews(source)
-    )
+  const results = await Promise.all(
+    sources.map(async (source) => {
+      try {
+        const items = source.rssUrl
+          ? await collectRssSource(source)
+          : await collectPageNews(source);
+
+        return {
+          items,
+          status: {
+            sourceId: source.id,
+            sourceName: source.name,
+            count: items.length
+          } satisfies SourceStatus
+        };
+      } catch (error) {
+        return {
+          items: [],
+          status: {
+            sourceId: source.id,
+            sourceName: source.name,
+            count: 0,
+            error: error instanceof Error ? error.message : "Bilinmeyen hata"
+          } satisfies SourceStatus
+        };
+      }
+    })
   );
 
-  const collected = results.flatMap((result) =>
-    result.status === "fulfilled" ? result.value : []
-  );
+  lastSourceStatus = results.map((result) => result.status);
 
+  const collected = results.flatMap((result) => result.items);
   const uniqueNews = new Map<string, CollectedNews>();
 
   for (const item of collected) {
