@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -12,20 +11,26 @@ type NewsItem = {
   publishedAt: string | null;
 };
 
-const categories: Record<string, string> = {
-  sincan: "SİNCAN",
-  etimesgut: "ETİMESGUT",
-  ankara: "ANKARA",
-  turkey: "TÜRKİYE",
-  world: "DÜNYA",
-  tubitak: "BİLİM & TEKNOLOJİ",
-  "tubitak-uzay": "BİLİM & UZAY",
-  "trt-uzay": "BİLİM & UZAY",
+const categoryInfo: Record<string, { label: string; section: string }> = {
+  sincan: { label: "SİNCAN", section: "Yerel Gündem" },
+  etimesgut: { label: "ETİMESGUT", section: "Yerel Gündem" },
+  ankara: { label: "ANKARA", section: "Ankara" },
+  "trt-turkiye": { label: "TÜRKİYE", section: "Türkiye" },
+  "bbc-turkce": { label: "TÜRKİYE", section: "Türkiye" },
+  "trt-dunya": { label: "DÜNYA", section: "Dünya" },
+  tubitak: { label: "BİLİM & TEKNOLOJİ", section: "Bilim ve Uzay" },
+  "tubitak-uzay": { label: "BİLİM & UZAY", section: "Bilim ve Uzay" },
+  "trt-uzay": { label: "BİLİM & UZAY", section: "Bilim ve Uzay" },
+  nasa: { label: "BİLİM & UZAY", section: "Bilim ve Uzay" },
 };
 
-function getCategory(sourceId: string): string {
-  return categories[sourceId] || "GÜNDEM";
-}
+const sectionOrder = [
+  "Yerel Gündem",
+  "Ankara",
+  "Türkiye",
+  "Dünya",
+  "Bilim ve Uzay",
+];
 
 function formatDate(value: string | null): string {
   if (!value) return "";
@@ -75,44 +80,61 @@ export default function NewsFeed() {
     );
   }
 
+  const groupedNews = sectionOrder
+    .map((section) => ({
+      section,
+      items: news.filter(
+        (item) => categoryInfo[item.sourceId]?.section === section
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+
   return (
-    <div className="news-grid">
-      {news.map((item, index) => (
-        <article
-          className="news-card"
-          key={`${item.sourceId}-${item.link}`}
-        >
-          <div className="news-card-top">
-            <span className="news-number">
-              {String(index + 1).padStart(2, "0")}
-            </span>
+    <div>
+      {groupedNews.map((group) => (
+        <section key={group.section} style={{ marginBottom: "32px" }}>
+          <h2 style={{ marginBottom: "16px" }}>{group.section}</h2>
 
-            <span className="news-category">
-              {getCategory(item.sourceId)}
-            </span>
+          <div className="news-grid">
+            {group.items.map((item, index) => (
+              <article
+                className="news-card"
+                key={`${item.sourceId}-${item.link}`}
+              >
+                <div className="news-card-top">
+                  <span className="news-number">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+
+                  <span className="news-category">
+                    {categoryInfo[item.sourceId]?.label || "GÜNDEM"}
+                  </span>
+                </div>
+
+                <h3>{item.title}</h3>
+
+                <p>
+                  {item.summary || "Kaynakta kısa açıklama bulunmuyor."}
+                </p>
+
+                <div className="news-coming">
+                  {item.sourceName}
+                  {formatDate(item.publishedAt) && (
+                    <> · {formatDate(item.publishedAt)}</>
+                  )}
+                </div>
+
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Kaynağı oku →
+                </a>
+              </article>
+            ))}
           </div>
-
-          <h3>{item.title}</h3>
-
-          <p>
-            {item.summary || "Kaynakta kısa açıklama bulunmuyor."}
-          </p>
-
-          <div className="news-coming">
-            {item.sourceName}
-            {formatDate(item.publishedAt) && (
-              <> · {formatDate(item.publishedAt)}</>
-            )}
-          </div>
-
-          <a
-            href={item.link}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Kaynağı oku →
-          </a>
-        </article>
+        </section>
       ))}
     </div>
   );
