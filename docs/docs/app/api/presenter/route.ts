@@ -60,30 +60,45 @@ HABERLER:
 ${newsText}
 `;
 
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: prompt }]
+    
+    let response: Response | undefined;
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      response = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 1800
             }
-          ],
-          
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 1800
-          }
-        }),
-        signal: AbortSignal.timeout(25000),
-        cache: "no-store"
+          }),
+          signal: AbortSignal.timeout(25000),
+          cache: "no-store"
+        }
+      );
+
+      if (response.ok || response.status !== 503 || attempt === 2) {
+        break;
       }
-    );
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    if (!response) {
+      throw new Error("Gemini yanıt vermedi.");
+    }
+
 
     if (!response.ok) {
       const errorText = await response.text();
