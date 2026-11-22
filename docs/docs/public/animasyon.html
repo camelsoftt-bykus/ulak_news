@@ -54,8 +54,8 @@ input[type=file]{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 </div>
 
 <div class="card">
-<div class="row"><span>Konum X (%)</span><input type="range" id="sx" min="0" max="100" step=".1" value="40"><output id="ox">40</output></div>
-<div class="row"><span>Konum Y (%)</span><input type="range" id="sy" min="0" max="100" step=".1" value="43.5"><output id="oy">43.5</output></div>
+<div class="row"><span>Konum X (%)</span><input type="range" id="sx" min="0" max="100" step=".1" value="40.5"><output id="ox">40.5</output></div>
+<div class="row"><span>Konum Y (%)</span><input type="range" id="sy" min="0" max="100" step=".1" value="42.5"><output id="oy">42.5</output></div>
 <div class="row"><span>Genişlik (%)</span><input type="range" id="sw" min="1" max="100" step=".1" value="10.2"><output id="ow">10.2</output></div>
 <div class="row"><span>Yükseklik (%)</span><input type="range" id="sh" min="1" max="100" step=".1" value="8.5"><output id="oh">8.5</output></div>
 <div class="row"><span>Hassasiyet</span><input type="range" id="sg" min=".3" max="3" step=".05" value="1.2"><output id="og">1.20</output></div>
@@ -129,8 +129,8 @@ $('imgInput').addEventListener('change',e=>{
 function detectMouthPosition(){
  if(!base)return null;
  return {
-  x:Math.round(imgW*.40),
-  y:Math.round(imgH*.435),
+  x:Math.round(imgW*.405),
+  y:Math.round(imgH*.425),
   w:Math.round(imgW*.102),
   h:Math.round(imgH*.085)
  };
