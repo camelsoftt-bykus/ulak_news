@@ -8,6 +8,8 @@ type NewsItem = {
   title: string;
   link: string;
   summary: string;
+  editorialSummary?: string;
+  whyImportant?: string;
   publishedAt: string | null;
 };
 
@@ -41,19 +43,14 @@ const sections = [
 
 function formatDate(value: string | null): string {
   if (!value) return "";
-
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) return "";
-
   return date.toLocaleDateString("tr-TR");
 }
 
 function formatGeneratedAt(value?: string): string {
   if (!value) return "";
-
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) return "";
 
   return date.toLocaleString("tr-TR", {
@@ -89,9 +86,7 @@ export default function NewsFeed() {
           throw new Error("Günlük bülten dosyası geçersiz.");
         }
 
-        if (active) {
-          setBulletin(data);
-        }
+        if (active) setBulletin(data);
       } catch {
         if (active) setError(true);
       } finally {
@@ -125,7 +120,6 @@ export default function NewsFeed() {
     }
 
     const text = getSpokenScript();
-
     if (!text) return;
 
     window.speechSynthesis.cancel();
@@ -253,11 +247,33 @@ export default function NewsFeed() {
 
                     <h3>{item.title}</h3>
 
-                    <p>
-                      {item.summary || "Kaynakta kısa açıklama bulunmuyor."}
-                    </p>
+                    <div style={{ marginTop: "14px" }}>
+                      <strong>Kısa özet</strong>
+                      <p style={{ marginTop: "6px" }}>
+                        {item.editorialSummary ||
+                          item.summary ||
+                          "Bu haber için özet bulunmuyor."}
+                      </p>
+                    </div>
 
-                    <div className="news-coming">
+                    {item.whyImportant && (
+                      <div
+                        style={{
+                          marginTop: "16px",
+                          padding: "14px",
+                          borderRadius: "12px",
+                          background: "#fff8ed",
+                          border: "1px solid #f1dfc5",
+                        }}
+                      >
+                        <strong>Neden önemli?</strong>
+                        <p style={{ marginTop: "6px", marginBottom: 0 }}>
+                          {item.whyImportant}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="news-coming" style={{ marginTop: "16px" }}>
                       {item.sourceName}
                       {formatDate(item.publishedAt) && (
                         <> · {formatDate(item.publishedAt)}</>
