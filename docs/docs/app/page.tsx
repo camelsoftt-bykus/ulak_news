@@ -1,15 +1,19 @@
+"use client";
 
+import { useState } from "react";
 import NewsFeed from "./news-feed";
 
 const newsCategories = [
-  "Sincan & Etimesgut",
-  "Ankara",
-  "Türkiye",
-  "Dünya",
-  "Bilim & Uzay"
+  { name: "Sincan & Etimesgut", id: "yerel-gundem" },
+  { name: "Ankara", id: "ankara" },
+  { name: "Türkiye", id: "turkiye" },
+  { name: "Dünya", id: "dunya" },
+  { name: "Bilim & Uzay", id: "bilim-ve-uzay" },
 ];
 
 export default function Home() {
+  const [activeCategory, setActiveCategory] = useState("yerel-gundem");
+
   return (
     <main>
       <header className="topbar">
@@ -109,9 +113,26 @@ export default function Home() {
 
         <div className="category-list">
           {newsCategories.map((category) => (
-            <span className="category-chip" key={category}>
-              {category}
-            </span>
+            <a
+              href={`#${category.id}`}
+              key={category.id}
+              className="category-chip"
+              onClick={() => setActiveCategory(category.id)}
+              aria-current={
+                activeCategory === category.id ? "location" : undefined
+              }
+              style={
+                activeCategory === category.id
+                  ? {
+                      background: "#292929",
+                      color: "#ffffff",
+                      borderColor: "#292929",
+                    }
+                  : undefined
+              }
+            >
+              {category.name}
+            </a>
           ))}
         </div>
 
