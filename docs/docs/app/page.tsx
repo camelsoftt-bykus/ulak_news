@@ -73,28 +73,42 @@ export default function Home() {
             <div className="eyebrow">GÜNÜN ÖZETİ</div>
             <h2 className="section-title">Sabah bültenin</h2>
           </div>
-          <span className="duration-pill">◷ 01:30</span>
+          <span className="duration-pill">ULAK · VİDEO</span>
         </div>
 
         <div className="video-panel">
           <div className="video-art studio-art">
-            <img
-              src="/ulak-studio.png"
-              alt="Ulak'ın haber stüdyosu"
-              className="ulak-studio"
-            />
-            <div className="play-circle">▶</div>
-            <span className="video-label">ULAK · GÜNLÜK BÜLTEN</span>
+            <video
+              controls
+              playsInline
+              preload="metadata"
+              poster="/ulak-studio.png"
+              style={{
+                display: "block",
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                background: "#171717",
+                borderRadius: "16px",
+              }}
+            >
+              <source
+                src="/freelipsync-19841f7c-b07c-4086-ab74-451f857e3e2c-original.mp4"
+                type="video/mp4"
+              />
+              Tarayıcınız video oynatmayı desteklemiyor.
+            </video>
           </div>
+
           <div className="video-info">
-            <span className="content-tag">YAKINDA</span>
+            <span className="content-tag">ULAK YAYINDA</span>
             <h3>Günün önemli gelişmeleri tek videoda.</h3>
             <p>
               Ulak'ın sıcak anlatımıyla yerelden dünyaya
-              günün gündemini 90 saniyede takip et.
+              günün gündemini takip et.
             </p>
             <span className="muted">
-              İlk video yayınlandığında burada görünecek.
+              İlk ULAK sunum videosu burada.
             </span>
           </div>
         </div>
