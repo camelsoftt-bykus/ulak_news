@@ -1,4 +1,7 @@
-import { collectRssNews } from "@/lib/rss-reader";
+import {
+  collectRssNews,
+  getNewsSourceStatus
+} from "@/lib/rss-reader";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -6,10 +9,12 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const news = await collectRssNews();
+    const sources = getNewsSourceStatus();
 
     return Response.json({
       count: news.length,
-      news
+      news,
+      sources
     });
   } catch (error) {
     console.error("ULAK haber API hatası:", error);
@@ -20,3 +25,4 @@ export async function GET() {
     );
   }
 }
+ 
