@@ -1,4 +1,3 @@
-
 import { collectRssNews } from "@/lib/rss-reader";
 
 export const runtime = "nodejs";
@@ -25,42 +24,72 @@ export async function GET() {
     }
 
     const newsText = news.map((item, index) => `
-Haber ${index + 1}
+HABER KAYDI ${index + 1}
 Kaynak: ${item.sourceName}
 Başlık: ${item.title}
-Özet: ${item.summary}
-Tarih: ${item.publishedAt || "Belirtilmemiş"}
-Bağlantı: ${item.link}
+Özet: ${item.summary || "Kaynakta açıklama bulunmuyor."}
+Yayın tarihi: ${item.publishedAt || "Belirtilmemiş"}
+Bölge önceliği: ${item.sourcePriority}
 `).join("\n");
 
     const prompt = `
-Sen ULAK adlı Türkçe haber programının sunucususun.
+GÖREVİN:
 
-Aşağıdaki haberleri kullanarak yaklaşık 90 saniyelik
-doğal, akıcı ve tarafsız bir Türkçe haber sunumu yaz.
+Sen ULAK adlı Türkçe haber bülteninin profesyonel sunucususun.
+Verilen haber kayıtlarından yaklaşık 90 saniyelik, doğal,
+akıcı ve tarafsız bir Türkçe haber sunumu hazırla.
 
-Öncelik sırası:
-1. Sincan ve Etimesgut
-2. Ankara
-3. Türkiye
-4. Dünya ve siyaset
-5. Bilim, teknoloji ve uzay
+ÇOK ÖNEMLİ DOĞRULUK KURALLARI:
 
-Kurallar:
-- Yalnızca verilen haberlerdeki doğrulanabilir bilgileri kullan.
-- Olmayan bilgi veya tarih uydurma.
-- Aynı haberi tekrarlama.
-- Önemli olmayan ayrıntılarla süreyi doldurma.
-- Her haberin neden önemli olduğunu kısaca açıkla.
-- Samimi, güven veren ve ölçülü bir erkek sunucu dili kullan.
-- Kaynak bağlantılarını metnin sonunda ayrıca listele.
-- Haber yoksa haber varmış gibi davranma.
+1. Yalnızca aşağıda verilen haber kayıtlarındaki bilgileri kullan.
+2. Haber kayıtlarında bulunmayan hiçbir olaydan söz etme.
+3. Yeni haber, kişi, kurum, açıklama, sayı, tarih veya yer uydurma.
+4. Bir haberin özetinde bulunmayan ayrıntıları tahmin ederek tamamlama.
+5. Bir haberin başlığı ve özeti çelişiyorsa iddiayı kesin bilgi gibi sunma.
+6. Kaynağın söylediği bir iddiayı doğrulanmış gerçek gibi anlatma.
+   Gerektiğinde "kaynak tarafından bildirildi" şeklinde ifade et.
+7. Aynı olayı farklı cümlelerle tekrar etme.
+8. Haber sayısı azsa süreyi doldurmak için yeni bilgi üretme.
+9. Yalnızca önemli ve anlamlı gelişmeleri seç.
+10. Kaynakta olmayan neden-sonuç ilişkileri kurma.
 
-HABERLER:
+YEREL ÖNCELİK:
+
+1. Sincan
+2. Etimesgut
+3. Ankara
+4. Türkiye
+5. Dünya ve siyaset
+6. Bilim, teknoloji ve uzay
+
+Birden fazla önemli haber varsa bu öncelik sırasını dikkate al.
+Ancak öncelik uğruna önemsiz bir haberi önemliymiş gibi sunma.
+
+SUNUM DİLİ:
+
+- Yalnızca doğal ve düzgün Türkçe kullan.
+- Türkçe karakterleri doğru yaz: ç, ğ, ı, İ, ö, ş, ü.
+- Bozuk, yabancı dilli veya anlamsız kelime kullanma.
+- Samimi, güven veren, ölçülü bir erkek haber sunucusu dili kullan.
+- Abartılı, sansasyonel veya taraflı ifadeler kullanma.
+- Haberleri kısa ve anlaşılır cümlelerle anlat.
+- Her haberin önemini yalnızca verilen bilgilerden hareketle açıkla.
+- Yaklaşık 90 saniyelik bir metin hazırla.
+- Selamlama ve kısa kapanış ekle.
+
+ÇIKTI KURALLARI:
+
+- Yalnızca sunucunun okuyacağı haber metnini üret.
+- Markdown başlıkları veya kalın yazı işaretleri kullanma.
+- Kaynak bağlantısı, kaynak listesi veya URL üretme.
+- Haberlerin dışına çıkan yorum ekleme.
+- Haber kayıtlarında olmayan bir gelişmeyi kesinlikle ekleme.
+
+HABER KAYITLARI:
+
 ${newsText}
 `;
 
-    
     let response: Response | undefined;
 
     for (let attempt = 1; attempt <= 2; attempt++) {
@@ -79,7 +108,7 @@ ${newsText}
               }
             ],
             generationConfig: {
-              temperature: 0.4,
+              temperature: 0.2,
               maxOutputTokens: 1800
             }
           }),
@@ -99,7 +128,6 @@ ${newsText}
       throw new Error("Gemini yanıt vermedi.");
     }
 
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Gemini API hatası:", errorText);
@@ -107,8 +135,7 @@ ${newsText}
       return Response.json(
         {
           error: "Gemini hatası",
-          geminiStatus: response.status,
-          details: errorText
+          geminiStatus: response.status
         },
         { status: 502 }
       );
@@ -116,7 +143,7 @@ ${newsText}
 
     const data = await response.json();
 
-    const script = data.candidates?.[0]?.content?.parts
+    let script = data.candidates?.[0]?.content?.parts
       ?.map((part: { text?: string }) => part.text || "")
       .join("\n")
       .trim();
@@ -127,6 +154,13 @@ ${newsText}
         { status: 502 }
       );
     }
+
+    // Kaynak listesini Gemini'den değil, gerçek haber kayıtlarından oluştur.
+    const sourceList = news.map((item, index) =>
+      `${index + 1}. ${item.sourceName}: ${item.title}\n${item.link}`
+    ).join("\n\n");
+
+    script = `${script}\n\nKaynaklar:\n${sourceList}`;
 
     return Response.json(
       {
@@ -140,6 +174,7 @@ ${newsText}
         }
       }
     );
+
   } catch (error) {
     console.error("ULAK sunucu hatası:", error);
 
