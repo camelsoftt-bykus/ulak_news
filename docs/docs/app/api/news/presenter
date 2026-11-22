@@ -1,0 +1,126 @@
+
+import { collectRssNews } from "@/lib/rss-reader";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function GET() {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return Response.json(
+        { error: "Gemini API anahtarı bulunamadı." },
+        { status: 500 }
+      );
+    }
+
+    const news = await collectRssNews();
+
+    if (news.length === 0) {
+      return Response.json({
+        count: 0,
+        script: "Bugün yayınlanacak doğrulanmış haber bulunamadı."
+      });
+    }
+
+    const newsForAI = news.map((item) => ({
+      source: item.sourceName,
+      title: item.title,
+      summary: item.summary,
+      link: item.link,
+      date: item.publishedAt
+    }));
+
+    const prompt = `
+Sen ULAK adlı tarafsız, samimi ve güvenilir bir Türkçe haber sunucususun.
+
+Aşağıdaki haberleri değerlendir ve yaklaşık 90 saniyelik
+bir sabah haber bülteni hazırla.
+
+ULAK YAYIN KURALLARI:
+- En fazla 5 haber kullan.
+- Öncelik Sincan, Etimesgut, Ankara, Türkiye, dünya,
+  bilim ve uzay sırasındadır.
+- Önemsiz haberleri sırf sayı dolsun diye kullanma.
+- Aynı olayı iki kez anlatma.
+- Yalnızca verilen haber bilgilerine dayan.
+- Kaynakta bulunmayan ayrıntıları uydurma.
+- Bilinmeyen bilgileri kesinmiş gibi anlatma.
+- Siyasi konularda tarafsız ol.
+- Doğal, akıcı ve anlaşılır Türkçe kullan.
+- Her haberin neden önemli olduğunu kısaca açıkla.
+- Haberler arasında doğal geçişler yap.
+- Yaklaşık 90 saniyeyi aşmayacak bir konuşma hazırla.
+- Haber yoksa bunu açıkça söyle; boş konuşma ekleme.
+
+ÇIKTI:
+Yalnızca ULAK'ın seslendireceği konuşma metnini yaz.
+Markdown, açıklama veya teknik not ekleme.
+
+HABERLER:
+${JSON.stringify(newsForAI)}
+`;
+
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 1200
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("Gemini API hatası:", error);
+
+      return Response.json(
+        { error: "ULAK şu anda haber metni hazırlayamıyor." },
+        { status: 502 }
+      );
+    }
+
+    const result = await response.json();
+
+    const script =
+      result.candidates?.[0]?.content?.parts
+        ?.map((part: { text?: string }) => part.text || "")
+        .join("")
+        .trim();
+
+    if (!script) {
+      return Response.json(
+        { error: "Gemini boş bir yanıt verdi." },
+        { status: 502 }
+      );
+    }
+
+    return Response.json({
+      count: news.length,
+      script,
+      news
+    });
+
+  } catch (error) {
+    console.error("ULAK sunucu hatası:", error);
+
+    return Response.json(
+      { error: "Haber sunumu hazırlanamadı." },
+      { status: 500 }
+    );
+  }
+}
