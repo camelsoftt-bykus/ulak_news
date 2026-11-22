@@ -1,52 +1,438 @@
-{
-  "count": 5,
-  "script": "İyi akşamlar sayın izleyiciler, ULAK haber bültenine hoş geldiniz. Günün öne çıkan gelişmelerini aktarıyoruz.\n\nHaber bültenimize yerel gelişmelerle başlıyoruz. Ankara’da kasım ayının ilk günlerinde etkili olan yılın ilk kar yağışı, Sincan’da da güzel görüntüler oluşturdu. Sincan Belediyesi tarafından bildirildiğine göre, mevsim normallerinin dışında yaşanan bu erken kar sürprizi ilçe genelinde yaşandı ve belediye ekipleri olumsuzluklara karşı teyakkuza geçirildi.\n\nSincan Belediyesinden aktarılan bir diğer habere göre, belediye 14 Kasım Dünya Diyabet Günü dolayısıyla Kültür Evi'nde anlamlı bir organizasyona ev sahipliği yaptı. Tip 1 diyabetle yaşayan vatandaşların katılımıyla bir kahvaltı programı düzenlendi.\n\nUluslararası gelişmelere baktığımızda, Birleşmiş Milletler iklim konferansı COP31 sona erdi. Uzayan görüşmelerin ardından Antalya Paktı adı verilen bir karar taslağı yayımlandı. Ancak Avrupa Birliği, Panama ve Norveç dahil bazı ülkelerin teklife itiraz etmesiyle anlaşma sağlanamadığı bildirildi.\n\nDünya bülteninden bir diğer haber İran ordusundan geldi. İran ordusu Deniz Kuvvetleri, Hürmüz Boğazı'nın doğusunda izin verilmeyen bölgeye girdiği belirtilen iki petrol tankerinin deniz mayınına çarparak alev aldığını duyurdu.\n\nBilim ve uzay dünyasından gelen son habere göre ise, NASA'nın günün astronomi fotoğrafı sayfasında Jüpiter'deki girdaplar ve renkler konulu Juno görseli paylaşıldı.\n\nULAK haber bülteninde bu dakikalarda aktaracaklarımız bu kadar. Bir sonraki bültende buluşmak dileğiyle, hoşçakalın.\n\nKaynaklar:\n1. Sincan Belediyesi: SİNCAN’DA YILIN İLK KAR SEVİNCİ, BELEDİYE EKİPLERİ TEYAKKUZD...\nhttps://www.sincan.bel.tr/haberler/sincanda-yilin-ilk-kar-sevinci-belediye-ekipleri-teyakkuzda\n\n2. BBC News Türkçe: COP31 sona erdi, 'Antalya Paktı' kabul edilmedi\nhttps://www.bbc.com/turkce/articles/c5rmg31g88glo?at_medium=RSS&at_campaign=rss\n\n3. TRT Haber - Dünya: İran ordusu: Hürmüz Boğazı'nda 2 tanker mayına çarparak alev aldı\nhttps://www.trthaber.com/haber/dunya/iran-ordusu-hurmuz-bogazinda-2-tanker-mayina-carparak-alev-aldi-964149.html\n\n4. NASA: APOD: 2026 November 22 – Swirls and Colors on Jupiter from Juno\nhttps://science.nasa.gov/image-article/apod-2026-november-22-swirls-and-colors-on-jupiter-from-juno/\n\n5. Sincan Belediyesi: SİNCAN BELEDİYESİ DÜNYA DİYABET GÜNÜ’NE DİKKAT ÇEKTİ\nhttps://www.sincan.bel.tr/haberler/sincan-belediyesi-dunya-diyabet-gunune-dikkat-cekti",
-  "news": [
-    {
-      "sourceId": "sincan",
-      "sourceName": "Sincan Belediyesi",
-      "title": "SİNCAN’DA YILIN İLK KAR SEVİNCİ, BELEDİYE EKİPLERİ TEYAKKUZD...",
-      "link": "https://www.sincan.bel.tr/haberler/sincanda-yilin-ilk-kar-sevinci-belediye-ekipleri-teyakkuzda",
-      "summary": "Ankara’da kasım ayının ilk günlerinde etkili olan yılın ilk kar yağışı, Sincan’da da güzel görüntüleri beraberinde getirdi. Mevsim normallerinin dışında yaşanan bu erken kar sürprizi, ilçe genelinde h...",
-      "publishedAt": null,
-      "sourcePriority": 1
-    },
-    {
-      "sourceId": "bbc-turkce",
-      "sourceName": "BBC News Türkçe",
-      "title": "COP31 sona erdi, 'Antalya Paktı' kabul edilmedi",
-      "link": "https://www.bbc.com/turkce/articles/c5rmg31g88glo?at_medium=RSS&at_campaign=rss",
-      "summary": "Birleşmiş Milletler (BM) iklim konferansı COP31'de uzayan görüşmelerin ardından Antalya Paktı adı verilen bir karar taslağı yayımlandı. Avrupa Birliği, Panama ve Norveç dahil ülkelerin teklife itiraz etmesiyle anlaşma sağlanamadı. Konferans sona eriyor.",
-      "publishedAt": "2026-11-22T17:25:09.000Z",
-      "sourcePriority": 3
-    },
-    {
-      "sourceId": "trt-dunya",
-      "sourceName": "TRT Haber - Dünya",
-      "title": "İran ordusu: Hürmüz Boğazı'nda 2 tanker mayına çarparak alev aldı",
-      "link": "https://www.trthaber.com/haber/dunya/iran-ordusu-hurmuz-bogazinda-2-tanker-mayina-carparak-alev-aldi-964149.html",
-      "summary": "İran ordusu Deniz Kuvvetleri, Hürmüz Boğazı'nın doğusunda izin verilmeyen bölgeye girdiği belirtilen 2 petrol tankerinin deniz mayınına çarparak alev aldığını duyurdu.",
-      "publishedAt": "2026-11-22T16:50:00.000Z",
-      "sourcePriority": 4
-    },
-    {
-      "sourceId": "nasa",
-      "sourceName": "NASA",
-      "title": "APOD: 2026 November 22 – Swirls and Colors on Jupiter from Juno",
-      "link": "https://science.nasa.gov/image-article/apod-2026-november-22-swirls-and-colors-on-jupiter-from-juno/",
-      "summary": "APOD Science APOD APOD: 2026 November 22 –… Today’s APOD Archive Submissions Index Search Calendar RSS Education About Discuss APOD Astronomy Picture of the Day Discover the cosmos! Each day a different image or photograph of our fascinating universe is featured, along with a brief explanation written by a professional astronomer. Swirls and Colors […]",
-      "publishedAt": "2026-11-22T05:05:00.000Z",
-      "sourcePriority": 5
-    },
-    {
-      "sourceId": "sincan",
-      "sourceName": "Sincan Belediyesi",
-      "title": "SİNCAN BELEDİYESİ DÜNYA DİYABET GÜNÜ’NE DİKKAT ÇEKTİ",
-      "link": "https://www.sincan.bel.tr/haberler/sincan-belediyesi-dunya-diyabet-gunune-dikkat-cekti",
-      "summary": "Sincan Belediyesi 14 Kasım Dünya Diyabet Günü’ne özel Kültür Evi’nde anlamlı bir organizasyona daha ev sahipliği yaptı. Tip 1 diyabetle yaşayan vatandaşların katıldığı kahvaltı programında, diyabet ko...",
-      "publishedAt": null,
-      "sourcePriority": 1
+"use client";
+
+import { useEffect, useState } from "react";
+import NewsFeed from "./news-feed";
+
+type NewsItem = {
+  sourceId: string;
+  sourceName: string;
+  title: string;
+  link: string;
+  summary: string;
+  publishedAt: string | null;
+};
+
+type DailyBulletin = {
+  count: number;
+  script: string;
+  news: NewsItem[];
+  generatedAt: string;
+};
+
+const newsCategories = [
+  { name: "Sincan & Etimesgut", id: "yerel-gundem" },
+  { name: "Ankara", id: "ankara" },
+  { name: "Türkiye", id: "turkiye" },
+  { name: "Dünya", id: "dunya" },
+  { name: "Bilim & Uzay", id: "bilim-ve-uzay" },
+];
+
+function formatDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleString("tr-TR", {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "Europe/Istanbul",
+  });
+}
+
+export default function Home() {
+  const [activeCategory, setActiveCategory] = useState("yerel-gundem");
+  const [bulletin, setBulletin] = useState<DailyBulletin | null>(null);
+  const [script, setScript] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDailyBulletin() {
+      try {
+        const response = await fetch(
+          `/data/daily.json?t=${Date.now()}`,
+          { cache: "no-store" }
+        );
+
+        if (!response.ok) {
+          throw new Error("Günlük bülten henüz oluşturulmadı.");
+        }
+
+        const data = await response.json();
+
+        if (!data.script || !Array.isArray(data.news)) {
+          throw new Error("Günlük bülten dosyası geçersiz.");
+        }
+
+        if (active) {
+          setBulletin(data);
+          setScript(data.script);
+        }
+      } catch (err) {
+        if (active) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Günlük bülten yüklenemedi."
+          );
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
     }
-  ],
-  "generatedAt": "2026-11-22T17:32:39Z"
+
+    loadDailyBulletin();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function prepareAndSpeak() {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      setError("Bu tarayıcı sesli okumayı desteklemiyor.");
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    setSpeaking(false);
+    setError("");
+    setRefreshing(true);
+
+    try {
+      const response = await fetch("/api/presenter", {
+        cache: "no-store",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.script) {
+        throw new Error(data.error || "Sunum metni alınamadı.");
+      }
+
+      setScript(data.script);
+
+      const utterance = new SpeechSynthesisUtterance(data.script);
+      utterance.lang = "tr-TR";
+      utterance.rate = 0.95;
+      utterance.pitch = 1;
+
+      const voices = window.speechSynthesis.getVoices();
+
+      const turkishVoice = voices.find(
+        (voice) => voice.lang.toLowerCase().startsWith("tr")
+      );
+
+      if (turkishVoice) {
+        utterance.voice = turkishVoice;
+      }
+
+      utterance.onstart = () => setSpeaking(true);
+      utterance.onend = () => setSpeaking(false);
+      utterance.onerror = () => {
+        setSpeaking(false);
+        setError("Seslendirme sırasında bir sorun oluştu.");
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Sunum hazırlanırken bir hata oluştu."
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  function stopSpeaking() {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    setSpeaking(false);
+  }
+
+  return (
+    <main>
+      <header className="topbar">
+        <div className="container nav-inner">
+          <a href="/" className="brand">
+            <span className="brand-mark">U</span>
+            <span>ULAK</span>
+          </a>
+
+          <nav className="nav-links">
+            <a href="#video">Günün videosu</a>
+            <a href="#gundem">Gündem</a>
+            <a href="#arsiv">Arşiv</a>
+          </nav>
+
+          <a href="#gundem" className="nav-button">
+            Güne başla <span>→</span>
+          </a>
+        </div>
+      </header>
+
+      <section className="hero container">
+        <div className="hero-copy">
+          <div className="eyebrow">
+            <span className="status-dot" /> KİŞİSEL SABAH BÜLTENİN
+          </div>
+
+          <h1>
+            Günaydın!
+            <br />
+            Güne <span>hazır ol.</span>
+          </h1>
+
+          <p>
+            Şehrinden dünyaya, günün önemli gelişmeleri.
+            Lafı uzatmadan, güvenilir kaynaklarla.
+          </p>
+
+          <a href="#video" className="primary-button">
+            Günün bültenini keşfet <span>→</span>
+          </a>
+
+          <div className="hero-note">
+            Her sabah 08.00 · Yaklaşık 90 saniye
+          </div>
+        </div>
+
+        <div className="mascot-stage">
+          <div className="sun-shape" />
+
+          <img
+            className="ulak-character"
+            src="/ulak-character.png"
+            alt="ULAK'ın maskotu"
+          />
+
+          <div className="mascot-caption">
+            <strong>Ben Ulak!</strong>
+            <span>Günün gündemini birlikte keşfedelim.</span>
+          </div>
+
+          <span className="floating-star star-one">✳</span>
+          <span className="floating-star star-two">✦</span>
+        </div>
+      </section>
+
+      <section className="container video-section" id="video">
+        <div className="section-heading">
+          <div>
+            <div className="eyebrow">GÜNÜN ÖZETİ</div>
+            <h2 className="section-title">Sabah bültenin</h2>
+          </div>
+
+          <span className="duration-pill">ULAK · VİDEO</span>
+        </div>
+
+        <div className="video-panel">
+          <div className="video-art studio-art">
+            <video
+              controls
+              playsInline
+              preload="metadata"
+              poster="/ulak-studio.png"
+              style={{
+                display: "block",
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                background: "#171717",
+                borderRadius: "16px",
+              }}
+            >
+              <source
+                src="/freelipsync-19841f7c-b07c-4086-ab74-451f857e3e2c-original.mp4"
+                type="video/mp4"
+              />
+              Tarayıcınız video oynatmayı desteklemiyor.
+            </video>
+          </div>
+
+          <div className="video-info">
+            <span className="content-tag">ULAK YAYINDA</span>
+            <h3>Günün önemli gelişmeleri tek videoda.</h3>
+            <p>
+              Ulak'ın sıcak anlatımıyla yerelden dünyaya
+              günün gündemini takip et.
+            </p>
+            <span className="muted">
+              İlk ULAK sunum videosu burada.
+            </span>
+          </div>
+        </div>
+
+        <div className="archive-card" style={{ marginTop: "24px" }}>
+          <div className="archive-icon">🔊</div>
+
+          <div style={{ flex: 1 }}>
+            <h2>ULAK'ın günlük haber bülteni</h2>
+
+            {loading ? (
+              <p className="muted">Günlük bülten yükleniyor...</p>
+            ) : bulletin ? (
+              <>
+                <p>
+                  Son bülten: {formatDate(bulletin.generatedAt)}
+                </p>
+
+                <p className="muted">
+                  {bulletin.count} haber günlük bültene eklendi.
+                </p>
+              </>
+            ) : (
+              <p className="muted">
+                {error || "Henüz günlük bülten bulunmuyor."}
+              </p>
+            )}
+
+            {script && (
+              <div
+                style={{
+                  marginTop: "18px",
+                  whiteSpace: "pre-wrap",
+                  lineHeight: 1.8,
+                }}
+              >
+                {script}
+              </div>
+            )}
+
+            {bulletin?.news && (
+              <div style={{ marginTop: "20px" }}>
+                <h3>Bültenin haber kaynakları</h3>
+
+                {bulletin.news.map((item, index) => (
+                  <p key={`${item.sourceId}-${item.link}`}>
+                    {index + 1}.{" "}
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {item.sourceName}: {item.title}
+                    </a>
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {error && bulletin && (
+              <p role="alert" style={{ color: "#b42318" }}>
+                {error}
+              </p>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                flexWrap: "wrap",
+                marginTop: "18px",
+              }}
+            >
+              <button
+                type="button"
+                className="primary-button"
+                onClick={prepareAndSpeak}
+                disabled={refreshing || loading}
+              >
+                {refreshing
+                  ? "Yeni bülten hazırlanıyor..."
+                  : "↻ Yeni haberleri hazırla ve dinle"}
+              </button>
+
+              {speaking && (
+                <button
+                  type="button"
+                  className="nav-button"
+                  onClick={stopSpeaking}
+                >
+                  ■ Durdur
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="container news-section" id="gundem">
+        <div className="section-heading">
+          <div>
+            <div className="eyebrow">ÖNCE YAKININDAN BAŞLAYALIM</div>
+            <h2 className="section-title">Günün gündemi</h2>
+          </div>
+
+          <span className="muted news-limit">
+            En fazla 5 önemli haber
+          </span>
+        </div>
+
+        <div className="category-list">
+          {newsCategories.map((category) => (
+            <a
+              href={`#${category.id}`}
+              key={category.id}
+              className="category-chip"
+              onClick={() => setActiveCategory(category.id)}
+              aria-current={
+                activeCategory === category.id ? "location" : undefined
+              }
+              style={
+                activeCategory === category.id
+                  ? {
+                      background: "#292929",
+                      color: "#ffffff",
+                      borderColor: "#292929",
+                    }
+                  : undefined
+              }
+            >
+              {category.name}
+            </a>
+          ))}
+        </div>
+
+        <NewsFeed />
+      </section>
+
+      <section className="container archive-section" id="arsiv">
+        <div className="archive-card">
+          <div className="archive-icon">▤</div>
+
+          <div>
+            <h2>Günün gündemi geçip gitmesin.</h2>
+            <p>
+              Günlük bültenler GitHub üzerinde tarihli olarak
+              saklanmaya başlandı. Arşiv ekranını sonraki aşamada
+              ekleyeceğiz.
+            </p>
+          </div>
+
+          <span className="archive-coming">Arşiv yakında</span>
+        </div>
+      </section>
+
+      <footer className="footer">
+        <div className="container footer-inner">
+          <a href="/" className="brand">
+            <span className="brand-mark">U</span>
+            <span>ULAK</span>
+          </a>
+
+          <span>Şehrinden dünyaya, güne hazır ol.</span>
+          <span>© ULAK</span>
+        </div>
+      </footer>
+    </main>
+  );
 }
