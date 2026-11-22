@@ -191,6 +191,21 @@ export default function Home() {
               ve cihazının Türkçe sesiyle okunur.
             </p>
 
+            <div style={{ marginTop: "16px" }}>
+              <strong>ULAK'ın yeni sesi: Kerem</strong>
+              <audio
+                controls
+                preload="metadata"
+                style={{ display: "block", width: "100%", marginTop: "10px" }}
+              >
+                <source
+                  src="/speechma_audio_Kerem_at_5_24_44%20PM_on_November_22nd_2026.mp3"
+                  type="audio/mpeg"
+                />
+                Tarayıcınız ses oynatmayı desteklemiyor.
+              </audio>
+            </div>
+
             {script && (
               <div style={{ marginTop: "16px", whiteSpace: "pre-wrap" }}>
                 {script}
