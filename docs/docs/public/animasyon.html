@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -50,7 +51,7 @@ input[type=file]{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 <canvas id="cv"></canvas>
 <small>Mavi ağız kutusunu parmağınızla taşıyabilir ve köşelerinden boyutlandırabilirsiniz.</small>
 <button class="btn alt" id="editBtn" style="width:100%">Ağız alanı düzenleme: AÇIK</button>
-<button class="btn" id="detectBtn" style="width:100%">Ağzı Yeniden Otomatik Bul</button>
+<button class="btn" id="detectBtn" style="width:100%">Sabit Ağız Konumuna Dön</button>
 </div>
 
 <div class="card">
@@ -128,124 +129,15 @@ $('imgInput').addEventListener('change',e=>{
  im.src=URL.createObjectURL(f);
 });
 
-// Otomatik ağız algılama
-// Arama yalnızca tahmini ağız bölgesinde yapılır.
+// Sabit ağız konumu
 function detectMouthPosition(){
  if(!base)return null;
 
- const scale=Math.min(1,400/Math.max(imgW,imgH));
- const w=Math.round(imgW*scale);
- const h=Math.round(imgH*scale);
-
- const temp=document.createElement('canvas');
- temp.width=w;
- temp.height=h;
- const t=temp.getContext('2d',{willReadFrequently:true});
- t.drawImage(base,0,0,w,h);
-
- const data=t.getImageData(0,0,w,h).data;
-
- // Ağız için beklenen bölge:
- // X: görselin %34-%68 arası
- // Y: görselin %40-%58 arası
- const x1=Math.floor(w*.34);
- const x2=Math.floor(w*.68);
- const y1=Math.floor(h*.40);
- const y2=Math.floor(h*.58);
-
- const rw=x2-x1;
- const rh=y2-y1;
- const total=rw*rh;
- const dark=new Uint8Array(total);
- const visited=new Uint8Array(total);
-
- for(let y=0;y<rh;y++){
-  for(let x=0;x<rw;x++){
-   const p=((y+y1)*w+(x+x1))*4;
-   const r=data[p],g=data[p+1],b=data[p+2];
-
-   // Koyu, düşük parlaklıklı ağız pikselleri
-   if(r<75&&g<75&&b<75){
-    dark[y*rw+x]=1;
-   }
-  }
- }
-
- let best=null;
- let bestScore=-Infinity;
-
- for(let i=0;i<total;i++){
-  if(!dark[i]||visited[i])continue;
-
-  const q=[i];
-  visited[i]=1;
-
-  let minX=rw,maxX=0,minY=rh,maxY=0,area=0;
-
-  for(let n=0;n<q.length;n++){
-   const k=q[n];
-   const x=k%rw;
-   const y=Math.floor(k/rw);
-
-   area++;
-   minX=Math.min(minX,x);
-   maxX=Math.max(maxX,x);
-   minY=Math.min(minY,y);
-   maxY=Math.max(maxY,y);
-
-   for(const z of [k-1,k+1,k-rw,k+rw]){
-    if(z<0||z>=total||visited[z]||!dark[z])continue;
-    if(Math.abs((z%rw)-x)>1)continue;
-    visited[z]=1;
-    q.push(z);
-   }
-  }
-
-  const bw=maxX-minX+1;
-  const bh=maxY-minY+1;
-
-  // Geniş ama çok yüksek olmayan küçük şekilleri kabul et
-  if(area<3||bw<2||bh<1)continue;
-  if(bw>rw*.55||bh>rh*.55)continue;
-  if(bw/bh<1.15)continue;
-
-  const cx=(minX+maxX)/2+x1;
-  const cy=(minY+maxY)/2+y1;
-
-  const expectedX=w*.525;
-  const expectedY=h*.4975;
-  const distance=Math.hypot(
-   (cx-expectedX)/w,
-   (cy-expectedY)/h
-  );
-
-  const score=area/(1+distance*100);
-
-  if(score>bestScore){
-   bestScore=score;
-   best={minX:minX+x1,maxX:maxX+x1,minY:minY+y1,maxY:maxY+y1};
-  }
- }
-
- if(!best)return null;
-
- const bw=best.maxX-best.minX+1;
- const bh=best.maxY-best.minY+1;
-
- // Aşırı büyük kutuyu kesinlikle kabul etme
- if(bw>w*.25||bh>h*.10)return null;
-
- const cx=(best.minX+best.maxX)/2;
- const cy=(best.minY+best.maxY)/2;
-
- const boxW=Math.max(bw*1.8,w*.045);
- const boxH=Math.max(bh*2.0,h*.018);
-
- return{
-  x:Math.round((cx-boxW/2)/scale),
-  y:Math.round((cy-boxH/2)/scale),
-  w:Math.round(boxW/scale),
-  h:Math.round(boxH/scale)
+ return {
+  x:Math.round(imgW*.44),
+  y:Math.round(imgH*.455),
+  w:Math.round(imgW*.17),
+  h:Math.round(imgH*.085)
  };
 }
 
@@ -263,43 +155,21 @@ function setupImage(im){
  base.height=imgH;
  base.getContext('2d').drawImage(im,0,0,imgW,imgH);
 
- const detected=detectMouthPosition();
-
- if(detected){
-  mouth=detected;
-  clampRect();
-  setStatus('Otomatik ağız konumu bulundu. Mavi kutuyu kontrol edin.');
- }else{
-  setDefaultMouth();
-  setStatus('Ağız otomatik bulunamadı. Varsayılan konum kullanılıyor.');
- }
-
+ mouth=detectMouthPosition();
+ clampRect();
  makePatch();
  syncSliders();
-}
 
-function setDefaultMouth(){
- mouth={
-  x:Math.round(imgW*.44),
-  y:Math.round(imgH*.455),
-  w:Math.round(imgW*.17),
-  h:Math.round(imgH*.085)
- };
+ setStatus('ULAK görseli yüklendi. Sabit ağız konumu hazır.');
 }
 
 $('detectBtn').addEventListener('click',()=>{
  if(!base){setStatus('Önce görsel yükleyin.');return;}
- const detected=detectMouthPosition();
-
- if(detected){
-  mouth=detected;
-  clampRect();
-  makePatch();
-  syncSliders();
-  setStatus('Otomatik ağız konumu bulundu. Kontrol edin.');
- }else{
-  setStatus('Uygun ağız şekli bulunamadı. Mevcut konum korundu.');
- }
+ mouth=detectMouthPosition();
+ clampRect();
+ makePatch();
+ syncSliders();
+ setStatus('Sabit ağız konumuna dönüldü.');
 });
 
 function makePatch(){
