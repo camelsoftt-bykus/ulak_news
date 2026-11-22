@@ -50,16 +50,45 @@ input[type=file]{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 <canvas id="cv"></canvas>
 <small>Mavi ağız kutusunu parmağınızla taşıyabilir ve köşelerinden boyutlandırabilirsiniz.</small>
 <button class="btn alt" id="editBtn" style="width:100%">Ağız alanı düzenleme: AÇIK</button>
-<button class="btn" id="detectBtn" style="width:100%">Sabit Ağız Konumuna Dön</button>
+<button class="btn" id="detectBtn" style="width:100%">Otomatik başlangıç konumuna dön</button>
 </div>
 
 <div class="card">
-<div class="row"><span>Konum X (%)</span><input type="range" id="sx" min="0" max="100" step=".1" value="42.5"><output id="ox">42.5</output></div>
-<div class="row"><span>Konum Y (%)</span><input type="range" id="sy" min="0" max="100" step=".1" value="36.5"><output id="oy">36.5</output></div>
-<div class="row"><span>Genişlik (%)</span><input type="range" id="sw" min="1" max="100" step=".1" value="10.2"><output id="ow">10.2</output></div>
-<div class="row"><span>Yükseklik (%)</span><input type="range" id="sh" min="1" max="100" step=".1" value="8.5"><output id="oh">8.5</output></div>
-<div class="row"><span>Hassasiyet</span><input type="range" id="sg" min=".3" max="3" step=".05" value="1.2"><output id="og">1.20</output></div>
-<div class="row"><span>Maks. açıklık</span><input type="range" id="sm" min=".2" max="1" step=".05" value=".8"><output id="om">0.80</output></div>
+<div class="row">
+<span>X Ofset (%)</span>
+<input type="range" id="sx" min="-15" max="15" step=".1" value="0">
+<output id="ox">0.0</output>
+</div>
+
+<div class="row">
+<span>Y Ofset (%)</span>
+<input type="range" id="sy" min="-15" max="15" step=".1" value="0">
+<output id="oy">0.0</output>
+</div>
+
+<div class="row">
+<span>Genişlik Ofseti</span>
+<input type="range" id="sw" min="-5" max="10" step=".1" value="0">
+<output id="ow">0.0</output>
+</div>
+
+<div class="row">
+<span>Yükseklik Ofseti</span>
+<input type="range" id="sh" min="-5" max="10" step=".1" value="0">
+<output id="oh">0.0</output>
+</div>
+
+<div class="row">
+<span>Hassasiyet</span>
+<input type="range" id="sg" min=".3" max="3" step=".05" value="1.2">
+<output id="og">1.20</output>
+</div>
+
+<div class="row">
+<span>Maks. açıklık</span>
+<input type="range" id="sm" min=".2" max="1" step=".05" value=".8">
+<output id="om">0.80</output>
+</div>
 </div>
 
 <div class="card">
@@ -81,206 +110,306 @@ const statusEl=$('status');
 
 let base=null,patchLayer=null,patchX=0,patchY=0;
 let imgW=0,imgH=0;
+
 let mouth={x:0,y:0,w:0,h:0};
+let mouthBase={x:0,y:0,w:0,h:0};
+
 let editing=true,prevEditing=true,isRecording=false;
 let gain=1.2,maxOpen=.8,level=0;
 
 const audio=new Audio();
 audio.preload='auto';
+
 let actx=null,analyser=null,streamDest=null,sampleBuf=null;
 let recorder=null,recChunks=[];
 
-function setStatus(msg){statusEl.textContent=msg}
+function setStatus(msg){
+ statusEl.textContent=msg;
+}
 
+// HABERLERİ GETİR
 $('newsBtn').addEventListener('click',async()=>{
  const btn=$('newsBtn');
  btn.disabled=true;
  btn.textContent='Haberler hazırlanıyor...';
  $('newsScript').textContent='Gemini sunum metni alınıyor...';
+
  try{
   const response=await fetch('/api/presenter',{cache:'no-store'});
   const data=await response.json();
-  if(!response.ok||!data.script)throw new Error(data.error||'Sunum metni alınamadı.');
+
+  if(!response.ok||!data.script){
+   throw new Error(data.error||'Sunum metni alınamadı.');
+  }
+
   $('newsScript').textContent=data.script;
   setStatus('Günün haber sunumu alındı.');
+
  }catch(err){
   $('newsScript').textContent='Haberler alınamadı: '+err.message;
   setStatus('Haber servisine ulaşılamadı.');
+
  }finally{
   btn.disabled=false;
   btn.textContent='Günün Haberlerini Getir';
  }
 });
 
+// GÖRSEL VE SES SEÇİMİ
 $('pickImgBtn').onclick=()=>$('imgInput').click();
 $('pickAudBtn').onclick=()=>$('audInput').click();
 
 $('imgInput').addEventListener('change',e=>{
  const f=e.target.files[0];
  if(!f)return;
+
  $('pickInfo').textContent='Görsel: '+f.name;
+
  const im=new Image();
+
  im.onerror=()=>setStatus('Görsel okunamadı.');
  im.onload=()=>setupImage(im);
  im.src=URL.createObjectURL(f);
 });
 
-// ULAK için güncellenmiş sabit ağız konumu
+// SABİT BAŞLANGIÇ AĞIZ KONUMU
 function detectMouthPosition(){
  if(!base)return null;
+
  return {
-  x:Math.round(imgW*.425),
-  y:Math.round(imgH*.365),
+  x:Math.round(imgW*.40),
+  y:Math.round(imgH*.43),
   w:Math.round(imgW*.102),
-  h:Math.round(imgH*.085)
+  h:Math.round(imgH*.086)
  };
 }
 
+function resetMouthPosition(){
+ const p=detectMouthPosition();
+ if(!p)return;
+
+ mouthBase={...p};
+ mouth={...p};
+
+ clampRect();
+ makePatch();
+ syncSliders();
+}
+
+// GÖRSELİ HAZIRLA
 function setupImage(im){
  const MAX=1080;
  const s=Math.min(1,MAX/Math.max(im.naturalWidth,im.naturalHeight));
+
  imgW=Math.round(im.naturalWidth*s);
  imgH=Math.round(im.naturalHeight*s);
+
  canvas.width=imgW;
  canvas.height=imgH;
 
  base=document.createElement('canvas');
  base.width=imgW;
  base.height=imgH;
+
  base.getContext('2d').drawImage(im,0,0,imgW,imgH);
 
- mouth=detectMouthPosition();
- clampRect();
- makePatch();
- syncSliders();
- setStatus('ULAK görseli yüklendi. Yeni ağız konumu hazır.');
+ resetMouthPosition();
+
+ setStatus('ULAK görseli yüklendi. Başlangıç ağız konumu hazır.');
 }
 
+// BAŞLANGIÇ KONUMUNA DÖN
 $('detectBtn').addEventListener('click',()=>{
- if(!base){setStatus('Önce görsel yükleyin.');return;}
- mouth=detectMouthPosition();
- clampRect();
- makePatch();
- syncSliders();
- setStatus('Yeni sabit ağız konumuna dönüldü.');
+ if(!base){
+  setStatus('Önce görsel yükleyin.');
+  return;
+ }
+
+ resetMouthPosition();
+ setStatus('Başlangıç ağız konumuna dönüldü.');
 });
 
+// AĞIZ ALANI MASKE VE YÜZ GEÇİŞİ
 function makePatch(){
  patchLayer=null;
+
  if(!base||mouth.w<4||mouth.h<4)return;
 
- const pad=Math.round(Math.max(mouth.w,mouth.h)*.45);
- const x0=Math.max(0,Math.round(mouth.x-pad));
- const y0=Math.max(0,Math.round(mouth.y-pad));
- const x1=Math.min(imgW,Math.round(mouth.x+mouth.w+pad));
- const y1=Math.min(imgH,Math.round(mouth.y+mouth.h+pad));
- const pw=x1-x0,ph=y1-y0;
+ const pad=Math.round(Math.max(mouth.w,mouth.h)*.8);
+
+ const x0=Math.max(0,Math.floor(mouth.x-pad));
+ const y0=Math.max(0,Math.floor(mouth.y-pad));
+ const x1=Math.min(imgW,Math.ceil(mouth.x+mouth.w+pad));
+ const y1=Math.min(imgH,Math.ceil(mouth.y+mouth.h+pad));
+
+ const pw=x1-x0;
+ const ph=y1-y0;
+
  if(pw<4||ph<4)return;
 
  patchX=x0;
  patchY=y0;
 
- const work=document.createElement('canvas');
- work.width=pw;
- work.height=ph;
- const w=work.getContext('2d');
- const srcY=Math.max(0,Math.round(mouth.y)-4);
- w.drawImage(base,x0,srcY,pw,1,0,0,pw,ph);
+ const patch=document.createElement('canvas');
+ patch.width=pw;
+ patch.height=ph;
 
- const soft=document.createElement('canvas');
- soft.width=pw;
- soft.height=ph;
- const s=soft.getContext('2d');
- if('filter' in s)s.filter=`blur(${Math.max(2,Math.round(mouth.h*.15))}px)`;
- s.drawImage(work,0,0);
- if('filter' in s)s.filter='none';
+ const pctx=patch.getContext('2d');
 
+ // Ağız çevresindeki gerçek yüz piksellerini örnekle
+ const baseCtx=base.getContext('2d');
+
+ function averageColor(y){
+  const sy=Math.max(0,Math.min(imgH-1,Math.round(y)));
+
+  const data=baseCtx.getImageData(
+   x0,sy,pw,1
+  ).data;
+
+  let r=0,g=0,b=0,n=0;
+
+  for(let i=0;i<data.length;i+=4){
+   r+=data[i];
+   g+=data[i+1];
+   b+=data[i+2];
+   n++;
+  }
+
+  return {
+   r:Math.round(r/n),
+   g:Math.round(g/n),
+   b:Math.round(b/n)
+  };
+ }
+
+ const top=averageColor(mouth.y-mouth.h*.8);
+ const bottom=averageColor(mouth.y+mouth.h*1.8);
+
+ // Yüz renginden yumuşak geçiş oluştur
+ const gradient=pctx.createLinearGradient(0,0,0,ph);
+
+ gradient.addColorStop(
+  0,
+  `rgb(${top.r},${top.g},${top.b})`
+ );
+
+ gradient.addColorStop(
+  1,
+  `rgb(${bottom.r},${bottom.g},${bottom.b})`
+ );
+
+ pctx.fillStyle=gradient;
+ pctx.fillRect(0,0,pw,ph);
+
+ // Yumuşak maske
  const mask=document.createElement('canvas');
  mask.width=pw;
  mask.height=ph;
- const m=mask.getContext('2d');
+
+ const mctx=mask.getContext('2d');
+
  const cx=mouth.x+mouth.w/2-x0;
  const cy=mouth.y+mouth.h/2-y0;
- const rx=mouth.w*.75;
- const ry=mouth.h*1.6;
 
- m.save();
- m.translate(cx,cy);
- m.scale(1,ry/rx);
- const g=m.createRadialGradient(0,0,0,0,0,rx);
- g.addColorStop(0,'rgba(0,0,0,1)');
- g.addColorStop(.6,'rgba(0,0,0,1)');
- g.addColorStop(1,'rgba(0,0,0,0)');
- m.fillStyle=g;
- const M=Math.max(rx,ry)*2;
- m.fillRect(-M,-M,2*M,2*M);
- m.restore();
+ const rx=mouth.w*.9;
+ const ry=mouth.h*2.0;
 
- s.globalCompositeOperation='destination-in';
- s.drawImage(mask,0,0);
- s.globalCompositeOperation='source-over';
- patchLayer=soft;
+ const feather=mctx.createRadialGradient(
+  cx,cy,Math.min(rx,ry)*.25,
+  cx,cy,Math.max(rx,ry)
+ );
+
+ feather.addColorStop(0,'rgba(255,255,255,1)');
+ feather.addColorStop(.55,'rgba(255,255,255,1)');
+ feather.addColorStop(.8,'rgba(255,255,255,.75)');
+ feather.addColorStop(1,'rgba(255,255,255,0)');
+
+ mctx.fillStyle=feather;
+ mctx.fillRect(0,0,pw,ph);
+
+ pctx.globalCompositeOperation='destination-in';
+ pctx.drawImage(mask,0,0);
+ pctx.globalCompositeOperation='source-over';
+
+ patchLayer=patch;
 }
 
+// SINIRLARI KORU
 function clampRect(){
  mouth.w=Math.max(10,Math.min(mouth.w,imgW));
  mouth.h=Math.max(10,Math.min(mouth.h,imgH));
+
  mouth.x=Math.max(0,Math.min(mouth.x,imgW-mouth.w));
  mouth.y=Math.max(0,Math.min(mouth.y,imgH-mouth.h));
 }
 
+// MANUEL OFSET KAYDIRICILARI
 const sliderMap=[
- ['sx','ox',v=>mouth.x=v/100*imgW],
- ['sy','oy',v=>mouth.y=v/100*imgH],
- ['sw','ow',v=>mouth.w=v/100*imgW],
- ['sh','oh',v=>mouth.h=v/100*imgH]
+ ['sx','ox',v=>mouth.x=mouthBase.x+(v/100*imgW)],
+ ['sy','oy',v=>mouth.y=mouthBase.y+(v/100*imgH)],
+ ['sw','ow',v=>mouth.w=mouthBase.w+(v/100*imgW)],
+ ['sh','oh',v=>mouth.h=mouthBase.h+(v/100*imgH)]
 ];
 
 sliderMap.forEach(([sid,oid,fn])=>{
  $(sid).addEventListener('input',e=>{
   if(!base)return;
+
   fn(parseFloat(e.target.value));
   clampRect();
-  $(oid).textContent=e.target.value;
+
+  $(oid).textContent=parseFloat(e.target.value).toFixed(1);
+
   makePatch();
  });
 });
+
+function syncSliders(){
+ if(!base)return;
+
+ const vals={
+  sx:(mouth.x-mouthBase.x)/imgW*100,
+  sy:(mouth.y-mouthBase.y)/imgH*100,
+  sw:(mouth.w-mouthBase.w)/imgW*100,
+  sh:(mouth.h-mouthBase.h)/imgH*100
+ };
+
+ for(const id in vals){
+  $(id).value=vals[id].toFixed(1);
+
+  $({
+   sx:'ox',
+   sy:'oy',
+   sw:'ow',
+   sh:'oh'
+  }[id]).textContent=vals[id].toFixed(1);
+ }
+}
 
 $('sg').addEventListener('input',e=>{
  gain=parseFloat(e.target.value);
  $('og').textContent=gain.toFixed(2);
 });
+
 $('sm').addEventListener('input',e=>{
  maxOpen=parseFloat(e.target.value);
  $('om').textContent=maxOpen.toFixed(2);
 });
 
-function syncSliders(){
- if(!base)return;
- const vals={
-  sx:mouth.x/imgW*100,
-  sy:mouth.y/imgH*100,
-  sw:mouth.w/imgW*100,
-  sh:mouth.h/imgH*100
- };
- for(const id in vals){
-  $(id).value=vals[id].toFixed(1);
-  $({sx:'ox',sy:'oy',sw:'ow',sh:'oh'}[id]).textContent=vals[id].toFixed(1);
- }
-}
-
+// MANUEL AĞIZ KUTUSU DÜZENLEME
 const opposite={tl:'br',br:'tl',tr:'bl',bl:'tr'};
 
 function toImg(e){
  const r=canvas.getBoundingClientRect();
- return{
+
+ return {
   x:(e.clientX-r.left)*canvas.width/r.width,
   y:(e.clientY-r.top)*canvas.height/r.height
  };
 }
 
 function cornersOf(){
- return{
+ return {
   tl:[mouth.x,mouth.y],
   tr:[mouth.x+mouth.w,mouth.y],
   bl:[mouth.x,mouth.y+mouth.h],
@@ -299,35 +428,75 @@ let drag=null;
 
 canvas.addEventListener('pointerdown',e=>{
  if(!base||!editing||isRecording)return;
+
  e.preventDefault();
- const p=toImg(e),R=canvas.width*.06,c=cornersOf();
+
+ const p=toImg(e);
+ const R=canvas.width*.06;
+ const c=cornersOf();
+
  let hit=null;
+
  for(const k in c){
-  if(Math.abs(p.x-c[k][0])<R&&Math.abs(p.y-c[k][1])<R){hit=k;break;}
+  if(
+   Math.abs(p.x-c[k][0])<R&&
+   Math.abs(p.y-c[k][1])<R
+  ){
+   hit=k;
+   break;
+  }
  }
+
  if(hit){
   const o=c[opposite[hit]];
-  drag={type:'resize',ax:o[0],ay:o[1]};
- }else if(p.x>=mouth.x&&p.x<=mouth.x+mouth.w&&p.y>=mouth.y&&p.y<=mouth.y+mouth.h){
-  drag={type:'move',dx:p.x-mouth.x,dy:p.y-mouth.y};
+
+  drag={
+   type:'resize',
+   ax:o[0],
+   ay:o[1]
+  };
+
+ }else if(
+  p.x>=mouth.x&&
+  p.x<=mouth.x+mouth.w&&
+  p.y>=mouth.y&&
+  p.y<=mouth.y+mouth.h
+ ){
+  drag={
+   type:'move',
+   dx:p.x-mouth.x,
+   dy:p.y-mouth.y
+  };
+
  }else{
-  drag={type:'new',sx:p.x,sy:p.y};
+  drag={
+   type:'new',
+   sx:p.x,
+   sy:p.y
+  };
  }
+
  canvas.setPointerCapture(e.pointerId);
 });
 
 canvas.addEventListener('pointermove',e=>{
  if(!drag)return;
+
  e.preventDefault();
+
  const p=toImg(e);
+
  if(drag.type==='move'){
   mouth.x=p.x-drag.dx;
   mouth.y=p.y-drag.dy;
+
  }else if(drag.type==='resize'){
   setRectFromCorners(drag.ax,drag.ay,p.x,p.y);
+
  }else{
   setRectFromCorners(drag.sx,drag.sy,p.x,p.y);
  }
+
  clampRect();
  makePatch();
  syncSliders();
@@ -336,120 +505,206 @@ canvas.addEventListener('pointermove',e=>{
 canvas.addEventListener('pointerup',()=>drag=null);
 canvas.addEventListener('pointercancel',()=>drag=null);
 
+// DÜZENLEME AÇ/KAPAT
 $('editBtn').addEventListener('click',()=>{
  editing=!editing;
- $('editBtn').textContent='Ağız alanı düzenleme: '+(editing?'AÇIK':'KAPALI');
+
+ $('editBtn').textContent=
+  'Ağız alanı düzenleme: '+(editing?'AÇIK':'KAPALI');
 });
 
+// SES YÜKLE
 $('audInput').addEventListener('change',e=>{
  const f=e.target.files[0];
  if(!f)return;
+
  audio.src=URL.createObjectURL(f);
  audio.load();
+
  $('pickInfo').textContent='Ses: '+f.name;
  setStatus('Ses yüklendi: '+f.name);
 });
 
+// SES ANALİZİ
 function ensureAudioGraph(){
  if(actx)return;
+
  actx=new(window.AudioContext||window.webkitAudioContext)();
+
  const src=actx.createMediaElementSource(audio);
+
  analyser=actx.createAnalyser();
  analyser.fftSize=1024;
+
  sampleBuf=new Uint8Array(analyser.fftSize);
+
  streamDest=actx.createMediaStreamDestination();
+
  src.connect(analyser);
  src.connect(actx.destination);
  src.connect(streamDest);
 }
 
+// SESİ OYNAT
 async function play(){
- if(!audio.src){setStatus('Önce MP3 seçin.');return;}
+ if(!audio.src){
+  setStatus('Önce MP3 seçin.');
+  return;
+ }
+
  ensureAudioGraph();
+
  if(actx.state==='suspended')await actx.resume();
+
  try{
   await audio.play();
   setStatus('Oynatılıyor...');
+
  }catch(err){
   setStatus('Ses oynatılamadı: '+err.message);
  }
 }
 
 $('playBtn').onclick=play;
+
 $('pauseBtn').onclick=()=>{
  audio.pause();
  setStatus('Duraklatıldı.');
 };
-$('restartBtn').onclick=()=>{audio.currentTime=0;};
 
+$('restartBtn').onclick=()=>{
+ audio.currentTime=0;
+};
+
+// AĞIZ HAREKETİ
 function frame(){
  let target=0;
+
  if(analyser&&!audio.paused&&!audio.ended){
   analyser.getByteTimeDomainData(sampleBuf);
+
   let sum=0;
+
   for(let i=0;i<sampleBuf.length;i++){
    const v=(sampleBuf[i]-128)/128;
    sum+=v*v;
   }
+
   const rms=Math.sqrt(sum/sampleBuf.length);
+
   target=Math.min(1,rms*5*gain);
+
   if(target<.05)target=0;
  }
+
  level+=(target-level)*(target>level?.55:.22);
+
  render();
+
  requestAnimationFrame(frame);
 }
 
-function patchAlpha(){return Math.max(0,Math.min(1,(level-.03)/.2));}
+function patchAlpha(){
+ return Math.max(0,Math.min(1,(level-.03)/.2));
+}
 
 function drawMouthOpening(){
  const cx=mouth.x+mouth.w/2;
  const cy=mouth.y+mouth.h*.5;
+
  const rx=mouth.w*.36;
- const ry=Math.max(mouth.h*.05,mouth.h*.5*Math.min(1,level)*maxOpen);
+
+ const ry=Math.max(
+  mouth.h*.05,
+  mouth.h*.5*Math.min(1,level)*maxOpen
+ );
+
  ctx.save();
+
  if('filter' in ctx)ctx.filter='blur(1px)';
+
  ctx.fillStyle='#3f1709';
+
  ctx.beginPath();
  ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
  ctx.fill();
+
  if(level>.35&&ry>mouth.h*.2){
   ctx.fillStyle='#b8524c';
+
   ctx.beginPath();
-  ctx.ellipse(cx,cy+ry*.5,rx*.55,ry*.4,0,0,Math.PI*2);
+  ctx.ellipse(
+   cx,
+   cy+ry*.5,
+   rx*.55,
+   ry*.4,
+   0,0,Math.PI*2
+  );
+
   ctx.fill();
  }
+
  ctx.restore();
 }
 
+// GÖRÜNTÜYÜ ÇİZ
 function render(){
  if(!base)return;
+
  ctx.globalAlpha=1;
+ ctx.filter='none';
+
  ctx.drawImage(base,0,0);
+
  const a=patchAlpha();
+
  if(a>0&&patchLayer){
   ctx.globalAlpha=a;
   ctx.drawImage(patchLayer,patchX,patchY);
   ctx.globalAlpha=1;
+
   if(level>.02)drawMouthOpening();
  }
+
  if(editing&&!isRecording)drawOverlay();
 }
 
+// DÜZENLEME KUTUSU
 function drawOverlay(){
  ctx.save();
+
  ctx.setLineDash([8,6]);
  ctx.strokeStyle='#00e0ff';
  ctx.lineWidth=Math.max(2,canvas.width*.003);
- ctx.strokeRect(mouth.x,mouth.y,mouth.w,mouth.h);
+
+ ctx.strokeRect(
+  mouth.x,
+  mouth.y,
+  mouth.w,
+  mouth.h
+ );
+
  ctx.setLineDash([]);
+
  const hs=Math.max(10,canvas.width*.025);
+
  ctx.fillStyle='#00e0ff';
+
  const c=cornersOf();
- for(const k in c)ctx.fillRect(c[k][0]-hs/2,c[k][1]-hs/2,hs,hs);
+
+ for(const k in c){
+  ctx.fillRect(
+   c[k][0]-hs/2,
+   c[k][1]-hs/2,
+   hs,
+   hs
+  );
+ }
+
  ctx.restore();
 }
 
+// VİDEO FORMATINI SEÇ
 function pickMime(){
  const list=[
   'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
@@ -458,71 +713,108 @@ function pickMime(){
   'video/webm;codecs=vp8,opus',
   'video/webm'
  ];
+
  return list.find(t=>MediaRecorder.isTypeSupported(t))||'';
 }
 
+// VİDEO KAYDINI BAŞLAT
 async function startRecording(){
- if(!base){setStatus('Önce ULAK görselini yükleyin.');return;}
- if(!audio.src){setStatus('Önce MP3 seçin.');return;}
+ if(!base){
+  setStatus('Önce ULAK görselini yükleyin.');
+  return;
+ }
+
+ if(!audio.src){
+  setStatus('Önce MP3 seçin.');
+  return;
+ }
+
  if(typeof MediaRecorder==='undefined'||!canvas.captureStream){
   setStatus('Tarayıcı video kaydını desteklemiyor.');
   return;
  }
+
  const mime=pickMime();
- if(!mime){setStatus('Video kaydı desteklenmiyor.');return;}
+
+ if(!mime){
+  setStatus('Video kaydı desteklenmiyor.');
+  return;
+ }
+
  ensureAudioGraph();
+
  if(actx.state==='suspended')await actx.resume();
 
  const stream=canvas.captureStream(30);
+
  stream.addTrack(streamDest.stream.getAudioTracks()[0]);
+
  recChunks=[];
+
  recorder=new MediaRecorder(stream,{
   mimeType:mime,
   videoBitsPerSecond:3500000,
   audioBitsPerSecond:128000
  });
+
  recorder.ondataavailable=e=>{
   if(e.data&&e.data.size)recChunks.push(e.data);
  };
+
  recorder.onstop=()=>{
   const type=mime.split(';')[0];
   const ext=type.includes('mp4')?'mp4':'webm';
+
   const blob=new Blob(recChunks,{type});
   const url=URL.createObjectURL(blob);
+
   const a=document.createElement('a');
   a.href=url;
   a.download='ulak-haber.'+ext;
+
   document.body.appendChild(a);
   a.click();
   a.remove();
+
   setTimeout(()=>URL.revokeObjectURL(url),60000);
+
   isRecording=false;
   editing=prevEditing;
+
   $('stopRecBtn').disabled=true;
   $('recBtn').disabled=false;
+
   setStatus('Kayıt tamamlandı: ulak-haber.'+ext);
  };
 
  prevEditing=editing;
  editing=false;
  isRecording=true;
+
  $('recBtn').disabled=true;
  $('stopRecBtn').disabled=false;
+
  audio.pause();
  audio.currentTime=0;
+
  recorder.start(1000);
 
  try{
   await audio.play();
   setStatus('Kaydediliyor... Ses bitince kayıt otomatik durur.');
+
  }catch(err){
   stopRecording();
   setStatus('Kayıt başlatılamadı: '+err.message);
  }
 }
 
+// VİDEO KAYDINI DURDUR
 function stopRecording(){
- if(recorder&&recorder.state!=='inactive')recorder.stop();
+ if(recorder&&recorder.state!=='inactive'){
+  recorder.stop();
+ }
+
  audio.pause();
 }
 
@@ -533,9 +825,15 @@ audio.addEventListener('ended',()=>{
 $('recBtn').onclick=startRecording;
 $('stopRecBtn').onclick=stopRecording;
 
+// VARSAYILAN ROBOT GÖRSELİ
 const defaultImage=new Image();
+
 defaultImage.onload=()=>setupImage(defaultImage);
-defaultImage.onerror=()=>setStatus('ULAK görseli yüklenemedi. Görsel Seç düğmesini kullanın.');
+
+defaultImage.onerror=()=>{
+ setStatus('ULAK görseli yüklenemedi. Görsel Seç düğmesini kullanın.');
+};
+
 defaultImage.src='/ulak-studio.png';
 
 requestAnimationFrame(frame);
