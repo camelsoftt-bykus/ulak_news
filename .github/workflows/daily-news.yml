@@ -19,6 +19,7 @@ jobs:
       - name: Günlük sunumu hazırla
         run: |
           set -e
+
           curl --fail --silent --show-error \
             "https://ulaknews-docs.vercel.app/api/presenter" \
             -o response.json
@@ -31,13 +32,35 @@ jobs:
             '. + {generatedAt: $generatedAt}' \
             response.json > docs/docs/public/data/daily.json
 
-      - name: Günlük bülteni kaydet
+      - name: Ahmet sesiyle otomatik ses üret
+        run: |
+          set -e
+
+          jq -n --arg text "$(jq -r '.script' response.json)" \
+            '{text: $text}' > tts-request.json
+
+          curl --fail --silent --show-error \
+            --max-time 180 \
+            -X POST \
+            -H "Content-Type: application/json" \
+            --data-binary @tts-request.json \
+            "https://ulaknews-docs.vercel.app/api/tts" \
+            -o docs/docs/public/data/daily.mp3
+
+          test -s docs/docs/public/data/daily.mp3
+
+          echo "Ahmet ses dosyası başarıyla üretildi."
+
+      - name: Günlük bülteni ve sesi kaydet
         run: |
           git config user.name "ULAK News Bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add docs/docs/public/data/daily.json
+          git add docs/docs/public/data/daily.mp3
 
           if ! git diff --cached --quiet; then
-            git commit -m "Günlük ULAK bültenini güncelle"
+            git commit -m "Günlük ULAK bültenini ve sesini güncelle"
             git push
           fi
+ 
