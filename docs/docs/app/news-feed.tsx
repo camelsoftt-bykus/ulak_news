@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -24,12 +25,12 @@ const categoryInfo: Record<string, { label: string; section: string }> = {
   nasa: { label: "BİLİM & UZAY", section: "Bilim ve Uzay" },
 };
 
-const sectionOrder = [
-  "Yerel Gündem",
-  "Ankara",
-  "Türkiye",
-  "Dünya",
-  "Bilim ve Uzay",
+const sections = [
+  { name: "Yerel Gündem", id: "yerel-gundem" },
+  { name: "Ankara", id: "ankara" },
+  { name: "Türkiye", id: "turkiye" },
+  { name: "Dünya", id: "dunya" },
+  { name: "Bilim ve Uzay", id: "bilim-ve-uzay" },
 ];
 
 function formatDate(value: string | null): string {
@@ -72,70 +73,72 @@ export default function NewsFeed() {
     );
   }
 
-  if (news.length === 0) {
-    return (
-      <p className="muted">
-        Şu anda yayınlanacak yeni haber bulunamadı.
-      </p>
-    );
-  }
-
-  const groupedNews = sectionOrder
-    .map((section) => ({
-      section,
-      items: news.filter(
-        (item) => categoryInfo[item.sourceId]?.section === section
-      ),
-    }))
-    .filter((group) => group.items.length > 0);
-
   return (
     <div>
-      {groupedNews.map((group) => (
-        <section key={group.section} style={{ marginBottom: "32px" }}>
-          <h2 style={{ marginBottom: "16px" }}>{group.section}</h2>
+      {sections.map((section) => {
+        const items = news.filter(
+          (item) => categoryInfo[item.sourceId]?.section === section.name
+        );
 
-          <div className="news-grid">
-            {group.items.map((item, index) => (
-              <article
-                className="news-card"
-                key={`${item.sourceId}-${item.link}`}
-              >
-                <div className="news-card-top">
-                  <span className="news-number">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
+        return (
+          <section
+            id={section.id}
+            key={section.id}
+            style={{
+              marginBottom: "32px",
+              scrollMarginTop: "90px",
+            }}
+          >
+            <h2 style={{ marginBottom: "16px" }}>{section.name}</h2>
 
-                  <span className="news-category">
-                    {categoryInfo[item.sourceId]?.label || "GÜNDEM"}
-                  </span>
-                </div>
+            {items.length === 0 ? (
+              <p className="muted">
+                Şu anda bu kategoride yayınlanacak yeni haber bulunamadı.
+              </p>
+            ) : (
+              <div className="news-grid">
+                {items.map((item, index) => (
+                  <article
+                    className="news-card"
+                    key={`${item.sourceId}-${item.link}`}
+                  >
+                    <div className="news-card-top">
+                      <span className="news-number">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
 
-                <h3>{item.title}</h3>
+                      <span className="news-category">
+                        {categoryInfo[item.sourceId]?.label || "GÜNDEM"}
+                      </span>
+                    </div>
 
-                <p>
-                  {item.summary || "Kaynakta kısa açıklama bulunmuyor."}
-                </p>
+                    <h3>{item.title}</h3>
 
-                <div className="news-coming">
-                  {item.sourceName}
-                  {formatDate(item.publishedAt) && (
-                    <> · {formatDate(item.publishedAt)}</>
-                  )}
-                </div>
+                    <p>
+                      {item.summary || "Kaynakta kısa açıklama bulunmuyor."}
+                    </p>
 
-                <a
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Kaynağı oku →
-                </a>
-              </article>
-            ))}
-          </div>
-        </section>
-      ))}
+                    <div className="news-coming">
+                      {item.sourceName}
+                      {formatDate(item.publishedAt) && (
+                        <> · {formatDate(item.publishedAt)}</>
+                      )}
+                    </div>
+
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Kaynağı oku →
+                    </a>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }
