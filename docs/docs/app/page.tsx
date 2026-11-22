@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -13,6 +14,74 @@ const newsCategories = [
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState("yerel-gundem");
+  const [script, setScript] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [error, setError] = useState("");
+
+  async function prepareAndSpeak() {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      setError("Bu tarayıcı sesli okumayı desteklemiyor.");
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    setSpeaking(false);
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/presenter", {
+        cache: "no-store",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.script) {
+        throw new Error(data.error || "Sunum metni alınamadı.");
+      }
+
+      setScript(data.script);
+
+      const utterance = new SpeechSynthesisUtterance(data.script);
+      utterance.lang = "tr-TR";
+      utterance.rate = 0.95;
+      utterance.pitch = 1;
+
+      const voices = window.speechSynthesis.getVoices();
+      const turkishVoice = voices.find(
+        (voice) => voice.lang.toLowerCase().startsWith("tr")
+      );
+
+      if (turkishVoice) {
+        utterance.voice = turkishVoice;
+      }
+
+      utterance.onstart = () => setSpeaking(true);
+      utterance.onend = () => setSpeaking(false);
+      utterance.onerror = () => {
+        setSpeaking(false);
+        setError("Seslendirme sırasında bir sorun oluştu.");
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Sunum hazırlanırken bir hata oluştu."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function stopSpeaking() {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeaking(false);
+  }
 
   return (
     <main>
@@ -110,6 +179,50 @@ export default function Home() {
             <span className="muted">
               İlk ULAK sunum videosu burada.
             </span>
+          </div>
+        </div>
+
+        <div className="archive-card" style={{ marginTop: "24px" }}>
+          <div className="archive-icon">🔊</div>
+          <div style={{ flex: 1 }}>
+            <h2>ULAK'ın bugünkü haberlerini dinle</h2>
+            <p>
+              Güncel haberlerden yeni bir sunum metni hazırlanır
+              ve cihazının Türkçe sesiyle okunur.
+            </p>
+
+            {script && (
+              <div style={{ marginTop: "16px", whiteSpace: "pre-wrap" }}>
+                {script}
+              </div>
+            )}
+
+            {error && (
+              <p role="alert" style={{ color: "#b42318", marginTop: "12px" }}>
+                {error}
+              </p>
+            )}
+
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "16px" }}>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={prepareAndSpeak}
+                disabled={loading}
+              >
+                {loading ? "Haberler hazırlanıyor..." : "▶ Haberi hazırla ve dinle"}
+              </button>
+
+              {speaking && (
+                <button
+                  type="button"
+                  className="nav-button"
+                  onClick={stopSpeaking}
+                >
+                  ■ Durdur
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>
