@@ -24,69 +24,62 @@ export async function GET() {
     }
 
     const newsText = news.map((item, index) => `
-HABER KAYDI ${index + 1}
+HABER ${index + 1}
 Kaynak: ${item.sourceName}
 Başlık: ${item.title}
-Özet: ${item.summary || "Kaynakta açıklama bulunmuyor."}
+Mevcut açıklama: ${item.summary || "Kaynakta açıklama bulunmuyor."}
 Yayın tarihi: ${item.publishedAt || "Belirtilmemiş"}
-Bölge önceliği: ${item.sourcePriority}
 `).join("\n");
 
     const prompt = `
-GÖREVİN:
+Sen ULAK adlı Türkçe haber merkezinin editörüsün.
 
-Sen ULAK adlı Türkçe haber bülteninin profesyonel sunucususun.
-Verilen haber kayıtlarından yaklaşık 90 saniyelik, doğal,
-akıcı ve tarafsız bir Türkçe haber sunumu hazırla.
+Aşağıdaki haber kayıtlarını kullanarak hem haber kartları için
+ayrı ayrı açıklamalar hem de yaklaşık 90 saniyelik bir sunucu metni hazırla.
 
-ÇOK ÖNEMLİ DOĞRULUK KURALLARI:
+DOĞRULUK KURALLARI:
+- Yalnızca verilen haber kayıtlarındaki bilgileri kullan.
+- Yeni olay, kişi, kurum, tarih, sayı veya açıklama uydurma.
+- Kaynakta olmayan ayrıntıları tahmin etme.
+- Bir iddiayı kesinleşmiş gerçek gibi sunma.
+- Bilgi yetersizse bunu açıkça belirt.
+- Haberleri tarafsız ve anlaşılır Türkçeyle anlat.
 
-1. Yalnızca aşağıda verilen haber kayıtlarındaki bilgileri kullan.
-2. Haber kayıtlarında bulunmayan hiçbir olaydan söz etme.
-3. Yeni haber, kişi, kurum, açıklama, sayı, tarih veya yer uydurma.
-4. Bir haberin özetinde bulunmayan ayrıntıları tahmin ederek tamamlama.
-5. Bir haberin başlığı ve özeti çelişiyorsa iddiayı kesin bilgi gibi sunma.
-6. Kaynağın söylediği bir iddiayı doğrulanmış gerçek gibi anlatma.
-   Gerektiğinde "kaynak tarafından bildirildi" şeklinde ifade et.
-7. Aynı olayı farklı cümlelerle tekrar etme.
-8. Haber sayısı azsa süreyi doldurmak için yeni bilgi üretme.
-9. Yalnızca önemli ve anlamlı gelişmeleri seç.
-10. Kaynakta olmayan neden-sonuç ilişkileri kurma.
+HER HABER İÇİN:
+- summary: Haberin ne olduğunu anlatan 2-3 kısa cümle.
+- whyImportant: Bu gelişmenin neden önemli olduğunu, yalnızca verilen bilgilerden hareketle 1-2 cümleyle açıkla.
+- Haber kaydında olmayan neden-sonuç ilişkileri kurma.
 
 YEREL ÖNCELİK:
+Sincan, Etimesgut, Ankara, Türkiye, dünya ve bilim/uzay.
+Önemli haberleri önceliklendir; önemsiz haberleri sırf sayıyı tamamlamak için büyütme.
 
-1. Sincan
-2. Etimesgut
-3. Ankara
-4. Türkiye
-5. Dünya ve siyaset
-6. Bilim, teknoloji ve uzay
-
-Birden fazla önemli haber varsa bu öncelik sırasını dikkate al.
-Ancak öncelik uğruna önemsiz bir haberi önemliymiş gibi sunma.
-
-SUNUM DİLİ:
-
-- Yalnızca doğal ve düzgün Türkçe kullan.
-- Türkçe karakterleri doğru yaz: ç, ğ, ı, İ, ö, ş, ü.
-- Bozuk, yabancı dilli veya anlamsız kelime kullanma.
-- Samimi, güven veren, ölçülü bir erkek haber sunucusu dili kullan.
-- Abartılı, sansasyonel veya taraflı ifadeler kullanma.
-- Haberleri kısa ve anlaşılır cümlelerle anlat.
-- Her haberin önemini yalnızca verilen bilgilerden hareketle açıkla.
+SUNUCU METNİ:
+- Doğal, akıcı ve düzgün Türkçe kullan.
+- Samimi ve güven veren bir haber sunucusu üslubu kullan.
 - Yaklaşık 90 saniyelik bir metin hazırla.
 - Selamlama ve kısa kapanış ekle.
+- Kaynak listesi veya URL yazma.
 
-ÇIKTI KURALLARI:
+ÇIKTI:
+Yalnızca geçerli JSON üret. Markdown veya kod bloğu kullanma.
+Aşağıdaki yapıyı aynen uygula:
 
-- Yalnızca sunucunun okuyacağı haber metnini üret.
-- Markdown başlıkları veya kalın yazı işaretleri kullanma.
-- Kaynak bağlantısı, kaynak listesi veya URL üretme.
-- Haberlerin dışına çıkan yorum ekleme.
-- Haber kayıtlarında olmayan bir gelişmeyi kesinlikle ekleme.
+{
+  "script": "Sunucunun okuyacağı haber metni",
+  "stories": [
+    {
+      "index": 1,
+      "summary": "Haberin kısa özeti",
+      "whyImportant": "Neden önemli olduğu"
+    }
+  ]
+}
+
+Her haber için stories listesinde bir kayıt oluştur.
+index numarası haber sırasıyla aynı olmalı.
 
 HABER KAYITLARI:
-
 ${newsText}
 `;
 
@@ -109,7 +102,8 @@ ${newsText}
             ],
             generationConfig: {
               temperature: 0.2,
-              maxOutputTokens: 1800
+              maxOutputTokens: 3000,
+              responseMimeType: "application/json"
             }
           }),
           signal: AbortSignal.timeout(25000),
@@ -143,30 +137,77 @@ ${newsText}
 
     const data = await response.json();
 
-    let script = data.candidates?.[0]?.content?.parts
+    const generatedText = data.candidates?.[0]?.content?.parts
       ?.map((part: { text?: string }) => part.text || "")
       .join("\n")
       .trim();
 
-    if (!script) {
+    if (!generatedText) {
       return Response.json(
-        { error: "Gemini boş bir sunum metni döndürdü." },
+        { error: "Gemini boş yanıt döndürdü." },
         { status: 502 }
       );
     }
 
-    // Kaynak listesini Gemini'den değil, gerçek haber kayıtlarından oluştur.
+    let result: {
+      script?: string;
+      stories?: {
+        index?: number;
+        summary?: string;
+        whyImportant?: string;
+      }[];
+    };
+
+    try {
+      result = JSON.parse(generatedText);
+    } catch {
+      console.error("Gemini JSON yanıtı okunamadı:", generatedText);
+
+      return Response.json(
+        { error: "Gemini yanıtı beklenen biçimde oluşturulamadı." },
+        { status: 502 }
+      );
+    }
+
+    if (
+      typeof result.script !== "string" ||
+      !Array.isArray(result.stories)
+    ) {
+      return Response.json(
+        { error: "Gemini yanıtında sunum veya haber özetleri eksik." },
+        { status: 502 }
+      );
+    }
+
+    const enrichedNews = news.map((item, index) => {
+      const story = result.stories?.find(
+        (entry) => entry.index === index + 1
+      );
+
+      return {
+        ...item,
+        editorialSummary:
+          typeof story?.summary === "string" && story.summary.trim()
+            ? story.summary.trim()
+            : item.summary || "Bu haber için ayrı özet oluşturulamadı.",
+        whyImportant:
+          typeof story?.whyImportant === "string" && story.whyImportant.trim()
+            ? story.whyImportant.trim()
+            : "Kaynakta bu konunun önemi hakkında yeterli açıklama bulunmuyor."
+      };
+    });
+
     const sourceList = news.map((item, index) =>
       `${index + 1}. ${item.sourceName}: ${item.title}\n${item.link}`
     ).join("\n\n");
 
-    script = `${script}\n\nKaynaklar:\n${sourceList}`;
+    const script = `${result.script.trim()}\n\nKaynaklar:\n${sourceList}`;
 
     return Response.json(
       {
-        count: news.length,
+        count: enrichedNews.length,
         script,
-        news
+        news: enrichedNews
       },
       {
         headers: {
