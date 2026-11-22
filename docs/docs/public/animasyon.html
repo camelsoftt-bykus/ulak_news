@@ -122,7 +122,8 @@ let level=0;
 
 // TARAYICI SESLENDİRME DURUMU
 let ttsSpeaking=false;
-let ttsStartedAt=0;
+let ttsMouthUntil=0;
+let ttsLastBoundary=0;
 let newsUtterance=null;
 
 const audio=new Audio();
@@ -174,6 +175,8 @@ function stopNewsSpeech(){
  }
 
  ttsSpeaking=false;
+ ttsMouthUntil=0;
+ ttsLastBoundary=0;
  level=0;
  newsUtterance=null;
 
@@ -222,7 +225,6 @@ $('speakNewsBtn').addEventListener('click',()=>{
 
  function selectTurkishVoice(){
   const voices=window.speechSynthesis.getVoices();
-
   return voices.find(v=>
    v.lang&&v.lang.toLowerCase().startsWith('tr')
   );
@@ -235,13 +237,31 @@ $('speakNewsBtn').addEventListener('click',()=>{
 
  newsUtterance.onstart=()=>{
   ttsSpeaking=true;
-  ttsStartedAt=performance.now();
+  ttsMouthUntil=0;
+  ttsLastBoundary=performance.now();
   btn.textContent='■ Sunumu durdur';
   setStatus('ULAK günlük haberleri seslendiriyor...');
  };
 
+ // KONUŞMA SINIRLARINDA AĞZI HAREKET ETTİR
+ newsUtterance.onboundary=(event)=>{
+  if(!ttsSpeaking)return;
+
+  const now=performance.now();
+
+  // Önceki konuşma parçasının tahmini süresi
+  const gap=ttsLastBoundary?now-ttsLastBoundary:180;
+
+  // Uzun sessizliklerde ağız kapansın
+  const duration=Math.max(90,Math.min(360,gap*.72));
+
+  ttsMouthUntil=now+duration;
+  ttsLastBoundary=now;
+ };
+
  newsUtterance.onend=()=>{
   ttsSpeaking=false;
+  ttsMouthUntil=0;
   level=0;
   btn.textContent='▶ ULAK Haberi Seslendir';
   setStatus('ULAK sunumu tamamlandı.');
@@ -249,6 +269,7 @@ $('speakNewsBtn').addEventListener('click',()=>{
 
  newsUtterance.onerror=(event)=>{
   ttsSpeaking=false;
+  ttsMouthUntil=0;
   level=0;
   btn.textContent='▶ ULAK Haberi Seslendir';
 
@@ -276,7 +297,7 @@ $('imgInput').addEventListener('change',e=>{
  im.src=URL.createObjectURL(f);
 });
 
-// MANUEL AYARLANAN KONUMA SABİTLENMİŞ BAŞLANGIÇ KONUMU
+// AĞIZ KONUMU - KULLANICININ AYARLADIĞI KOORDİNATLAR KORUNDU
 function detectMouthPosition(){
  if(!base)return null;
 
@@ -401,9 +422,9 @@ function makePatch(){
  pctx.translate(pw/2,ph/2);
  pctx.scale(pw/2,ph/2);
 
- const rad=pctx.createRadialGradient(0,0,0.45,0,0,1);
+ const rad=pctx.createRadialGradient(0,0,.45,0,0,1);
  rad.addColorStop(0,`rgba(${midR},${midG},${midB},1)`);
- rad.addColorStop(0.75,`rgba(${midR},${midG},${midB},0.92)`);
+ rad.addColorStop(.75,`rgba(${midR},${midG},${midB},.92)`);
  rad.addColorStop(1,`rgba(${midR},${midG},${midB},0)`);
 
  pctx.fillStyle=rad;
@@ -511,10 +532,7 @@ canvas.addEventListener('pointerdown',e=>{
  let hit=null;
 
  for(const k in c){
-  if(
-   Math.abs(p.x-c[k][0])<R&&
-   Math.abs(p.y-c[k][1])<R
-  ){
+  if(Math.abs(p.x-c[k][0])<R&&Math.abs(p.y-c[k][1])<R){
    hit=k;
    break;
   }
@@ -523,23 +541,13 @@ canvas.addEventListener('pointerdown',e=>{
  if(hit){
   const o=c[opposite[hit]];
   drag={type:'resize',ax:o[0],ay:o[1]};
-
  }else if(
   p.x>=mouth.x&&p.x<=mouth.x+mouth.w&&
   p.y>=mouth.y&&p.y<=mouth.y+mouth.h
  ){
-  drag={
-   type:'move',
-   dx:p.x-mouth.x,
-   dy:p.y-mouth.y
-  };
-
+  drag={type:'move',dx:p.x-mouth.x,dy:p.y-mouth.y};
  }else{
-  drag={
-   type:'new',
-   sx:p.x,
-   sy:p.y
-  };
+  drag={type:'new',sx:p.x,sy:p.y};
  }
 
  canvas.setPointerCapture(e.pointerId);
@@ -549,16 +557,13 @@ canvas.addEventListener('pointermove',e=>{
  if(!drag)return;
 
  e.preventDefault();
-
  const p=toImg(e);
 
  if(drag.type==='move'){
   mouth.x=p.x-drag.dx;
   mouth.y=p.y-drag.dy;
-
  }else if(drag.type==='resize'){
   setRectFromCorners(drag.ax,drag.ay,p.x,p.y);
-
  }else{
   setRectFromCorners(drag.sx,drag.sy,p.x,p.y);
  }
@@ -574,9 +579,7 @@ canvas.addEventListener('pointercancel',()=>drag=null);
 // DÜZENLEME AÇ/KAPAT
 $('editBtn').addEventListener('click',()=>{
  editing=!editing;
-
- $('editBtn').textContent=
-  'Ağız alanı düzenleme: '+(editing?'AÇIK':'KAPALI');
+ $('editBtn').textContent='Ağız alanı düzenleme: '+(editing?'AÇIK':'KAPALI');
 });
 
 // SES YÜKLE
@@ -651,10 +654,7 @@ function drawMouthOpening(){
  const cy=mouth.y+mouth.h*.52;
 
  const rx=mouth.w*.34;
- const ry=Math.max(
-  1,
-  mouth.h*.42*Math.min(1,level)*maxOpen
- );
+ const ry=Math.max(1,mouth.h*.42*Math.min(1,level)*maxOpen);
 
  ctx.save();
  ctx.filter='none';
@@ -666,15 +666,8 @@ function drawMouthOpening(){
 
  if(level>.35&&ry>mouth.h*.12){
   ctx.fillStyle='#b8524c';
-
   ctx.beginPath();
-  ctx.ellipse(
-   cx,
-   cy+ry*.45,
-   rx*.5,
-   Math.max(1,ry*.3),
-   0,0,Math.PI*2
-  );
+  ctx.ellipse(cx,cy+ry*.45,rx*.5,Math.max(1,ry*.3),0,0,Math.PI*2);
   ctx.fill();
  }
 
@@ -687,7 +680,6 @@ function render(){
 
  ctx.globalAlpha=1;
  ctx.filter='none';
-
  ctx.drawImage(base,0,0);
 
  const a=patchAlpha();
@@ -706,27 +698,18 @@ function render(){
 // MAVİ DÜZENLEME KUTUSU
 function drawOverlay(){
  ctx.save();
-
  ctx.setLineDash([8,6]);
  ctx.strokeStyle='#00e0ff';
  ctx.lineWidth=Math.max(2,canvas.width*.003);
-
  ctx.strokeRect(mouth.x,mouth.y,mouth.w,mouth.h);
-
  ctx.setLineDash([]);
 
  const hs=Math.max(8,canvas.width*.018);
  ctx.fillStyle='#00e0ff';
-
  const c=cornersOf();
 
  for(const k in c){
-  ctx.fillRect(
-   c[k][0]-hs/2,
-   c[k][1]-hs/2,
-   hs,
-   hs
-  );
+  ctx.fillRect(c[k][0]-hs/2,c[k][1]-hs/2,hs,hs);
  }
 
  ctx.restore();
@@ -764,14 +747,12 @@ async function startRecording(){
  stopNewsSpeech();
 
  const mime=pickMime();
-
  if(!mime){
   setStatus('Video kaydı desteklenmiyor.');
   return;
  }
 
  ensureAudioGraph();
-
  if(actx.state==='suspended')await actx.resume();
 
  const stream=canvas.captureStream(30);
@@ -811,9 +792,7 @@ async function startRecording(){
 
   $('stopRecBtn').disabled=true;
   $('recBtn').disabled=false;
-
-  $('editBtn').textContent=
-   'Ağız alanı düzenleme: '+(editing?'AÇIK':'KAPALI');
+  $('editBtn').textContent='Ağız alanı düzenleme: '+(editing?'AÇIK':'KAPALI');
 
   setStatus('Kayıt tamamlandı: ulak-haber.'+ext);
  };
@@ -827,7 +806,6 @@ async function startRecording(){
 
  audio.pause();
  audio.currentTime=0;
-
  recorder.start(1000);
 
  try{
@@ -850,19 +828,15 @@ audio.addEventListener('ended',()=>{
  if(isRecording)stopRecording();
 });
 
-// KAYIT DÜĞMELERİ
 $('recBtn').onclick=startRecording;
 $('stopRecBtn').onclick=stopRecording;
 
 // VARSAYILAN ULAK GÖRSELİ
 const defaultImage=new Image();
-
 defaultImage.onload=()=>setupImage(defaultImage);
-
 defaultImage.onerror=()=>{
  setStatus('ULAK görseli yüklenemedi. Görsel Seç düğmesini kullanın.');
 };
-
 defaultImage.src='/ulak-studio.png';
 
 // ANİMASYON DÖNGÜSÜ
@@ -874,31 +848,25 @@ function frame(){
   analyser.getByteTimeDomainData(sampleBuf);
 
   let sum=0;
-
   for(let i=0;i<sampleBuf.length;i++){
    const v=(sampleBuf[i]-128)/128;
    sum+=v*v;
   }
 
   const rms=Math.sqrt(sum/sampleBuf.length);
-
   target=Math.min(1,rms*5*gain);
 
   if(target<.05)target=0;
  }
 
- // TARAYICI SESLENDİRMESİNDE AĞIZ HAREKETİ
+ // TARAYICI SESLENDİRMESİ: KONUŞMA SINIRI OLAYLARI
  else if(ttsSpeaking){
-  const elapsed=performance.now()-ttsStartedAt;
-  const movement=Math.abs(Math.sin(elapsed/105));
-
-  target=.12+movement*.48;
+  target=performance.now()<ttsMouthUntil?.72:0;
  }
 
- level+=(target-level)*(target>level?.55:.22);
+ level+=(target-level)*(target>level?.48:.20);
 
  render();
-
  requestAnimationFrame(frame);
 }
 
