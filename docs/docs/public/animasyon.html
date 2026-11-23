@@ -1093,7 +1093,7 @@ function drawImageAttribution(item){
  // Uzun atıf ve lisans bağlantılarını kesmek yerine satırlara böl.
  const wrappedLines=[];
  sourceLines.forEach((value)=>{
-  const words=String(value).split(/\\s+/);
+  const words=String(value).split(/\s+/);
   let line='';
   words.forEach((word)=>{
    const candidate=line?line+' '+word:word;
