@@ -55,36 +55,12 @@ small{color:#b9ab9a;font-size:12px;line-height:1.5;display:block;margin-top:6px}
 </div>
 
 <div class="card">
-<div class="row">
-<span>X Ofset (%)</span>
-<input type="range" id="sx" min="-15" max="15" step=".1" value="0">
-<output id="ox">0.0</output>
-</div>
-<div class="row">
-<span>Y Ofset (%)</span>
-<input type="range" id="sy" min="-15" max="15" step=".1" value="0">
-<output id="oy">0.0</output>
-</div>
-<div class="row">
-<span>Genişlik Ofseti</span>
-<input type="range" id="sw" min="-5" max="10" step=".1" value="0">
-<output id="ow">0.0</output>
-</div>
-<div class="row">
-<span>Yükseklik Ofseti</span>
-<input type="range" id="sh" min="-5" max="10" step=".1" value="0">
-<output id="oh">0.0</output>
-</div>
-<div class="row">
-<span>Hassasiyet</span>
-<input type="range" id="sg" min=".3" max="3" step=".05" value="1.2">
-<output id="og">1.20</output>
-</div>
-<div class="row">
-<span>Maks. açıklık</span>
-<input type="range" id="sm" min=".2" max=".8" step=".05" value=".55">
-<output id="om">0.55</output>
-</div>
+<div class="row"><span>X Ofset (%)</span><input type="range" id="sx" min="-15" max="15" step=".1" value="0"><output id="ox">0.0</output></div>
+<div class="row"><span>Y Ofset (%)</span><input type="range" id="sy" min="-15" max="15" step=".1" value="0"><output id="oy">0.0</output></div>
+<div class="row"><span>Genişlik Ofseti</span><input type="range" id="sw" min="-5" max="10" step=".1" value="0"><output id="ow">0.0</output></div>
+<div class="row"><span>Yükseklik Ofseti</span><input type="range" id="sh" min="-5" max="10" step=".1" value="0"><output id="oh">0.0</output></div>
+<div class="row"><span>Hassasiyet</span><input type="range" id="sg" min=".3" max="3" step=".05" value="1.2"><output id="og">1.20</output></div>
+<div class="row"><span>Maks. açıklık</span><input type="range" id="sm" min=".2" max=".8" step=".05" value=".55"><output id="om">0.55</output></div>
 </div>
 
 <div class="card">
@@ -109,7 +85,6 @@ let patchLayer=null;
 let patchX=0,patchY=0;
 let imgW=0,imgH=0;
 
-/* YENİ CAM MASKESİ */
 let windowMaskCanvas=null;
 let maskReady=false;
 let maskLoading=false;
@@ -140,10 +115,10 @@ let sampleBuf=null;
 let recorder=null;
 let recChunks=[];
 
-/* HABER GÖRSELLERİ */
 let newsSlides=[];
 let currentStoryIndex=-1;
 let newsImagesLoading=false;
+let newsRequestRunning=false;
 
 window.ULAK_IMAGES_READY=false;
 
@@ -151,13 +126,7 @@ function setStatus(msg){
  statusEl.textContent=msg;
 }
 
-/*
-  Maske dosyası:
-  public/koruma_maske_v2.png
-
-  Beyaz alan: korunacak stüdyo ve ULAK.
-  Siyah alan: haber fotoğrafının görüneceği cam.
-*/
+/* CAM MASKESİNİ YÜKLE */
 function loadWindowMask(){
  if(!imgW||!imgH)return;
 
@@ -187,31 +156,21 @@ function loadWindowMask(){
    const output=mctx.createImageData(imgW,imgH);
 
    for(let i=0;i<data.length;i+=4){
-    const gray=Math.round(
-     data[i]*.299+
-     data[i+1]*.587+
-     data[i+2]*.114
-    );
-
+    const gray=Math.round(data[i]*.299+data[i+1]*.587+data[i+2]*.114);
     output.data[i]=255;
     output.data[i+1]=255;
     output.data[i+2]=255;
-
-    /* Siyah maske alanı opak, beyaz alan şeffaf */
     output.data[i+3]=255-gray;
    }
 
    mctx.putImageData(output,0,0);
-
    windowMaskCanvas=matte;
    maskReady=true;
    maskLoading=false;
 
-   newsSlides.forEach(item=>{
-    item.layer=null;
-   });
-
+   newsSlides.forEach(item=>item.layer=null);
    setStatus('ULAK görseli ve cam maskesi hazır.');
+
   }catch(error){
    maskLoading=false;
    maskFailed=true;
@@ -225,10 +184,10 @@ function loadWindowMask(){
   setStatus('Cam maskesi yüklenemedi. public/koruma_maske_v2.png dosyasını kontrol edin.');
  };
 
- maskImage.src='/koruma_maske_v2.png';
+ maskImage.src='/koruma_maske_v2.png?v=2';
 }
 
-/* FOTOĞRAFI CAM ALANINA HAZIRLA */
+/* HABER FOTOĞRAFINI MASKELİ KATMAN YAP */
 function createNewsLayer(item){
  if(!base||!maskReady||!item.image)return null;
  if(item.layer)return item.layer;
@@ -240,10 +199,6 @@ function createNewsLayer(item){
 
  const lctx=layer.getContext('2d');
 
- /*
-   Fotoğraf tüm stüdyo görüntüsünü kaplayacak şekilde
-   ölçeklenir. Maske yalnızca cam alanını gösterir.
- */
  const scale=Math.max(
   imgW/photo.naturalWidth,
   imgH/photo.naturalHeight
@@ -252,18 +207,8 @@ function createNewsLayer(item){
  const dw=photo.naturalWidth*scale;
  const dh=photo.naturalHeight*scale;
 
- lctx.drawImage(
-  photo,
-  (imgW-dw)/2,
-  (imgH-dh)/2,
-  dw,
-  dh
- );
+ lctx.drawImage(photo,(imgW-dw)/2,(imgH-dh)/2,dw,dh);
 
- /*
-   destination-in: Fotoğraf yalnızca siyah maske
-   alanlarında görünür.
- */
  lctx.globalCompositeOperation='destination-in';
  lctx.drawImage(windowMaskCanvas,0,0);
 
@@ -271,6 +216,7 @@ function createNewsLayer(item){
  return layer;
 }
 
+/* HABERLERİ GÖRSELLERİYLE YÜKLE */
 function setULAKNews(news){
  const items=Array.isArray(news)?news:[];
  newsSlides=items.map(item=>({...item,image:null,layer:null}));
@@ -303,12 +249,11 @@ function setULAKNews(news){
   window.ULAK_IMAGES_READY=true;
 
   newsSlides.forEach(item=>{
-   if(item.image&&maskReady){
-    createNewsLayer(item);
-   }
+   if(item.image&&maskReady)createNewsLayer(item);
   });
 
-  setStatus('Haber görselleri hazır. '+newsSlides.length+' haber alındı.');
+  const readyCount=newsSlides.filter(item=>item.image).length;
+  setStatus('Haber görselleri hazır. '+readyCount+' / '+newsSlides.length+' görsel yüklendi.');
  }).catch(error=>{
   console.warn('Haber görselleri hazırlanamadı:',error);
   newsImagesLoading=false;
@@ -318,6 +263,7 @@ function setULAKNews(news){
 
 window.setULAKNews=setULAKNews;
 
+/* HABER METNİNİ KAYNAKLARDAN AYIR */
 function getNewsText(){
  return $('newsScript').textContent
   .split(/\n\s*Kaynaklar:\s*\n/i)[0]
@@ -325,8 +271,12 @@ function getNewsText(){
 }
 
 /* HABERLERİ GETİR */
-$('newsBtn').addEventListener('click',async()=>{
+async function loadDailyNews(){
  const btn=$('newsBtn');
+
+ if(newsRequestRunning)return;
+
+ newsRequestRunning=true;
  btn.disabled=true;
  btn.textContent='Haberler hazırlanıyor...';
  $('newsScript').textContent='Sunum metni alınıyor...';
@@ -346,18 +296,22 @@ $('newsBtn').addEventListener('click',async()=>{
    generatedSpeechText='';
   }
 
-  setStatus('Haber sunumu ve görseller alınıyor.');
+  setStatus('Haber sunumu alındı. Görseller yükleniyor...');
 
  }catch(err){
   $('newsScript').textContent='Haberler alınamadı: '+err.message;
-  setStatus('Haber servisine ulaşılamadı.');
+  setStatus('Haber servisine ulaşılamadı: '+err.message);
+
  }finally{
+  newsRequestRunning=false;
   btn.disabled=false;
   btn.textContent='Günün Haberlerini Getir';
  }
-});
+}
 
-/* GÜNLÜK METNİ AHMET SESİNE DÖNÜŞTÜR */
+$('newsBtn').addEventListener('click',loadDailyNews);
+
+/* SES DOSYASI ÜRET */
 async function generateNewsAudio(text){
  const btn=$('speakNewsBtn');
  btn.disabled=true;
@@ -383,14 +337,9 @@ async function generateNewsAudio(text){
   }
 
   const blob=await response.blob();
+  if(!blob.size)throw new Error('Ses dosyası boş geldi.');
 
-  if(!blob.size){
-   throw new Error('Ses dosyası boş geldi.');
-  }
-
-  if(generatedAudioUrl){
-   URL.revokeObjectURL(generatedAudioUrl);
-  }
+  if(generatedAudioUrl)URL.revokeObjectURL(generatedAudioUrl);
 
   generatedAudioUrl=URL.createObjectURL(blob);
   audio.src=generatedAudioUrl;
@@ -412,7 +361,7 @@ async function generateNewsAudio(text){
  }
 }
 
-/* AHMET SESİNİ OYNAT */
+/* SESLENDİR */
 async function speakNews(){
  if(isRecording){
   setStatus('Video kaydı sırasında yeni ses başlatılamaz.');
@@ -428,12 +377,8 @@ async function speakNews(){
 
  const text=getNewsText();
 
- if(
-  !text||
-  text.includes('henüz alınmadı')||
-  text.startsWith('Haberler alınamadı:')
- ){
-  setStatus('Önce Günün Haberlerini Getir düğmesine basın.');
+ if(!text||text.includes('henüz alınmadı')||text.startsWith('Haberler alınamadı:')){
+  setStatus('Önce haberlerin yüklenmesini bekleyin.');
   return;
  }
 
@@ -473,21 +418,19 @@ function detectMouthPosition(){
  const rawX=Math.round(imgW*.435-rawW/2);
  const rawY=Math.round(imgH*.465-rawH/2);
 
- const w=Math.round(rawW+(-2.0/100)*imgW);
- const h=Math.round(rawH+(0.0/100)*imgH);
- const x=Math.round(rawX+(4.4/100)*imgW);
- const y=Math.round(rawY+(-7.3/100)*imgH);
-
- return {x,y,w,h};
+ return {
+  x:Math.round(rawX+(4.4/100)*imgW),
+  y:Math.round(rawY+(-7.3/100)*imgH),
+  w:Math.round(rawW+(-2.0/100)*imgW),
+  h:rawH
+ };
 }
 
 function resetMouthPosition(){
  const p=detectMouthPosition();
  if(!p)return;
-
  mouthBase={...p};
  mouth={...p};
-
  clampRect();
  makePatch();
  syncSliders();
@@ -507,12 +450,10 @@ function setupImage(im){
  base=document.createElement('canvas');
  base.width=imgW;
  base.height=imgH;
-
  base.getContext('2d').drawImage(im,0,0,imgW,imgH);
 
  resetMouthPosition();
  loadWindowMask();
-
  setStatus('ULAK görseli yüklendi. Cam maskesi hazırlanıyor...');
 }
 
@@ -529,7 +470,6 @@ $('detectBtn').addEventListener('click',()=>{
 function clampRect(){
  mouth.w=Math.max(6,Math.min(mouth.w,imgW*.2));
  mouth.h=Math.max(6,Math.min(mouth.h,imgH*.15));
-
  mouth.x=Math.max(0,Math.min(mouth.x,imgW-mouth.w));
  mouth.y=Math.max(0,Math.min(mouth.y,imgH-mouth.h));
 }
@@ -537,7 +477,6 @@ function clampRect(){
 /* AĞIZ MASKESİ */
 function makePatch(){
  patchLayer=null;
-
  if(!base||mouth.w<4||mouth.h<4)return;
 
  const pad=Math.max(4,Math.round(Math.min(mouth.w,mouth.h)*.25));
@@ -556,31 +495,22 @@ function makePatch(){
 
  function sampleFaceColor(y){
   y=Math.max(0,Math.min(imgH-1,Math.round(y)));
-
   const sx=Math.max(0,Math.round(mouth.x+mouth.w*.25));
   const sw=Math.max(1,Math.min(Math.round(mouth.w*.5),imgW-sx));
-
   const data=baseCtx.getImageData(sx,y,sw,1).data;
 
   let r=0,g=0,b=0,n=0;
   for(let i=0;i<data.length;i+=4){
    if(data[i]<90&&data[i+1]<90&&data[i+2]<90)continue;
-   r+=data[i];
-   g+=data[i+1];
-   b+=data[i+2];
-   n++;
+   r+=data[i];g+=data[i+1];b+=data[i+2];n++;
   }
 
-  if(n===0)return {r:245,g:215,b:185};
-  return {
-   r:Math.round(r/n),
-   g:Math.round(g/n),
-   b:Math.round(b/n)
-  };
+  if(!n)return {r:245,g:215,b:185};
+  return {r:Math.round(r/n),g:Math.round(g/n),b:Math.round(b/n)};
  }
 
- const top=sampleFaceColor(mouth.y-Math.max(3,mouth.h*.25));
- const bottom=sampleFaceColor(mouth.y+mouth.h+Math.max(3,mouth.h*.25));
+ const top=sampleFaceColor(mouth.y-mouth.h*.25);
+ const bottom=sampleFaceColor(mouth.y+mouth.h*1.25);
 
  const midR=Math.round((top.r+bottom.r)/2);
  const midG=Math.round((top.g+bottom.g)/2);
@@ -604,7 +534,7 @@ function makePatch(){
  patchLayer=patch;
 }
 
-/* OFSET KAYDIRICILARI */
+/* KAYDIRICILAR */
 const sliderMap=[
  ['sx','ox',v=>mouth.x=mouthBase.x+(v/100*imgW)],
  ['sy','oy',v=>mouth.y=mouthBase.y+(v/100*imgH)],
@@ -615,10 +545,8 @@ const sliderMap=[
 sliderMap.forEach(([sid,oid,fn])=>{
  $(sid).addEventListener('input',e=>{
   if(!base)return;
-
   fn(parseFloat(e.target.value));
   clampRect();
-
   $(oid).textContent=parseFloat(e.target.value).toFixed(1);
   makePatch();
  });
@@ -636,7 +564,6 @@ function syncSliders(){
 
  for(const id in vals){
   $(id).value=vals[id].toFixed(1);
-
   const output={sx:'ox',sy:'oy',sw:'ow',sh:'oh'}[id];
   $(output).textContent=vals[id].toFixed(1);
  }
@@ -652,15 +579,12 @@ $('sm').addEventListener('input',e=>{
  $('om').textContent=maxOpen.toFixed(2);
 });
 
-/* ELLE KUTU DÜZENLEME */
+/* ELLE AĞIZ KUTUSU DÜZENLEME */
 const opposite={tl:'br',br:'tl',tr:'bl',bl:'tr'};
 
 function toImg(e){
  const r=canvas.getBoundingClientRect();
- return {
-  x:(e.clientX-r.left)*canvas.width/r.width,
-  y:(e.clientY-r.top)*canvas.height/r.height
- };
+ return {x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height};
 }
 
 function cornersOf(){
@@ -683,29 +607,21 @@ let drag=null;
 
 canvas.addEventListener('pointerdown',e=>{
  if(!base||!editing||isRecording)return;
-
  e.preventDefault();
 
  const p=toImg(e);
  const R=canvas.width*.035;
  const c=cornersOf();
-
  let hit=null;
 
  for(const k in c){
-  if(Math.abs(p.x-c[k][0])<R&&Math.abs(p.y-c[k][1])<R){
-   hit=k;
-   break;
-  }
+  if(Math.abs(p.x-c[k][0])<R&&Math.abs(p.y-c[k][1])<R){hit=k;break;}
  }
 
  if(hit){
   const o=c[opposite[hit]];
   drag={type:'resize',ax:o[0],ay:o[1]};
- }else if(
-  p.x>=mouth.x&&p.x<=mouth.x+mouth.w&&
-  p.y>=mouth.y&&p.y<=mouth.y+mouth.h
- ){
+ }else if(p.x>=mouth.x&&p.x<=mouth.x+mouth.w&&p.y>=mouth.y&&p.y<=mouth.y+mouth.h){
   drag={type:'move',dx:p.x-mouth.x,dy:p.y-mouth.y};
  }else{
   drag={type:'new',sx:p.x,sy:p.y};
@@ -716,7 +632,6 @@ canvas.addEventListener('pointerdown',e=>{
 
 canvas.addEventListener('pointermove',e=>{
  if(!drag)return;
-
  e.preventDefault();
  const p=toImg(e);
 
@@ -737,13 +652,12 @@ canvas.addEventListener('pointermove',e=>{
 canvas.addEventListener('pointerup',()=>drag=null);
 canvas.addEventListener('pointercancel',()=>drag=null);
 
-/* DÜZENLEME AÇ/KAPAT */
 $('editBtn').addEventListener('click',()=>{
  editing=!editing;
  $('editBtn').textContent='Ağız alanı düzenleme: '+(editing?'AÇIK':'KAPALI');
 });
 
-/* SES YÜKLE */
+/* SES DOSYASI YÜKLE */
 $('audInput').addEventListener('change',e=>{
  const f=e.target.files[0];
  if(!f)return;
@@ -754,7 +668,6 @@ $('audInput').addEventListener('change',e=>{
 
  audioSourceType='file';
  generatedSpeechText='';
-
  $('pickInfo').textContent='Ses: '+f.name;
  setStatus('Ses yüklendi: '+f.name);
 });
@@ -764,13 +677,12 @@ function ensureAudioGraph(){
  if(actx)return;
 
  actx=new(window.AudioContext||window.webkitAudioContext)();
-
  const src=actx.createMediaElementSource(audio);
 
  analyser=actx.createAnalyser();
  analyser.fftSize=1024;
-
  sampleBuf=new Uint8Array(analyser.fftSize);
+
  streamDest=actx.createMediaStreamDestination();
 
  src.connect(analyser);
@@ -785,7 +697,6 @@ async function play(){
  }
 
  ensureAudioGraph();
-
  if(actx.state==='suspended')await actx.resume();
 
  try{
@@ -818,14 +729,12 @@ function patchAlpha(){
 function drawMouthOpening(){
  const cx=mouth.x+mouth.w/2;
  const cy=mouth.y+mouth.h*.52;
-
  const rx=mouth.w*.34;
  const ry=Math.max(1,mouth.h*.42*Math.min(1,level)*maxOpen);
 
  ctx.save();
  ctx.filter='none';
  ctx.fillStyle='#3f1709';
-
  ctx.beginPath();
  ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
  ctx.fill();
@@ -836,7 +745,6 @@ function drawMouthOpening(){
   ctx.ellipse(cx,cy+ry*.45,rx*.5,Math.max(1,ry*.3),0,0,Math.PI*2);
   ctx.fill();
  }
-
  ctx.restore();
 }
 
@@ -849,14 +757,29 @@ function drawNewsBackground(){
 
  const progress=Math.max(0,Math.min(.9999,audio.currentTime/duration));
 
- const index=Math.min(
-  newsSlides.length-1,
-  Math.floor(progress*newsSlides.length)
- );
+ /*
+  İlk yaklaşık eşleştirme: haber metinlerinin uzunluğuna
+  göre süre dağıtılır. Daha uzun haber daha uzun görünür.
+ */
+ const weights=newsSlides.map(item=>{
+  const text=(item.title||'')+' '+(item.summary||item.description||'');
+  return Math.max(1,text.trim().length);
+ });
+
+ const total=weights.reduce((a,b)=>a+b,0);
+ let position=progress*total;
+ let index=0;
+
+ while(index<weights.length-1&&position>=weights[index]){
+  position-=weights[index];
+  index++;
+ }
 
  currentStoryIndex=index;
 
  const item=newsSlides[index];
+
+ /* Görseli olmayan haber için eski fotoğrafı göstermeyiz */
  if(!item||!item.image)return;
 
  const layer=createNewsLayer(item);
@@ -877,20 +800,15 @@ function render(){
  ctx.filter='none';
  ctx.globalCompositeOperation='source-over';
 
- /* Önce orijinal stüdyo ve ULAK */
  ctx.drawImage(base,0,0);
-
- /* Sonra yalnızca cam alanındaki haber fotoğrafı */
  drawNewsBackground();
 
- /* Ağız animasyonu */
  const a=patchAlpha();
 
  if(a>0&&patchLayer){
   ctx.globalAlpha=a;
   ctx.drawImage(patchLayer,patchX,patchY);
   ctx.globalAlpha=1;
-
   if(level>.02)drawMouthOpening();
  }
 
@@ -913,7 +831,6 @@ function drawOverlay(){
  for(const k in c){
   ctx.fillRect(c[k][0]-hs/2,c[k][1]-hs/2,hs,hs);
  }
-
  ctx.restore();
 }
 
@@ -926,7 +843,6 @@ function pickMime(){
   'video/webm;codecs=vp8,opus',
   'video/webm'
  ];
-
  return list.find(t=>MediaRecorder.isTypeSupported(t))||'';
 }
 
@@ -944,12 +860,8 @@ async function startRecording(){
  if(audioSourceType!=='file'){
   const text=getNewsText();
 
-  if(
-   !text||
-   text.includes('henüz alınmadı')||
-   text.startsWith('Haberler alınamadı:')
-  ){
-   setStatus('Önce Günün Haberlerini Getir düğmesine basın.');
+  if(!text||text.includes('henüz alınmadı')||text.startsWith('Haberler alınamadı:')){
+   setStatus('Önce haberlerin yüklenmesini bekleyin.');
    return;
   }
 
@@ -969,20 +881,16 @@ async function startRecording(){
   return;
  }
 
- /* Görsellerin yüklenmesini bekle */
  if(newsImagesLoading){
   setStatus('Haber görselleri yükleniyor. Lütfen bekleyin...');
   const started=Date.now();
-
   while(newsImagesLoading&&Date.now()-started<45000){
    await new Promise(resolve=>setTimeout(resolve,200));
   }
  }
 
  newsSlides.forEach(item=>{
-  if(item.image&&!item.layer){
-   createNewsLayer(item);
-  }
+  if(item.image&&!item.layer)createNewsLayer(item);
  });
 
  const mime=pickMime();
@@ -998,7 +906,6 @@ async function startRecording(){
  stream.addTrack(streamDest.stream.getAudioTracks()[0]);
 
  recChunks=[];
-
  recorder=new MediaRecorder(stream,{
   mimeType:mime,
   videoBitsPerSecond:3500000,
@@ -1012,14 +919,12 @@ async function startRecording(){
  recorder.onstop=()=>{
   const type=mime.split(';')[0];
   const ext=type.includes('mp4')?'mp4':'webm';
-
   const blob=new Blob(recChunks,{type});
   const url=URL.createObjectURL(blob);
 
   const a=document.createElement('a');
   a.href=url;
   a.download='ulak-haber.'+ext;
-
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -1057,9 +962,7 @@ async function startRecording(){
 }
 
 function stopRecording(){
- if(recorder&&recorder.state!=='inactive'){
-  recorder.stop();
- }
+ if(recorder&&recorder.state!=='inactive')recorder.stop();
  audio.pause();
 }
 
@@ -1084,14 +987,21 @@ defaultImage.onerror=()=>{
 };
 defaultImage.src='/ulak-studio.png';
 
+/* SAYFA AÇILINCA HABERLERİ OTOMATİK GETİR */
+window.addEventListener('load',()=>{
+ setTimeout(()=>{
+  loadDailyNews();
+ },700);
+});
+
 /* ANİMASYON DÖNGÜSÜ */
 function frame(){
  let target=0;
 
  if(analyser&&!audio.paused&&!audio.ended){
   analyser.getByteTimeDomainData(sampleBuf);
-
   let sum=0;
+
   for(let i=0;i<sampleBuf.length;i++){
    const v=(sampleBuf[i]-128)/128;
    sum+=v*v;
@@ -1099,12 +1009,10 @@ function frame(){
 
   const rms=Math.sqrt(sum/sampleBuf.length);
   target=Math.min(1,rms*5*gain);
-
   if(target<.05)target=0;
  }
 
  level+=(target>level?.48:.20)*(target-level);
-
  render();
  requestAnimationFrame(frame);
 }
