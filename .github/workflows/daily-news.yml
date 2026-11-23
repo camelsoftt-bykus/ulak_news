@@ -37,11 +37,43 @@ jobs:
         run: |
           set -e
 
-          curl --fail --silent --show-error \
-            "https://ulaknews-docs.vercel.app/api/presenter" \
-            -o response.json
+          presenter_url="https://ulaknews-docs.vercel.app/api/presenter"
+          presenter_ok=false
 
-          jq -e '.script and (.news | type == "array")' response.json > /dev/null
+          for attempt in 1 2 3; do
+            set +e
+            http_code=$(curl --silent --show-error --connect-timeout 20 --max-time 180 \
+              --output response.json --write-out "%{http_code}" "$presenter_url")
+            curl_exit=$?
+            set -e
+
+            if [ "$curl_exit" -eq 0 ] && [ "$http_code" = "200" ]; then
+              presenter_ok=true
+              break
+            fi
+
+            echo "Presenter API denemesi $attempt başarısız. HTTP: ${http_code:-bilinmiyor}, curl çıkış kodu: $curl_exit"
+            echo "Sunucunun hata yanıtı:"
+            cat response.json 2>/dev/null || true
+
+            if [ "$attempt" -lt 3 ] && { [ "$curl_exit" -ne 0 ] || [ "$http_code" = "429" ] || [[ "${http_code:-}" =~ ^5 ]]; }; then
+              sleep 15
+              continue
+            fi
+
+            break
+          done
+
+          if [ "$presenter_ok" != "true" ]; then
+            echo "::error::Haber sunucusu üç denemeden sonra da başarılı yanıt vermedi."
+            exit 1
+          fi
+
+          if ! jq -e '.script and (.news | type == "array")' response.json > /dev/null; then
+            echo "::error::Haber sunucusu 200 döndürdü ancak yanıt biçimi geçersiz."
+            cat response.json
+            exit 1
+          fi
 
           mkdir -p docs/docs/public/data
 
