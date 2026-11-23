@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -45,7 +44,7 @@ small{color:#b9ab9a;font-size:12px;line-height:1.5;display:block;margin-top:6px}
 <input type="file" id="imgInput" accept="image/*">
 <input type="file" id="audInput" accept="audio/*">
 <div id="pickInfo" style="font-size:12px;color:#b9ab9a;margin-top:5px"></div>
-<div id="status">ULAK görseli yükleniyor...</div>
+<div id="status">ULAK görseli ve cam maskesi yükleniyor...</div>
 </div>
 
 <div class="card">
@@ -110,6 +109,12 @@ let patchLayer=null;
 let patchX=0,patchY=0;
 let imgW=0,imgH=0;
 
+/* YENİ CAM MASKESİ */
+let windowMaskCanvas=null;
+let maskReady=false;
+let maskLoading=false;
+let maskFailed=false;
+
 let mouth={x:0,y:0,w:0,h:0};
 let mouthBase={x:0,y:0,w:0,h:0};
 
@@ -142,9 +147,133 @@ let newsImagesLoading=false;
 
 window.ULAK_IMAGES_READY=false;
 
+function setStatus(msg){
+ statusEl.textContent=msg;
+}
+
+/*
+  Maske dosyası:
+  public/koruma_maske_v2.png
+
+  Beyaz alan: korunacak stüdyo ve ULAK.
+  Siyah alan: haber fotoğrafının görüneceği cam.
+*/
+function loadWindowMask(){
+ if(!imgW||!imgH)return;
+
+ maskReady=false;
+ maskLoading=true;
+ maskFailed=false;
+
+ const maskImage=new Image();
+
+ maskImage.onload=()=>{
+  try{
+   const source=document.createElement('canvas');
+   source.width=imgW;
+   source.height=imgH;
+
+   const sctx=source.getContext('2d',{willReadFrequently:true});
+   sctx.drawImage(maskImage,0,0,imgW,imgH);
+
+   const pixels=sctx.getImageData(0,0,imgW,imgH);
+   const data=pixels.data;
+
+   const matte=document.createElement('canvas');
+   matte.width=imgW;
+   matte.height=imgH;
+
+   const mctx=matte.getContext('2d');
+   const output=mctx.createImageData(imgW,imgH);
+
+   for(let i=0;i<data.length;i+=4){
+    const gray=Math.round(
+     data[i]*.299+
+     data[i+1]*.587+
+     data[i+2]*.114
+    );
+
+    output.data[i]=255;
+    output.data[i+1]=255;
+    output.data[i+2]=255;
+
+    /* Siyah maske alanı opak, beyaz alan şeffaf */
+    output.data[i+3]=255-gray;
+   }
+
+   mctx.putImageData(output,0,0);
+
+   windowMaskCanvas=matte;
+   maskReady=true;
+   maskLoading=false;
+
+   newsSlides.forEach(item=>{
+    item.layer=null;
+   });
+
+   setStatus('ULAK görseli ve cam maskesi hazır.');
+  }catch(error){
+   maskLoading=false;
+   maskFailed=true;
+   setStatus('Cam maskesi hazırlanamadı: '+error.message);
+  }
+ };
+
+ maskImage.onerror=()=>{
+  maskLoading=false;
+  maskFailed=true;
+  setStatus('Cam maskesi yüklenemedi. public/koruma_maske_v2.png dosyasını kontrol edin.');
+ };
+
+ maskImage.src='/koruma_maske_v2.png';
+}
+
+/* FOTOĞRAFI CAM ALANINA HAZIRLA */
+function createNewsLayer(item){
+ if(!base||!maskReady||!item.image)return null;
+ if(item.layer)return item.layer;
+
+ const photo=item.image;
+ const layer=document.createElement('canvas');
+ layer.width=imgW;
+ layer.height=imgH;
+
+ const lctx=layer.getContext('2d');
+
+ /*
+   Fotoğraf tüm stüdyo görüntüsünü kaplayacak şekilde
+   ölçeklenir. Maske yalnızca cam alanını gösterir.
+ */
+ const scale=Math.max(
+  imgW/photo.naturalWidth,
+  imgH/photo.naturalHeight
+ );
+
+ const dw=photo.naturalWidth*scale;
+ const dh=photo.naturalHeight*scale;
+
+ lctx.drawImage(
+  photo,
+  (imgW-dw)/2,
+  (imgH-dh)/2,
+  dw,
+  dh
+ );
+
+ /*
+   destination-in: Fotoğraf yalnızca siyah maske
+   alanlarında görünür.
+ */
+ lctx.globalCompositeOperation='destination-in';
+ lctx.drawImage(windowMaskCanvas,0,0);
+
+ item.layer=layer;
+ return layer;
+}
+
 function setULAKNews(news){
  const items=Array.isArray(news)?news:[];
- newsSlides=items.map(item=>({...item,image:null}));
+ newsSlides=items.map(item=>({...item,image:null,layer:null}));
  currentStoryIndex=-1;
  newsImagesLoading=true;
  window.ULAK_IMAGES_READY=false;
@@ -172,6 +301,13 @@ function setULAKNews(news){
  Promise.all(tasks).then(()=>{
   newsImagesLoading=false;
   window.ULAK_IMAGES_READY=true;
+
+  newsSlides.forEach(item=>{
+   if(item.image&&maskReady){
+    createNewsLayer(item);
+   }
+  });
+
   setStatus('Haber görselleri hazır. '+newsSlides.length+' haber alındı.');
  }).catch(error=>{
   console.warn('Haber görselleri hazırlanamadı:',error);
@@ -181,10 +317,6 @@ function setULAKNews(news){
 }
 
 window.setULAKNews=setULAKNews;
-
-function setStatus(msg){
- statusEl.textContent=msg;
-}
 
 function getNewsText(){
  return $('newsScript').textContent
@@ -379,7 +511,9 @@ function setupImage(im){
  base.getContext('2d').drawImage(im,0,0,imgW,imgH);
 
  resetMouthPosition();
- setStatus('ULAK görseli yüklendi. Ağız konumu hazır.');
+ loadWindowMask();
+
+ setStatus('ULAK görseli yüklendi. Cam maskesi hazırlanıyor...');
 }
 
 $('detectBtn').addEventListener('click',()=>{
@@ -706,15 +840,15 @@ function drawMouthOpening(){
  ctx.restore();
 }
 
-/* HABER EKRANI */
-function drawNewsScreen(){
- if(!base||!newsSlides.length)return;
+/* HABER FOTOĞRAFINI CAMIN ARKASINA ÇİZ */
+function drawNewsBackground(){
+ if(!base||!newsSlides.length||!maskReady)return;
 
  const duration=audio.duration;
-
  if(!Number.isFinite(duration)||duration<=0)return;
 
  const progress=Math.max(0,Math.min(.9999,audio.currentTime/duration));
+
  const index=Math.min(
   newsSlides.length-1,
   Math.floor(progress*newsSlides.length)
@@ -723,94 +857,15 @@ function drawNewsScreen(){
  currentStoryIndex=index;
 
  const item=newsSlides[index];
- if(!item)return;
+ if(!item||!item.image)return;
 
- /*
-  Ekran konumu ilk taslak değerleridir.
-  Robot görselinin gerçek ekran alanına göre testte ayarlanacaktır.
- */
- const x=Math.round(imgW*.586);
- const y=Math.round(imgH*.058);
- const w=Math.round(imgW*.238);
- const h=Math.round(imgH*.52);
+ const layer=createNewsLayer(item);
+ if(!layer)return;
 
  ctx.save();
-
- /* Ekran çerçevesi */
- ctx.fillStyle='#171e2b';
- ctx.fillRect(x-5,y-5,w+10,h+10);
-
- ctx.beginPath();
- ctx.rect(x,y,w,h);
- ctx.clip();
-
- /* Ekran zemini */
- ctx.fillStyle='#101c2c';
- ctx.fillRect(x,y,w,h);
-
- if(item.image){
-  const im=item.image;
-  const scale=Math.max(w/im.naturalWidth,h/im.naturalHeight);
-  const dw=im.naturalWidth*scale;
-  const dh=im.naturalHeight*scale;
-  ctx.drawImage(
-   im,
-   x+(w-dw)/2,
-   y+(h-dh)/2,
-   dw,
-   dh
-  );
-
-  /* Fotoğraf altı hafif koyu başlık bandı */
-  const bandH=Math.round(h*.28);
-  const gradient=ctx.createLinearGradient(0,y+h-bandH,0,y+h);
-  gradient.addColorStop(0,'rgba(0,0,0,0)');
-  gradient.addColorStop(1,'rgba(0,0,0,.88)');
-  ctx.fillStyle=gradient;
-  ctx.fillRect(x,y+h-bandH,w,bandH);
- }else{
-  ctx.fillStyle='#162b43';
-  ctx.fillRect(x,y,w,h);
-  ctx.fillStyle='#ffae45';
-  ctx.font=`bold ${Math.max(12,Math.round(w*.075))}px sans-serif`;
-  ctx.textAlign='center';
-  ctx.fillText('ULAK HABER',x+w/2,y+h*.25);
- }
-
- /* Haber başlığı */
- const title=(item.title||'Günün haberi').trim();
- const maxChars=23;
- const lines=[];
-
- for(let i=0;i<title.length;i+=maxChars){
-  lines.push(title.slice(i,i+maxChars));
-  if(lines.length>=4)break;
- }
-
- ctx.fillStyle='#ffffff';
- ctx.textAlign='left';
- ctx.font=`bold ${Math.max(10,Math.round(w*.075))}px sans-serif`;
-
- const lineHeight=Math.max(13,Math.round(w*.09));
- const startY=y+h-lineHeight*(lines.length+1);
-
- lines.forEach((line,i)=>{
-  ctx.fillText(line,x+Math.round(w*.06),startY+i*lineHeight,w*.88);
- });
-
- /* Kaynak ve lisans bilgisi */
- const credit=item.imageCredit||item.imageArtist||'';
- const license=item.imageLicense||'';
- const creditText=[credit,license].filter(Boolean).join(' · ');
-
- if(creditText){
-  ctx.fillStyle='rgba(0,0,0,.78)';
-  ctx.fillRect(x,y+h-15,w,15);
-  ctx.fillStyle='#ffffff';
-  ctx.font=`${Math.max(6,Math.round(w*.025))}px sans-serif`;
-  ctx.fillText(creditText.slice(0,65),x+3,y+h-4,w-6);
- }
-
+ ctx.globalAlpha=1;
+ ctx.globalCompositeOperation='source-over';
+ ctx.drawImage(layer,0,0);
  ctx.restore();
 }
 
@@ -820,11 +875,15 @@ function render(){
 
  ctx.globalAlpha=1;
  ctx.filter='none';
+ ctx.globalCompositeOperation='source-over';
+
+ /* Önce orijinal stüdyo ve ULAK */
  ctx.drawImage(base,0,0);
 
- /* Haber fotoğrafını robotun arkasındaki ekrana çiz */
- drawNewsScreen();
+ /* Sonra yalnızca cam alanındaki haber fotoğrafı */
+ drawNewsBackground();
 
+ /* Ağız animasyonu */
  const a=patchAlpha();
 
  if(a>0&&patchLayer){
@@ -877,6 +936,11 @@ async function startRecording(){
   return;
  }
 
+ if(!maskReady){
+  setStatus('Cam maskesi henüz hazır değil. Biraz bekleyip tekrar deneyin.');
+  return;
+ }
+
  if(audioSourceType!=='file'){
   const text=getNewsText();
 
@@ -914,6 +978,12 @@ async function startRecording(){
    await new Promise(resolve=>setTimeout(resolve,200));
   }
  }
+
+ newsSlides.forEach(item=>{
+  if(item.image&&!item.layer){
+   createNewsLayer(item);
+  }
+ });
 
  const mime=pickMime();
  if(!mime){
