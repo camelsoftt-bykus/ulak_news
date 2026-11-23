@@ -1,3 +1,4 @@
+
 import Parser from "rss-parser";
 import { newsSources } from "./news-sources";
 
@@ -11,6 +12,14 @@ export type CollectedNews = {
   summary: string;
   publishedAt: string | null;
   sourcePriority: number;
+
+  imageUrl?: string;
+  imagePageUrl?: string;
+  imageTitle?: string;
+  imageLicense?: string;
+  imageLicenseUrl?: string;
+  imageArtist?: string;
+  imageCredit?: string;
 };
 
 export type SourceStatus = {
@@ -18,6 +27,16 @@ export type SourceStatus = {
   sourceName: string;
   count: number;
   error?: string;
+};
+
+type CommonsImage = {
+  imageUrl: string;
+  imagePageUrl: string;
+  imageTitle: string;
+  imageLicense: string;
+  imageLicenseUrl: string;
+  imageArtist: string;
+  imageCredit: string;
 };
 
 let lastSourceStatus: SourceStatus[] = [];
@@ -223,13 +242,184 @@ async function collectRssSource(
   }));
 }
 
+// WIKIMEDIA COMMONS GÖRSEL ARAMA
+
+function normalizeWords(value: string): string[] {
+  const stopWords = new Set([
+    "ve", "ile", "icin", "olan", "olarak", "bir", "bu",
+    "da", "de", "son", "yeni", "daha", "hakkinda",
+    "aciklama", "haber", "haberleri", "gundem"
+  ]);
+
+  return value
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ı/g, "i")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length >= 4 && !stopWords.has(word));
+}
+
+function getMetadata(
+  metadata: Record<string, { value?: string }> | undefined,
+  key: string
+): string {
+  return cleanText(metadata?.[key]?.value || "");
+}
+
+function isAllowedLicense(name: string, copyrighted: string): boolean {
+  const license = name.toLowerCase();
+
+  if (copyrighted.toLowerCase() === "false") return true;
+
+  return (
+    /cc0|public domain|public domain mark/.test(license) ||
+    /cc by 4\.0/.test(license) ||
+    /cc by 3\.0/.test(license) ||
+    /cc by 2\.0/.test(license) ||
+    /cc by 1\.0/.test(license)
+  );
+}
+
+async function findCommonsImage(
+  news: CollectedNews
+): Promise<CommonsImage | null> {
+  try {
+    const keywords = normalizeWords(
+      `${news.title} ${news.summary}`
+    ).slice(0, 7);
+
+    if (keywords.length < 2) return null;
+
+    const searchText = keywords.join(" ");
+
+    const searchUrl = new URL(
+      "https://commons.wikimedia.org/w/api.php"
+    );
+
+    searchUrl.search = new URLSearchParams({
+      action: "query",
+      format: "json",
+      generator: "search",
+      gsrsearch: searchText,
+      gsrnamespace: "6",
+      gsrlimit: "8",
+      prop: "imageinfo",
+      iiprop: "url|mime|extmetadata",
+      iiurlwidth: "1400",
+      iiextmetadatalanguage: "en"
+    }).toString();
+
+    const response = await fetch(searchUrl, {
+      headers: {
+        "User-Agent": "ULAK-News/1.0 (news image attribution)"
+      },
+      signal: AbortSignal.timeout(12000),
+      cache: "no-store"
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+
+    const pages = Object.values(
+      data.query?.pages || {}
+    ) as {
+      title: string;
+      imageinfo?: {
+        thumburl?: string;
+        url?: string;
+        mime?: string;
+        extmetadata?: Record<string, { value?: string }>;
+      }[];
+    }[];
+
+    let bestImage: CommonsImage | null = null;
+    let bestScore = 0;
+
+    for (const page of pages) {
+      const info = page.imageinfo?.[0];
+      if (!info) continue;
+
+      const imageUrl = info.thumburl || info.url || "";
+
+      if (!imageUrl.startsWith("https://upload.wikimedia.org/")) {
+        continue;
+      }
+
+      if (!["image/jpeg", "image/png", "image/webp"].includes(info.mime || "")) {
+        continue;
+      }
+
+      const metadata = info.extmetadata;
+
+      const license = getMetadata(metadata, "LicenseShortName");
+      const copyrighted = getMetadata(metadata, "Copyrighted");
+
+      if (!isAllowedLicense(license, copyrighted)) continue;
+
+      const description =
+        getMetadata(metadata, "ImageDescription");
+
+      const searchableText = normalizeWords(
+        `${page.title} ${description}`
+      );
+
+      const matchedWords = keywords.filter((word) =>
+        searchableText.includes(word)
+      );
+
+      const score = matchedWords.length;
+
+      // En az iki anlamlı kelime eşleşmesi gerekli.
+      if (score < 2 || score <= bestScore) continue;
+
+      const fileName = page.title.replace(/^File:/, "");
+
+      const attribution =
+        getMetadata(metadata, "Attribution");
+
+      const artist =
+        attribution ||
+        getMetadata(metadata, "Artist") ||
+        getMetadata(metadata, "Credit") ||
+        "Belirtilmemiş";
+
+      const credit = getMetadata(metadata, "Credit");
+
+      bestScore = score;
+
+      bestImage = {
+        imageUrl,
+        imagePageUrl:
+          "https://commons.wikimedia.org/wiki/" +
+          encodeURIComponent(page.title.replace(/ /g, "_")),
+        imageTitle: fileName,
+        imageLicense: license || "Public domain",
+        imageLicenseUrl: getMetadata(metadata, "LicenseUrl"),
+        imageArtist: artist,
+        imageCredit: credit
+      };
+    }
+
+    return bestImage;
+  } catch (error) {
+    console.error(
+      "ULAK Commons görsel arama hatası:",
+      error
+    );
+
+    return null;
+  }
+}
+
 function balanceSources(items: CollectedNews[]): CollectedNews[] {
   const regions = ["local", "ankara", "turkey", "world", "science"] as const;
 
   const selected: CollectedNews[] = [];
   const usedLinks = new Set<string>();
 
-  // Önce her bölgeden en az bir haber seçmeyi dene.
   for (const region of regions) {
     const sourceIds = newsSources
       .filter((source) => source.enabled && source.region === region)
@@ -251,7 +441,6 @@ function balanceSources(items: CollectedNews[]): CollectedNews[] {
     if (selected.length === 5) return selected;
   }
 
-  // Kalan yerleri öncelik ve tarihe göre doldur.
   const remaining = items
     .filter((item) => !usedLinks.has(item.link))
     .sort((a, b) => {
@@ -320,5 +509,20 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
     }
   }
 
-  return balanceSources(Array.from(uniqueNews.values()));
+  const selected = balanceSources(
+    Array.from(uniqueNews.values())
+  );
+
+  // Görseller yalnızca seçilmiş haberler için aranır.
+  const enriched = await Promise.all(
+    selected.map(async (item) => {
+      const image = await findCommonsImage(item);
+
+      return image
+        ? { ...item, ...image }
+        : item;
+    })
+  );
+
+  return enriched;
 }
