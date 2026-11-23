@@ -1079,44 +1079,44 @@ function drawImageAttribution(item){
  if(item.imageKind!=='representative'||!windowBox)return;
 
  const b=windowBox;
- const fontSize=Math.max(10,Math.round(imgW*.012));
- const pad=Math.max(6,Math.round(fontSize*.65));
- const lineHeight=Math.round(fontSize*1.35);
- const boxHeight=pad*2+lineHeight*2;
+ const fontSize=Math.max(10,Math.min(14,Math.round(imgW*.01)));
+ const pad=Math.max(5,Math.round(fontSize*.5));
+ const lineHeight=Math.round(fontSize*1.25);
+ const boxHeight=pad*2+lineHeight*3;
  const boxY=b.y+b.h-boxHeight;
 
- const source='Kaynak: Wikimedia Commons';
- const license=item.imageLicense||'Lisans bilgisi';
- const artist=item.imageArtist||'Belirtilmemiş';
- const line1=(item.imageCaption||'Temsili görsel')+' · '+source;
- const line2='Lisans: '+license+' · Fotoğraf: '+artist;
+ const line1=(item.imageCaption||'Temsili görsel')+' · Wikimedia Commons';
+ const line2='Lisans: '+(item.imageLicense||'Lisans bilgisi');
+ const line3='Fotoğraf: '+(item.imageArtist||'Belirtilmemiş');
 
  ctx.save();
  ctx.beginPath();
  ctx.rect(b.x,b.y,b.w,b.h);
  ctx.clip();
 
- ctx.globalAlpha=.82;
+ ctx.globalAlpha=.84;
  ctx.fillStyle='#17130f';
  ctx.fillRect(b.x,boxY,b.w,boxHeight);
 
  ctx.globalAlpha=1;
  ctx.fillStyle='#ffffff';
- ctx.font='600 '+fontSize+'px Arial, sans-serif';
  ctx.textBaseline='top';
 
  const maxWidth=Math.max(20,b.w-pad*2);
  const fitText=(value)=>{
   let text=String(value);
+  ctx.font='400 '+fontSize+'px Arial, sans-serif';
   while(text.length>3&&ctx.measureText(text).width>maxWidth){
    text=text.slice(0,-2);
   }
   return text.length<String(value).length?text.trim()+'…':text;
  };
 
+ ctx.font='600 '+fontSize+'px Arial, sans-serif';
  ctx.fillText(fitText(line1),b.x+pad,boxY+pad);
  ctx.font='400 '+fontSize+'px Arial, sans-serif';
  ctx.fillText(fitText(line2),b.x+pad,boxY+pad+lineHeight);
+ ctx.fillText(fitText(line3),b.x+pad,boxY+pad+lineHeight*2);
  ctx.restore();
 }
 
