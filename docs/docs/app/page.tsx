@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -141,40 +142,6 @@ export default function Home() {
 
         <p className="muted" style={{ marginTop: "12px", fontSize: "13px" }}>
           Günlük sunum otomatik hazırlanır. En yeni bülteni buradan izleyebilirsin.
-        </p>
-
-        <div className="section-heading" style={{ marginTop: "42px" }}>
-          <div>
-            <div className="eyebrow">ULAK ANİMASYON STÜDYOSU</div>
-            <h2 className="section-title">Animasyon stüdyosu</h2>
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: "18px",
-            borderRadius: "16px",
-            overflow: "hidden",
-            background: "#1d1a17",
-            border: "1px solid #4a423b",
-          }}
-        >
-          <iframe
-            src="/animasyon.html"
-            title="ULAK Animasyon Stüdyosu"
-            style={{
-              display: "block",
-              width: "100%",
-              height: "1600px",
-              border: "0",
-              background: "#1d1a17",
-            }}
-            allow="autoplay"
-          />
-        </div>
-
-        <p className="muted" style={{ marginTop: "12px", fontSize: "13px" }}>
-          Stüdyoyu ayrıca açıp animasyon ayarlarını kullanabilirsin.
         </p>
       </section>
 
