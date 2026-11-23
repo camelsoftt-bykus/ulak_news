@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -134,6 +135,53 @@ let sampleBuf=null;
 let recorder=null;
 let recChunks=[];
 
+/* HABER GÖRSELLERİ */
+let newsSlides=[];
+let currentStoryIndex=-1;
+let newsImagesLoading=false;
+
+window.ULAK_IMAGES_READY=false;
+
+function setULAKNews(news){
+ const items=Array.isArray(news)?news:[];
+ newsSlides=items.map(item=>({...item,image:null}));
+ currentStoryIndex=-1;
+ newsImagesLoading=true;
+ window.ULAK_IMAGES_READY=false;
+
+ const tasks=newsSlides.map(async item=>{
+  if(!item.imageUrl)return;
+
+  try{
+   const proxyUrl='/api/news-image?url='+encodeURIComponent(item.imageUrl);
+   const image=new Image();
+   image.crossOrigin='anonymous';
+
+   await new Promise((resolve,reject)=>{
+    image.onload=resolve;
+    image.onerror=reject;
+    image.src=proxyUrl;
+   });
+
+   item.image=image;
+  }catch(error){
+   console.warn('Haber görseli yüklenemedi:',item.title,error);
+  }
+ });
+
+ Promise.all(tasks).then(()=>{
+  newsImagesLoading=false;
+  window.ULAK_IMAGES_READY=true;
+  setStatus('Haber görselleri hazır. '+newsSlides.length+' haber alındı.');
+ }).catch(error=>{
+  console.warn('Haber görselleri hazırlanamadı:',error);
+  newsImagesLoading=false;
+  window.ULAK_IMAGES_READY=true;
+ });
+}
+
+window.setULAKNews=setULAKNews;
+
 function setStatus(msg){
  statusEl.textContent=msg;
 }
@@ -144,7 +192,7 @@ function getNewsText(){
   .trim();
 }
 
-// HABERLERİ GETİR
+/* HABERLERİ GETİR */
 $('newsBtn').addEventListener('click',async()=>{
  const btn=$('newsBtn');
  btn.disabled=true;
@@ -160,13 +208,13 @@ $('newsBtn').addEventListener('click',async()=>{
   }
 
   $('newsScript').textContent=data.script;
+  setULAKNews(data.news);
 
-  // Yeni haber geldiğinde önceki üretilmiş ses artık güncel değildir.
   if(audioSourceType==='generated'){
    generatedSpeechText='';
   }
 
-  setStatus('Günün haber sunumu alındı. Ahmet sesi hazır olduğunda seslendirilebilir.');
+  setStatus('Haber sunumu ve görseller alınıyor.');
 
  }catch(err){
   $('newsScript').textContent='Haberler alınamadı: '+err.message;
@@ -177,7 +225,7 @@ $('newsBtn').addEventListener('click',async()=>{
  }
 });
 
-// GÜNLÜK METNİ AHMET SESİNE DÖNÜŞTÜR
+/* GÜNLÜK METNİ AHMET SESİNE DÖNÜŞTÜR */
 async function generateNewsAudio(text){
  const btn=$('speakNewsBtn');
  btn.disabled=true;
@@ -232,7 +280,7 @@ async function generateNewsAudio(text){
  }
 }
 
-// AHMET SESİNİ OYNAT
+/* AHMET SESİNİ OYNAT */
 async function speakNews(){
  if(isRecording){
   setStatus('Video kaydı sırasında yeni ses başlatılamaz.');
@@ -268,7 +316,7 @@ async function speakNews(){
 
 $('speakNewsBtn').addEventListener('click',speakNews);
 
-// DOSYA SEÇİMİ
+/* DOSYA SEÇİMİ */
 $('pickImgBtn').onclick=()=>$('imgInput').click();
 $('pickAudBtn').onclick=()=>$('audInput').click();
 
@@ -284,7 +332,7 @@ $('imgInput').addEventListener('change',e=>{
  im.src=URL.createObjectURL(f);
 });
 
-// AĞIZ KONUMU
+/* AĞIZ KONUMU */
 function detectMouthPosition(){
  if(!base)return null;
 
@@ -313,7 +361,7 @@ function resetMouthPosition(){
  syncSliders();
 }
 
-// GÖRSELİ HAZIRLA
+/* GÖRSELİ HAZIRLA */
 function setupImage(im){
  const MAX=1080;
  const s=Math.min(1,MAX/Math.max(im.naturalWidth,im.naturalHeight));
@@ -343,7 +391,7 @@ $('detectBtn').addEventListener('click',()=>{
  setStatus('Başlangıç ağız konumuna dönüldü.');
 });
 
-// SINIRLAR
+/* SINIRLAR */
 function clampRect(){
  mouth.w=Math.max(6,Math.min(mouth.w,imgW*.2));
  mouth.h=Math.max(6,Math.min(mouth.h,imgH*.15));
@@ -352,7 +400,7 @@ function clampRect(){
  mouth.y=Math.max(0,Math.min(mouth.y,imgH-mouth.h));
 }
 
-// AĞIZ MASKESİ
+/* AĞIZ MASKESİ */
 function makePatch(){
  patchLayer=null;
 
@@ -422,7 +470,7 @@ function makePatch(){
  patchLayer=patch;
 }
 
-// OFSET KAYDIRICILARI
+/* OFSET KAYDIRICILARI */
 const sliderMap=[
  ['sx','ox',v=>mouth.x=mouthBase.x+(v/100*imgW)],
  ['sy','oy',v=>mouth.y=mouthBase.y+(v/100*imgH)],
@@ -470,7 +518,7 @@ $('sm').addEventListener('input',e=>{
  $('om').textContent=maxOpen.toFixed(2);
 });
 
-// ELLE KUTU DÜZENLEME
+/* ELLE KUTU DÜZENLEME */
 const opposite={tl:'br',br:'tl',tr:'bl',bl:'tr'};
 
 function toImg(e){
@@ -555,13 +603,13 @@ canvas.addEventListener('pointermove',e=>{
 canvas.addEventListener('pointerup',()=>drag=null);
 canvas.addEventListener('pointercancel',()=>drag=null);
 
-// DÜZENLEME AÇ/KAPAT
+/* DÜZENLEME AÇ/KAPAT */
 $('editBtn').addEventListener('click',()=>{
  editing=!editing;
  $('editBtn').textContent='Ağız alanı düzenleme: '+(editing?'AÇIK':'KAPALI');
 });
 
-// SES YÜKLE
+/* SES YÜKLE */
 $('audInput').addEventListener('change',e=>{
  const f=e.target.files[0];
  if(!f)return;
@@ -577,7 +625,7 @@ $('audInput').addEventListener('change',e=>{
  setStatus('Ses yüklendi: '+f.name);
 });
 
-// SES ANALİZİ
+/* SES ANALİZİ */
 function ensureAudioGraph(){
  if(actx)return;
 
@@ -628,7 +676,7 @@ $('restartBtn').onclick=()=>{
  audio.currentTime=0;
 };
 
-// AĞIZ HAREKETİ
+/* AĞIZ HAREKETİ */
 function patchAlpha(){
  return Math.max(0,Math.min(1,(level-.03)/.2));
 }
@@ -658,13 +706,124 @@ function drawMouthOpening(){
  ctx.restore();
 }
 
-// GÖRÜNTÜ
+/* HABER EKRANI */
+function drawNewsScreen(){
+ if(!base||!newsSlides.length)return;
+
+ const duration=audio.duration;
+
+ if(!Number.isFinite(duration)||duration<=0)return;
+
+ const progress=Math.max(0,Math.min(.9999,audio.currentTime/duration));
+ const index=Math.min(
+  newsSlides.length-1,
+  Math.floor(progress*newsSlides.length)
+ );
+
+ currentStoryIndex=index;
+
+ const item=newsSlides[index];
+ if(!item)return;
+
+ /*
+  Ekran konumu ilk taslak değerleridir.
+  Robot görselinin gerçek ekran alanına göre testte ayarlanacaktır.
+ */
+ const x=Math.round(imgW*.586);
+ const y=Math.round(imgH*.058);
+ const w=Math.round(imgW*.238);
+ const h=Math.round(imgH*.52);
+
+ ctx.save();
+
+ /* Ekran çerçevesi */
+ ctx.fillStyle='#171e2b';
+ ctx.fillRect(x-5,y-5,w+10,h+10);
+
+ ctx.beginPath();
+ ctx.rect(x,y,w,h);
+ ctx.clip();
+
+ /* Ekran zemini */
+ ctx.fillStyle='#101c2c';
+ ctx.fillRect(x,y,w,h);
+
+ if(item.image){
+  const im=item.image;
+  const scale=Math.max(w/im.naturalWidth,h/im.naturalHeight);
+  const dw=im.naturalWidth*scale;
+  const dh=im.naturalHeight*scale;
+  ctx.drawImage(
+   im,
+   x+(w-dw)/2,
+   y+(h-dh)/2,
+   dw,
+   dh
+  );
+
+  /* Fotoğraf altı hafif koyu başlık bandı */
+  const bandH=Math.round(h*.28);
+  const gradient=ctx.createLinearGradient(0,y+h-bandH,0,y+h);
+  gradient.addColorStop(0,'rgba(0,0,0,0)');
+  gradient.addColorStop(1,'rgba(0,0,0,.88)');
+  ctx.fillStyle=gradient;
+  ctx.fillRect(x,y+h-bandH,w,bandH);
+ }else{
+  ctx.fillStyle='#162b43';
+  ctx.fillRect(x,y,w,h);
+  ctx.fillStyle='#ffae45';
+  ctx.font=`bold ${Math.max(12,Math.round(w*.075))}px sans-serif`;
+  ctx.textAlign='center';
+  ctx.fillText('ULAK HABER',x+w/2,y+h*.25);
+ }
+
+ /* Haber başlığı */
+ const title=(item.title||'Günün haberi').trim();
+ const maxChars=23;
+ const lines=[];
+
+ for(let i=0;i<title.length;i+=maxChars){
+  lines.push(title.slice(i,i+maxChars));
+  if(lines.length>=4)break;
+ }
+
+ ctx.fillStyle='#ffffff';
+ ctx.textAlign='left';
+ ctx.font=`bold ${Math.max(10,Math.round(w*.075))}px sans-serif`;
+
+ const lineHeight=Math.max(13,Math.round(w*.09));
+ const startY=y+h-lineHeight*(lines.length+1);
+
+ lines.forEach((line,i)=>{
+  ctx.fillText(line,x+Math.round(w*.06),startY+i*lineHeight,w*.88);
+ });
+
+ /* Kaynak ve lisans bilgisi */
+ const credit=item.imageCredit||item.imageArtist||'';
+ const license=item.imageLicense||'';
+ const creditText=[credit,license].filter(Boolean).join(' · ');
+
+ if(creditText){
+  ctx.fillStyle='rgba(0,0,0,.78)';
+  ctx.fillRect(x,y+h-15,w,15);
+  ctx.fillStyle='#ffffff';
+  ctx.font=`${Math.max(6,Math.round(w*.025))}px sans-serif`;
+  ctx.fillText(creditText.slice(0,65),x+3,y+h-4,w-6);
+ }
+
+ ctx.restore();
+}
+
+/* GÖRÜNTÜ */
 function render(){
  if(!base)return;
 
  ctx.globalAlpha=1;
  ctx.filter='none';
  ctx.drawImage(base,0,0);
+
+ /* Haber fotoğrafını robotun arkasındaki ekrana çiz */
+ drawNewsScreen();
 
  const a=patchAlpha();
 
@@ -679,7 +838,7 @@ function render(){
  if(editing&&!isRecording)drawOverlay();
 }
 
-// MAVİ DÜZENLEME KUTUSU
+/* MAVİ DÜZENLEME KUTUSU */
 function drawOverlay(){
  ctx.save();
  ctx.setLineDash([8,6]);
@@ -699,7 +858,7 @@ function drawOverlay(){
  ctx.restore();
 }
 
-// VİDEO KAYDI
+/* VİDEO KAYDI */
 function pickMime(){
  const list=[
   'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
@@ -718,7 +877,6 @@ async function startRecording(){
   return;
  }
 
- // MP3 elle seçilmediyse güncel haber metninin Ahmet sesini üret.
  if(audioSourceType!=='file'){
   const text=getNewsText();
 
@@ -745,6 +903,16 @@ async function startRecording(){
  if(typeof MediaRecorder==='undefined'||!canvas.captureStream){
   setStatus('Tarayıcı video kaydını desteklemiyor.');
   return;
+ }
+
+ /* Görsellerin yüklenmesini bekle */
+ if(newsImagesLoading){
+  setStatus('Haber görselleri yükleniyor. Lütfen bekleyin...');
+  const started=Date.now();
+
+  while(newsImagesLoading&&Date.now()-started<45000){
+   await new Promise(resolve=>setTimeout(resolve,200));
+  }
  }
 
  const mime=pickMime();
@@ -838,7 +1006,7 @@ audio.addEventListener('ended',()=>{
 $('recBtn').onclick=startRecording;
 $('stopRecBtn').onclick=stopRecording;
 
-// VARSAYILAN ULAK GÖRSELİ
+/* VARSAYILAN ULAK GÖRSELİ */
 const defaultImage=new Image();
 defaultImage.onload=()=>setupImage(defaultImage);
 defaultImage.onerror=()=>{
@@ -846,11 +1014,10 @@ defaultImage.onerror=()=>{
 };
 defaultImage.src='/ulak-studio.png';
 
-// ANİMASYON DÖNGÜSÜ
+/* ANİMASYON DÖNGÜSÜ */
 function frame(){
  let target=0;
 
- // AHMET SESİNİN GERÇEK SES DALGASINDAN AĞIZ HAREKETİ
  if(analyser&&!audio.paused&&!audio.ended){
   analyser.getByteTimeDomainData(sampleBuf);
 
@@ -876,4 +1043,3 @@ requestAnimationFrame(frame);
 </script>
 </body>
 </html>
- 
