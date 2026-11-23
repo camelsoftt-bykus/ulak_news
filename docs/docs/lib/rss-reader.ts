@@ -1,8 +1,9 @@
-
 import Parser from "rss-parser";
 import { newsSources } from "./news-sources";
 
 const parser = new Parser();
+
+const MAX_DAILY_NEWS = 8;
 
 export type CollectedNews = {
   sourceId: string;
@@ -354,9 +355,12 @@ function buildSearchQueries(
 
   for (const entity of verifiedEntities) {
     if (queries.length >= 3) break;
-    if (!queries.some((query) =>
-      normalizeText(query).includes(normalizeText(entity))
-    )) {
+
+    if (
+      !queries.some((query) =>
+        normalizeText(query).includes(normalizeText(entity))
+      )
+    ) {
       queries.push(entity);
     }
   }
@@ -364,6 +368,13 @@ function buildSearchQueries(
   return queries;
 }
 
+/*
+ * Görsel puanlaması:
+ * - Sadece özel isim eşleşmesi artık yeterli değildir.
+ * - Özel isim ile haber konusu birlikte eşleşmelidir.
+ * - Özel isim bulunamıyorsa en az üç konu kelimesi eşleşmelidir.
+ * - Tek veya iki genel kelimeyle alakasız fotoğraf kabul edilmez.
+ */
 function scoreImage(
   page: CommonsPage,
   description: string,
@@ -371,34 +382,35 @@ function scoreImage(
   verifiedEntities: string[]
 ): { score: number; reason: string } {
   const searchableText = `${page.title} ${description}`;
+  const searchableWords = new Set(getWords(searchableText));
 
   const matchedEntities = verifiedEntities.filter((entity) =>
     containsPhrase(searchableText, entity)
   );
 
-  if (matchedEntities.length > 0) {
+  const uniqueQueryWords = [...new Set(imageQueryWords)];
+
+  const matchedQueryWords = uniqueQueryWords.filter((word) =>
+    searchableWords.has(word)
+  );
+
+  if (matchedEntities.length > 0 && matchedQueryWords.length >= 1) {
     return {
-      score: 100 + matchedEntities.length,
-      reason: `Doğrulanmış özel isim eşleşti: ${matchedEntities.join(", ")}`
+      score: 100 + matchedEntities.length * 5 + matchedQueryWords.length,
+      reason: `Özel isim ve konu eşleşti: ${matchedEntities.join(", ")}; ${matchedQueryWords.join(", ")}`
     };
   }
 
-  const searchableWords = new Set(getWords(searchableText));
-  const matchedQueryWords = [
-    ...new Set(imageQueryWords)
-  ].filter((word) => searchableWords.has(word));
-
-  // Yalnızca tek bir genel kelime eşleşmesi yeterli değildir.
-  if (matchedQueryWords.length < 2) {
+  if (matchedQueryWords.length >= 3) {
     return {
-      score: 0,
-      reason: `Yetersiz eşleşme (${matchedQueryWords.length} kelime)`
+      score: 10 + matchedQueryWords.length,
+      reason: `Konu kelimeleri eşleşti: ${matchedQueryWords.join(", ")}`
     };
   }
 
   return {
-    score: matchedQueryWords.length,
-    reason: `İngilizce arama eşleşmesi: ${matchedQueryWords.join(", ")}`
+    score: 0,
+    reason: `Yetersiz konu eşleşmesi (${matchedQueryWords.length} kelime)`
   };
 }
 
@@ -510,7 +522,6 @@ export async function findCommonsImage(
           continue;
         }
 
-        // HTML açıklama temizlenir ve aşırı uzun metin sınırlandırılır.
         const description = getMetadata(
           metadata,
           "ImageDescription"
@@ -580,33 +591,58 @@ export async function findCommonsImage(
   return bestImage;
 }
 
+/*
+ * Haber seçimi:
+ * Önce her bölgeden bir haber seçilir.
+ * Ardından kalan haberler öncelik ve tarihe göre eklenir.
+ * Haber sayısı 8'i geçmez; daha az nitelikli haber varsa
+ * sonuç daha kısa kalır.
+ */
 function balanceSources(items: CollectedNews[]): CollectedNews[] {
-  const regions = ["local", "ankara", "turkey", "world", "science"] as const;
+  const regions = [
+    "local",
+    "ankara",
+    "turkey",
+    "world",
+    "science"
+  ] as const;
 
   const selected: CollectedNews[] = [];
   const usedLinks = new Set<string>();
 
+  const getDate = (item: CollectedNews): number => {
+    if (!item.publishedAt) return 0;
+
+    const date = new Date(item.publishedAt).getTime();
+    return Number.isFinite(date) ? date : 0;
+  };
+
+  const newestFirst = (a: CollectedNews, b: CollectedNews) =>
+    getDate(b) - getDate(a);
+
+  // Önce bölgelerin dengeli temsil edilmesini sağla.
   for (const region of regions) {
+    if (selected.length >= MAX_DAILY_NEWS) break;
+
     const sourceIds = newsSources
       .filter((source) => source.enabled && source.region === region)
       .map((source) => source.id);
 
     const candidate = items
-      .filter((item) => sourceIds.includes(item.sourceId))
-      .sort((a, b) => {
-        const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
-        const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
-        return dateB - dateA;
-      })[0];
+      .filter(
+        (item) =>
+          sourceIds.includes(item.sourceId) &&
+          !usedLinks.has(item.link)
+      )
+      .sort(newestFirst)[0];
 
-    if (candidate && !usedLinks.has(candidate.link)) {
+    if (candidate) {
       selected.push(candidate);
       usedLinks.add(candidate.link);
     }
-
-    if (selected.length === 5) return selected;
   }
 
+  // Kalan yerleri kaynak önceliği ve yayın tarihine göre doldur.
   const remaining = items
     .filter((item) => !usedLinks.has(item.link))
     .sort((a, b) => {
@@ -614,13 +650,12 @@ function balanceSources(items: CollectedNews[]): CollectedNews[] {
         return a.sourcePriority - b.sourcePriority;
       }
 
-      const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
-      const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
-      return dateB - dateA;
+      return newestFirst(a, b);
     });
 
   for (const item of remaining) {
-    if (selected.length >= 5) break;
+    if (selected.length >= MAX_DAILY_NEWS) break;
+
     selected.push(item);
     usedLinks.add(item.link);
   }
@@ -675,7 +710,6 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
     }
   }
 
-  // Bu aşamada görsel araması yapılmaz.
-  // Görsel araması, Gemini imageQuery ürettikten sonra presenter tarafından çağrılır.
+  // Görsel araması, Gemini imageQuery ürettikten sonra presenter tarafından yapılır.
   return balanceSources(Array.from(uniqueNews.values()));
 }
