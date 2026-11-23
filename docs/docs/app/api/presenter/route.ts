@@ -1,7 +1,45 @@
-import { collectRssNews } from "@/lib/rss-reader";
+
+import {
+  collectRssNews,
+  findCommonsImage
+} from "@/lib/rss-reader";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+type GeneratedStory = {
+  index?: number;
+  summary?: string;
+  whyImportant?: string;
+  imageQuery?: string;
+  imageEntities?: string[];
+};
+
+function cleanImageQuery(value: unknown): string {
+  if (typeof value !== "string") return "";
+
+  const words = value
+    .replace(/[^a-zA-Z0-9\s-]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 5);
+
+  // En az iki İngilizce arama kelimesi olmalı.
+  if (words.length < 2) return "";
+
+  return words.join(" ");
+}
+
+function cleanImageEntities(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter((item) => item.length >= 3 && item.length <= 80)
+    .slice(0, 3);
+}
 
 export async function GET() {
   try {
@@ -34,8 +72,9 @@ Yayın tarihi: ${item.publishedAt || "Belirtilmemiş"}
     const prompt = `
 Sen ULAK adlı Türkçe haber merkezinin editörüsün.
 
-Aşağıdaki haber kayıtlarını kullanarak hem haber kartları için
-ayrı ayrı açıklamalar hem de yaklaşık 90 saniyelik bir sunucu metni hazırla.
+Aşağıdaki haber kayıtlarını kullanarak haber kartları için
+ayrı ayrı açıklamalar, görsel arama bilgileri ve yaklaşık
+90 saniyelik bir sunucu metni hazırla.
 
 DOĞRULUK KURALLARI:
 - Yalnızca verilen haber kayıtlarındaki bilgileri kullan.
@@ -48,7 +87,17 @@ DOĞRULUK KURALLARI:
 HER HABER İÇİN:
 - summary: Haberin ne olduğunu anlatan 2-3 kısa cümle.
 - whyImportant: Bu gelişmenin neden önemli olduğunu, yalnızca verilen bilgilerden hareketle 1-2 cümleyle açıkla.
-- Haber kaydında olmayan neden-sonuç ilişkileri kurma.
+- imageQuery: Wikimedia Commons'ta görsel aramak için İngilizce 2-5 kelimelik ifade.
+- imageEntities: Haber başlığında veya açıklamasında AYNEN geçen,
+  görsel aramasında işe yarayabilecek özel isimler.
+- imageEntities içine yalnızca haber kaydında gerçekten yazan
+  kişi, kurum, şehir, ülke, yapı veya proje isimlerini koy.
+- Haberde geçmeyen özel isimleri kesinlikle ekleme.
+- Özel isim yoksa imageEntities boş dizi olsun.
+- imageQuery haberin gerçek konusunu tarif etsin.
+- Genel ve belirsiz ifadeler yerine somut kavramlar kullan.
+- Görsel arama ifadesine haberde bulunmayan kişi veya yer ekleme.
+- Uygun bir İngilizce ifade oluşturulamıyorsa imageQuery boş olsun.
 
 YEREL ÖNCELİK:
 Sincan, Etimesgut, Ankara, Türkiye, dünya ve bilim/uzay.
@@ -71,13 +120,16 @@ Aşağıdaki yapıyı aynen uygula:
     {
       "index": 1,
       "summary": "Haberin kısa özeti",
-      "whyImportant": "Neden önemli olduğu"
+      "whyImportant": "Neden önemli olduğu",
+      "imageQuery": "English visual search phrase",
+      "imageEntities": ["Haberde geçen özel isim"]
     }
   ]
 }
 
 Her haber için stories listesinde bir kayıt oluştur.
 index numarası haber sırasıyla aynı olmalı.
+imageEntities her zaman bir dizi olmalı.
 
 HABER KAYITLARI:
 ${newsText}
@@ -102,7 +154,7 @@ ${newsText}
             ],
             generationConfig: {
               temperature: 0.2,
-              maxOutputTokens: 3000,
+              maxOutputTokens: 4000,
               responseMimeType: "application/json"
             }
           }),
@@ -151,11 +203,7 @@ ${newsText}
 
     let result: {
       script?: string;
-      stories?: {
-        index?: number;
-        summary?: string;
-        whyImportant?: string;
-      }[];
+      stories?: GeneratedStory[];
     };
 
     try {
@@ -179,23 +227,60 @@ ${newsText}
       );
     }
 
-    const enrichedNews = news.map((item, index) => {
+    const stories = news.map((item, index) => {
       const story = result.stories?.find(
         (entry) => entry.index === index + 1
       );
 
       return {
-        ...item,
-        editorialSummary:
-          typeof story?.summary === "string" && story.summary.trim()
-            ? story.summary.trim()
-            : item.summary || "Bu haber için ayrı özet oluşturulamadı.",
-        whyImportant:
-          typeof story?.whyImportant === "string" && story.whyImportant.trim()
-            ? story.whyImportant.trim()
-            : "Kaynakta bu konunun önemi hakkında yeterli açıklama bulunmuyor."
+        item,
+        story,
+        imageQuery: cleanImageQuery(story?.imageQuery),
+        imageEntities: cleanImageEntities(story?.imageEntities)
       };
     });
+
+    // Görseller Gemini'nin imageQuery üretmesinden sonra aranır.
+    // Her haberin araması ayrı ayrı hata yakalar; bir görsel hatası
+    // bütün haber sunumunu durdurmaz.
+    const enrichedNews = await Promise.all(
+      stories.map(async ({ item, story, imageQuery, imageEntities }) => {
+        let image:
+          | Awaited<ReturnType<typeof findCommonsImage>>
+          | null = null;
+
+        if (imageQuery || imageEntities.length > 0) {
+          try {
+            image = await findCommonsImage(item, {
+              imageQuery,
+              imageEntities
+            });
+          } catch (error) {
+            console.error(
+              `[ULAK görsel] Haber görseli alınamadı: ${item.title}`,
+              error
+            );
+          }
+        } else {
+          console.log(
+            `[ULAK görsel] Arama ifadesi üretilemedi: ${item.title}`
+          );
+        }
+
+        return {
+          ...item,
+          ...(image || {}),
+          editorialSummary:
+            typeof story?.summary === "string" && story.summary.trim()
+              ? story.summary.trim()
+              : item.summary || "Bu haber için ayrı özet oluşturulamadı.",
+          whyImportant:
+            typeof story?.whyImportant === "string" && story.whyImportant.trim()
+              ? story.whyImportant.trim()
+              : "Kaynakta bu konunun önemi hakkında yeterli açıklama bulunmuyor."
+        };
+      })
+    );
 
     const sourceList = news.map((item, index) =>
       `${index + 1}. ${item.sourceName}: ${item.title}\n${item.link}`
