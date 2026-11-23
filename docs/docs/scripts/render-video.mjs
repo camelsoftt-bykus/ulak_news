@@ -48,7 +48,9 @@ async function main() {
     imageLicense: item.imageLicense || "",
     imageLicenseUrl: item.imageLicenseUrl || "",
     imageArtist: item.imageArtist || "",
-    imageCredit: item.imageCredit || ""
+    imageCredit: item.imageCredit || "",
+    imageKind: item.imageKind || "none",
+    imageCaption: item.imageCaption || ""
   }));
 
   console.log(`Haber sayısı: ${newsForAnimation.length}`);
