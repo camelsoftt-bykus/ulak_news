@@ -1,4 +1,3 @@
-
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -93,7 +92,6 @@ async function main() {
     });
 
     await page.waitForSelector("#newsScript");
-    await page.waitForSelector("#audInput");
     await page.waitForSelector("#recBtn");
 
     console.log("Haber metni animasyona aktarılıyor...");
@@ -123,8 +121,7 @@ async function main() {
     await page.locator("#audInput").setInputFiles(DAILY_MP3);
 
     await page.waitForFunction(() => {
-      const status = document.body.innerText;
-      return status.includes("Ses yüklendi:");
+      return document.body.innerText.includes("Ses yüklendi:");
     }, null, { timeout: 60000 });
 
     const recordButton = page.locator("#recBtn");
@@ -142,7 +139,6 @@ async function main() {
     await recordButton.click();
 
     const download = await downloadPromise;
-
     const downloadError = await download.failure();
 
     if (downloadError) {
@@ -177,9 +173,11 @@ async function main() {
     fs.unlinkSync(RAW_VIDEO);
 
     console.log("ULAK videosu başarıyla oluşturuldu.");
-    console.log(`Video boyutu: ${(
-      fs.statSync(DAILY_MP4).size / 1024 / 1024
-    ).toFixed(2)} MB`);
+    console.log(
+      `Video boyutu: ${(
+        fs.statSync(DAILY_MP4).size / 1024 / 1024
+      ).toFixed(2)} MB`
+    );
 
     await context.close();
   } finally {
