@@ -25,7 +25,7 @@ function cleanImageQuery(value: unknown): string {
   if (typeof value !== "string") return "";
 
   const words = value
-    .replace(/[^a-zA-Z0-9\s-]/g, " ")
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
     .trim()
     .split(/\s+/)
     .filter(Boolean)
@@ -82,74 +82,54 @@ Yayın tarihi: ${item.publishedAt || "Belirtilmemiş"}
     const prompt = `
 Sen ULAK adlı Türkçe haber merkezinin editörüsün.
 
-Aşağıdaki haber kayıtlarından, yaklaşık 90 saniyelik doğal bir Türkçe haber sunumu hazırla.
+Aşağıdaki haber kayıtlarından yaklaşık 90 saniyelik doğal bir Türkçe haber sunumu hazırla.
 
-DOĞRULUK KURALLARI:
-- Yalnızca verilen haber kayıtlarındaki bilgileri kullan.
-- Yeni olay, kişi, kurum, tarih, sayı veya açıklama uydurma.
-- Kaynakta olmayan ayrıntıları tahmin etme.
-- Bir iddiayı kesinleşmiş gerçek gibi sunma.
-- Bilgi yetersizse bunu açıkça belirt.
+DOĞRULUK:
+- Yalnızca verilen haber bilgilerini kullan.
+- Olay, kişi, kurum, tarih veya sayı uydurma.
 - Haberleri tarafsız ve anlaşılır Türkçeyle anlat.
+- Haber sırasını değiştirme.
 - Haber sayısı kadar stories kaydı oluştur.
-- Haber sırasını kesinlikle değiştirme.
 
 HER HABER İÇİN:
-- narration: Ahmet'in seslendireceği metin. Başlığı da doğal biçimde anlatıma kat. Yaklaşık 2-3 kısa cümle kullan.
-- summary: Haber kartında gösterilecek 2-3 kısa cümle.
-- whyImportant: Bu gelişmenin neden önemli olduğunu, yalnızca verilen bilgilerden hareketle 1-2 cümleyle açıkla.
-- imageQuery: Wikimedia Commons'ta görsel aramak için İngilizce 2-5 kelimelik ifade.
-- imageEntities: Haber başlığında veya açıklamasında AYNEN geçen, görsel aramasında işe yarayabilecek özel isimler.
-- imageEntities içine yalnızca haber kaydında gerçekten yazan kişi, kurum, şehir, ülke, yapı veya proje isimlerini koy.
-- Haberde geçmeyen özel isimleri kesinlikle ekleme.
-- Özel isim yoksa imageEntities boş dizi olsun.
-- imageQuery haberin gerçek konusunu tarif etsin.
-- Genel ve belirsiz ifadeler yerine somut kavramlar kullan.
+- narration: Ahmet'in seslendireceği 2-3 kısa cümle.
+- summary: 2-3 kısa cümlelik haber özeti.
+- whyImportant: Neden önemli olduğunu açıkla.
+- imageQuery: Haber konusunu somut biçimde anlatan İngilizce 2-5 kelime.
+- imageEntities: Yalnızca haberde gerçekten geçen özel isimler.
 - Görsel arama ifadesine haberde bulunmayan kişi veya yer ekleme.
-- Uygun bir İngilizce ifade oluşturulamıyorsa imageQuery boş olsun.
-
-YEREL ÖNCELİK:
-Sincan, Etimesgut, Ankara, Türkiye, dünya ve bilim/uzay.
-Önemli haberleri önceliklendir; önemsiz haberleri sırf sayıyı tamamlamak için büyütme.
+- Uygun ifade oluşturulamıyorsa imageQuery boş olsun.
 
 SUNUM:
-- intro: Kısa selamlama ve günün haberlerine giriş. 1-2 cümle.
-- closing: Kısa, doğal kapanış. 1 cümle.
-- Her haberin narration metni tek başına seslendirildiğinde doğal duyulmalı.
-- Haber metinlerinde "bir sonraki haberimiz" gibi başka habere bağlı ifadeler kullanma.
-- Kaynak listesi, URL veya teknik açıklama seslendirme metinlerine ekleme.
-- Toplam sunum yaklaşık 90 saniye sürsün. Haber sayısı arttığında her haberin anlatımını kısalt.
-- Samimi, güven veren ve akıcı bir haber sunucusu üslubu kullan.
+- intro: Kısa selamlama.
+- closing: Kısa kapanış.
+- Toplam süre yaklaşık 90 saniye olsun.
+- Doğal, samimi ve tarafsız bir sunucu üslubu kullan.
+- Kaynak listesi seslendirme metnine eklenmesin.
 
-ÇIKTI:
-Yalnızca geçerli JSON üret. Markdown veya kod bloğu kullanma.
-Aşağıdaki yapıyı aynen uygula:
+Yalnızca geçerli JSON üret. Markdown kullanma.
 
 {
-  "intro": "Kısa açılış metni",
-  "closing": "Kısa kapanış metni",
+  "intro": "Açılış",
+  "closing": "Kapanış",
   "stories": [
     {
       "index": 1,
-      "narration": "Bu haber için seslendirilecek metin",
-      "summary": "Haberin kısa özeti",
-      "whyImportant": "Neden önemli olduğu",
+      "narration": "Seslendirilecek haber metni",
+      "summary": "Haber özeti",
+      "whyImportant": "Önemi",
       "imageQuery": "English visual search phrase",
-      "imageEntities": ["Haberde geçen özel isim"]
+      "imageEntities": []
     }
   ]
 }
-
-Her haber için stories listesinde bir kayıt oluştur.
-index numarası haber sırasıyla aynı olmalı.
-imageEntities her zaman bir dizi olmalı.
-narration her zaman dolu bir metin olmalı.
 
 HABER KAYITLARI:
 ${newsText}
 `;
 
     let response: Response | undefined;
+    let lastGeminiError = "";
 
     for (let attempt = 1; attempt <= 2; attempt++) {
       response = await fetch(
@@ -177,7 +157,19 @@ ${newsText}
         }
       );
 
-      if (response.ok || response.status !== 503 || attempt === 2) {
+      if (response.ok) break;
+
+      lastGeminiError = await response.text();
+
+      console.error(
+        `[ULAK Gemini] Deneme ${attempt}, HTTP ${response.status}:`,
+        lastGeminiError
+      );
+
+      if (
+        ![429, 500, 502, 503, 504].includes(response.status) ||
+        attempt === 2
+      ) {
         break;
       }
 
@@ -189,13 +181,11 @@ ${newsText}
     }
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini API hatası:", errorText);
-
       return Response.json(
         {
           error: "Gemini hatası",
-          geminiStatus: response.status
+          geminiStatus: response.status,
+          detail: lastGeminiError.slice(0, 1500)
         },
         { status: 502 }
       );
@@ -210,7 +200,11 @@ ${newsText}
 
     if (!generatedText) {
       return Response.json(
-        { error: "Gemini boş yanıt döndürdü." },
+        {
+          error: "Gemini boş yanıt döndürdü.",
+          finishReason: data.candidates?.[0]?.finishReason || "Bilinmiyor",
+          promptFeedback: data.promptFeedback || null
+        },
         { status: 502 }
       );
     }
@@ -223,7 +217,10 @@ ${newsText}
       console.error("Gemini JSON yanıtı okunamadı:", generatedText);
 
       return Response.json(
-        { error: "Gemini yanıtı beklenen biçimde oluşturulamadı." },
+        {
+          error: "Gemini yanıtı beklenen biçimde oluşturulamadı.",
+          detail: generatedText.slice(0, 1000)
+        },
         { status: 502 }
       );
     }
@@ -255,35 +252,45 @@ ${newsText}
       };
     });
 
-    // Her haberin görseli kendi haber kaydıyla eşleştirilir.
-    // Bir görsel aramasının başarısız olması diğer haberleri durdurmaz.
     const enrichedNews = await Promise.all(
       stories.map(async ({ item, story, imageQuery, imageEntities }) => {
-        let image:
-          | Awaited<ReturnType<typeof findCommonsImage>>
-          | null = null;
+        // Önce haber kaynağının kendi fotoğrafını kullan.
+        // Kaynak fotoğrafı varsa Commons araması yapma.
+        let image: Awaited<
+          ReturnType<typeof findCommonsImage>
+        > = null;
 
-        if (imageQuery || imageEntities.length > 0) {
+        let imageSource = "none";
+
+        if (item.imageUrl) {
+          imageSource = "article";
+        } else if (imageQuery || imageEntities.length > 0) {
           try {
             image = await findCommonsImage(item, {
               imageQuery,
               imageEntities
             });
+
+            if (image) {
+              imageSource = "commons";
+            }
           } catch (error) {
             console.error(
               `[ULAK görsel] Haber görseli alınamadı: ${item.title}`,
               error
             );
           }
-        } else {
-          console.log(
-            `[ULAK görsel] Arama ifadesi üretilemedi: ${item.title}`
-          );
         }
+
+        const finalImage = image
+          ? { ...image, imageSource }
+          : item.imageUrl
+            ? { imageSource }
+            : { imageSource };
 
         return {
           ...item,
-          ...(image || {}),
+          ...finalImage,
           editorialSummary:
             typeof story?.summary === "string" && story.summary.trim()
               ? story.summary.trim()
@@ -296,7 +303,6 @@ ${newsText}
       })
     );
 
-    // Açılış, her haber ve kapanış ayrı ses parçası olarak döndürülür.
     const intro =
       cleanNarration(result.intro) ||
       "Merhaba, ULAK haber merkezine hoş geldiniz. Günün önemli gelişmeleriyle karşınızdayız.";
@@ -323,8 +329,6 @@ ${newsText}
       }
     ];
 
-    // Ekranda gösterilecek metin seslendirme metinlerinden oluşturulur.
-    // Kaynak listesi yalnızca ekranda kalır; speechSegments içine girmez.
     const spokenScript = speechSegments
       .map((segment) => segment.text)
       .join("\n\n");
@@ -335,9 +339,24 @@ ${newsText}
 
     const script = `${spokenScript}\n\nKaynaklar:\n${sourceList}`;
 
+    const imageCount = enrichedNews.filter(
+      (item) => typeof item.imageUrl === "string" && item.imageUrl.length > 0
+    ).length;
+
+    const articleImageCount = enrichedNews.filter(
+      (item) => item.imageSource === "article"
+    ).length;
+
+    const commonsImageCount = enrichedNews.filter(
+      (item) => item.imageSource === "commons"
+    ).length;
+
     return Response.json(
       {
         count: enrichedNews.length,
+        imageCount,
+        articleImageCount,
+        commonsImageCount,
         script,
         speechSegments,
         news: enrichedNews
@@ -353,7 +372,10 @@ ${newsText}
     console.error("ULAK sunucu hatası:", error);
 
     return Response.json(
-      { error: "Sunum hazırlanırken bir hata oluştu." },
+      {
+        error: "Sunum hazırlanırken bir hata oluştu.",
+        detail: error instanceof Error ? error.message : "Bilinmeyen hata"
+      },
       { status: 500 }
     );
   }
