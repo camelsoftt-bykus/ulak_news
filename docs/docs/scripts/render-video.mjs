@@ -1,132 +1,193 @@
-import { chromium } from "playwright";
+
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { promisify } from "node:util";
+import { execFile } from "node:child_process";
+import { chromium } from "playwright";
 
-const root = process.cwd();
-const dataDir = path.join(root, "public", "data");
+const execFileAsync = promisify(execFile);
 
-const jsonPath = path.join(dataDir, "daily.json");
-const audioPath = path.join(dataDir, "daily.mp3");
-const outputPath = path.join(dataDir, "daily.mp4");
+const ROOT = process.cwd();
+const DATA_DIR = path.join(ROOT, "public", "data");
 
-if (!fs.existsSync(jsonPath) || !fs.existsSync(audioPath)) {
-  throw new Error("Günlük haber veya MP3 dosyası bulunamadı.");
-}
+const DAILY_JSON = path.join(DATA_DIR, "daily.json");
+const DAILY_MP3 = path.join(DATA_DIR, "daily.mp3");
+const DAILY_MP4 = path.join(DATA_DIR, "daily.mp4");
+const RAW_VIDEO = path.join(DATA_DIR, "daily-raw.webm");
 
-const daily = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+const ANIMATION_URL =
+  "https://ulaknews-docs.vercel.app/animasyon.html";
 
-if (!daily.script) {
-  throw new Error("Günlük sunum metni bulunamadı.");
-}
+const TIMEOUT = 12 * 60 * 1000;
 
-const newsForAnimation = Array.isArray(daily.news)
-  ? daily.news.map((item) => ({
-      title: item.title || "",
-      summary: item.editorialSummary || item.summary || "",
-      whyImportant: item.whyImportant || "",
-      link: item.link || "",
-      sourceName: item.sourceName || "",
-      imageUrl: item.imageUrl || "",
-      imagePageUrl: item.imagePageUrl || "",
-      imageTitle: item.imageTitle || "",
-      imageLicense: item.imageLicense || "",
-      imageLicenseUrl: item.imageLicenseUrl || "",
-      imageArtist: item.imageArtist || "",
-      imageCredit: item.imageCredit || ""
-    }))
-  : [];
+async function main() {
+  console.log("ULAK video üretimi başlıyor...");
 
-const browser = await chromium.launch({ headless: true });
-
-try {
-  const page = await browser.newPage({
-    viewport: { width: 1080, height: 1080 },
-    acceptDownloads: true
-  });
-
-  page.on("pageerror", error => {
-    console.error("Animasyon sayfası hatası:", error.message);
-  });
-
-  await page.goto(
-    "https://ulaknews-docs.vercel.app/animasyon.html",
-    { waitUntil: "domcontentloaded", timeout: 120000 }
-  );
-
-  await page.waitForFunction(
-    () => document.querySelector("#cv")?.width > 0,
-    null,
-    { timeout: 120000 }
-  );
-
-  // Haber bilgilerini animasyon sayfasına aktar.
-  await page.evaluate((news) => {
-    window.ULAK_NEWS = news;
-  }, newsForAnimation);
-
-  console.log(
-    `Animasyona ${newsForAnimation.length} haber aktarıldı.`
-  );
-
-  await page.locator("#newsScript").evaluate(
-    (element, script) => {
-      element.textContent = script;
-    },
-    daily.script
-  );
-
-  await page.locator("#audInput").setInputFiles(audioPath);
-
-  await page.waitForFunction(
-    () => document.querySelector("#status")?.textContent.startsWith("Ses yüklendi:"),
-    null,
-    { timeout: 30000 }
-  );
-
-  console.log("MP3 animasyon sayfasına yüklendi.");
-
-  const downloadPromise = page.waitForEvent("download", {
-    timeout: 300000
-  });
-
-  await page.locator("#recBtn").click();
-
-  await page.waitForFunction(
-    () => document.querySelector("#status")?.textContent.startsWith("Kaydediliyor"),
-    null,
-    { timeout: 60000 }
-  );
-
-  console.log("ULAK video kaydı başladı.");
-
-  const download = await downloadPromise;
-  const filename = download.suggestedFilename();
-  const extension = filename.endsWith(".mp4") ? "mp4" : "webm";
-  const rawPath = path.join(dataDir, `daily-raw.${extension}`);
-
-  await download.saveAs(rawPath);
-
-  execFileSync("ffmpeg", [
-    "-y",
-    "-i", rawPath,
-    "-c:v", "libx264",
-    "-preset", "veryfast",
-    "-pix_fmt", "yuv420p",
-    "-c:a", "aac",
-    "-b:a", "128k",
-    "-movflags", "+faststart",
-    outputPath
-  ], { stdio: "inherit" });
-
-  fs.unlinkSync(rawPath);
-
-  if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size === 0) {
-    throw new Error("MP4 video üretilemedi.");
+  if (!fs.existsSync(DAILY_JSON)) {
+    throw new Error("daily.json dosyası bulunamadı.");
   }
 
-  console.log("ULAK günlük videosu hazır:", outputPath);
+  if (!fs.existsSync(DAILY_MP3)) {
+    throw new Error("daily.mp3 dosyası bulunamadı.");
+  }
 
-} finally {
-  await browser.close();
+  const daily = JSON.parse(fs.readFileSync(DAILY_JSON, "utf8"));
+
+  if (!daily.script || !Array.isArray(daily.news)) {
+    throw new Error("Günlük haber verisi eksik veya hatalı.");
+  }
+
+  const newsForAnimation = daily.news.map((item) => ({
+    title: item.title || "",
+    summary: item.summary || "",
+    whyImportant: item.whyImportant || "",
+    link: item.link || "",
+    sourceName: item.sourceName || "",
+    imageUrl: item.imageUrl || "",
+    imagePageUrl: item.imagePageUrl || "",
+    imageTitle: item.imageTitle || "",
+    imageLicense: item.imageLicense || "",
+    imageLicenseUrl: item.imageLicenseUrl || "",
+    imageArtist: item.imageArtist || "",
+    imageCredit: item.imageCredit || ""
+  }));
+
+  console.log(`Haber sayısı: ${newsForAnimation.length}`);
+  console.log("Animasyon sayfası açılıyor...");
+
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--autoplay-policy=no-user-gesture-required"
+    ]
+  });
+
+  try {
+    const context = await browser.newContext({
+      acceptDownloads: true,
+      viewport: {
+        width: 1280,
+        height: 720
+      }
+    });
+
+    const page = await context.newPage();
+
+    page.setDefaultTimeout(60000);
+
+    page.on("console", (message) => {
+      if (message.type() === "error") {
+        console.log("Tarayıcı hatası:", message.text());
+      }
+    });
+
+    page.on("pageerror", (error) => {
+      console.log("Sayfa hatası:", error.message);
+    });
+
+    await page.goto(ANIMATION_URL, {
+      waitUntil: "networkidle",
+      timeout: 120000
+    });
+
+    await page.waitForSelector("#newsScript");
+    await page.waitForSelector("#audInput");
+    await page.waitForSelector("#recBtn");
+
+    console.log("Haber metni animasyona aktarılıyor...");
+
+    await page.locator("#newsScript").fill(daily.script);
+
+    await page.waitForFunction(
+      () => typeof window.setULAKNews === "function",
+      null,
+      { timeout: 60000 }
+    );
+
+    await page.evaluate((news) => {
+      window.setULAKNews(news);
+    }, newsForAnimation);
+
+    console.log("Haber görselleri yükleniyor...");
+
+    await page.waitForFunction(
+      () => window.ULAK_IMAGES_READY === true,
+      null,
+      { timeout: 45000 }
+    );
+
+    console.log("Ahmet'in ses dosyası yükleniyor...");
+
+    await page.locator("#audInput").setInputFiles(DAILY_MP3);
+
+    await page.waitForFunction(() => {
+      const status = document.body.innerText;
+      return status.includes("Ses yüklendi:");
+    }, null, { timeout: 60000 });
+
+    const recordButton = page.locator("#recBtn");
+
+    await recordButton.waitFor({
+      state: "visible"
+    });
+
+    console.log("Robot sunumu kaydediliyor...");
+
+    const downloadPromise = page.waitForEvent("download", {
+      timeout: TIMEOUT
+    });
+
+    await recordButton.click();
+
+    const download = await downloadPromise;
+
+    const downloadError = await download.failure();
+
+    if (downloadError) {
+      throw new Error(`Video indirme hatası: ${downloadError}`);
+    }
+
+    await download.saveAs(RAW_VIDEO);
+
+    if (!fs.existsSync(RAW_VIDEO) || fs.statSync(RAW_VIDEO).size === 0) {
+      throw new Error("Ham video dosyası oluşturulamadı.");
+    }
+
+    console.log("Video MP4 formatına dönüştürülüyor...");
+
+    await execFileAsync("ffmpeg", [
+      "-y",
+      "-i", RAW_VIDEO,
+      "-c:v", "libx264",
+      "-preset", "veryfast",
+      "-crf", "23",
+      "-pix_fmt", "yuv420p",
+      "-c:a", "aac",
+      "-b:a", "192k",
+      "-movflags", "+faststart",
+      DAILY_MP4
+    ]);
+
+    if (!fs.existsSync(DAILY_MP4) || fs.statSync(DAILY_MP4).size === 0) {
+      throw new Error("MP4 video oluşturulamadı.");
+    }
+
+    fs.unlinkSync(RAW_VIDEO);
+
+    console.log("ULAK videosu başarıyla oluşturuldu.");
+    console.log(`Video boyutu: ${(
+      fs.statSync(DAILY_MP4).size / 1024 / 1024
+    ).toFixed(2)} MB`);
+
+    await context.close();
+  } finally {
+    await browser.close();
+  }
 }
+
+main().catch((error) => {
+  console.error("ULAK video üretim hatası:", error);
+  process.exit(1);
+});
