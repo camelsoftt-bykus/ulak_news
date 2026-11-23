@@ -1,7 +1,15 @@
 import Parser from "rss-parser";
 import { newsSources } from "./news-sources";
 
-const parser = new Parser();
+const parser = new Parser({
+  customFields: {
+    item: [
+      ["media:content", "mediaContent", { keepArray: true }],
+      ["media:thumbnail", "mediaThumbnail", { keepArray: true }],
+      ["enclosure", "enclosure"]
+    ]
+  }
+});
 
 const MAX_DAILY_NEWS = 8;
 
@@ -13,7 +21,6 @@ export type CollectedNews = {
   summary: string;
   publishedAt: string | null;
   sourcePriority: number;
-
   imageUrl?: string;
   imagePageUrl?: string;
   imageTitle?: string;
@@ -147,6 +154,60 @@ function getMetaContent(html: string, name: string): string {
   return "";
 }
 
+function normalizeImageUrl(raw: string, baseUrl: string): string {
+  if (!raw) return "";
+
+  const cleaned = raw
+    .replace(/&amp;/g, "&")
+    .replace(/&#038;/g, "&")
+    .trim();
+
+  if (
+    !cleaned ||
+    cleaned.startsWith("data:") ||
+    cleaned.startsWith("blob:")
+  ) {
+    return "";
+  }
+
+  try {
+    const url = new URL(cleaned, baseUrl);
+
+    if (!["https:", "http:"].includes(url.protocol)) return "";
+    if (url.hostname === "localhost") return "";
+    if (!url.hostname.includes(".")) return "";
+
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
+function getArticleImage(html: string, articleUrl: string): string {
+  const candidates = [
+    getMetaContent(html, "og:image"),
+    getMetaContent(html, "og:image:url"),
+    getMetaContent(html, "twitter:image"),
+    getMetaContent(html, "twitter:image:src"),
+    getMetaContent(html, "thumbnail")
+  ];
+
+  for (const candidate of candidates) {
+    const imageUrl = normalizeImageUrl(candidate, articleUrl);
+    if (imageUrl) return imageUrl;
+  }
+
+  const imageMatch = html.match(
+    /<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["']/i
+  );
+
+  if (imageMatch?.[1]) {
+    return normalizeImageUrl(imageMatch[1], articleUrl);
+  }
+
+  return "";
+}
+
 function getArticlePathPattern(sourceId: string): RegExp | null {
   const patterns: Record<string, RegExp> = {
     sincan: /^\/haberler\/[^/]+\/?$/,
@@ -213,6 +274,8 @@ async function collectPageNews(
         getMetaContent(articleHtml, "article:published_time") ||
         null;
 
+      const imageUrl = getArticleImage(articleHtml, link);
+
       return {
         sourceId: source.id,
         sourceName: source.name,
@@ -220,7 +283,8 @@ async function collectPageNews(
         link,
         summary,
         publishedAt,
-        sourcePriority: source.priority
+        sourcePriority: source.priority,
+        ...(imageUrl ? { imageUrl } : {})
       } satisfies CollectedNews;
     })
   );
@@ -228,6 +292,56 @@ async function collectPageNews(
   return articles.flatMap((result) =>
     result.status === "fulfilled" ? [result.value] : []
   );
+}
+
+function getRssImage(item: any, articleUrl: string): string {
+  const candidates: string[] = [];
+
+  if (typeof item.enclosure?.url === "string") {
+    candidates.push(item.enclosure.url);
+  }
+
+  if (typeof item.image?.url === "string") {
+    candidates.push(item.image.url);
+  }
+
+  if (typeof item.itunes?.image === "string") {
+    candidates.push(item.itunes.image);
+  }
+
+  const mediaFields = [
+    item.mediaContent,
+    item.mediaThumbnail
+  ].flatMap((value: any) =>
+    Array.isArray(value) ? value : value ? [value] : []
+  );
+
+  for (const media of mediaFields) {
+    if (typeof media?.$?.url === "string") {
+      candidates.push(media.$.url);
+    }
+
+    if (typeof media?.url === "string") {
+      candidates.push(media.url);
+    }
+  }
+
+  const content = String(item.content || item["content:encoded"] || "");
+
+  const contentImage = content.match(
+    /<img\b[^>]*src=["']([^"']+)["']/i
+  );
+
+  if (contentImage?.[1]) {
+    candidates.push(contentImage[1]);
+  }
+
+  for (const candidate of candidates) {
+    const imageUrl = normalizeImageUrl(candidate, articleUrl);
+    if (imageUrl) return imageUrl;
+  }
+
+  return "";
 }
 
 async function collectRssSource(
@@ -251,17 +365,23 @@ async function collectRssSource(
   const xml = await response.text();
   const feed = await parser.parseString(xml);
 
-  return feed.items.slice(0, 20).map((item) => ({
-    sourceId: source.id,
-    sourceName: source.name,
-    title: cleanText(item.title || ""),
-    link: item.link || source.url,
-    summary: cleanText(
-      item.contentSnippet || item.content || item.summary || ""
-    ),
-    publishedAt: item.isoDate || item.pubDate || null,
-    sourcePriority: source.priority
-  }));
+  return feed.items.slice(0, 20).map((item: any) => {
+    const link = item.link || source.url;
+    const imageUrl = getRssImage(item, link);
+
+    return {
+      sourceId: source.id,
+      sourceName: source.name,
+      title: cleanText(item.title || ""),
+      link,
+      summary: cleanText(
+        item.contentSnippet || item.content || item.summary || ""
+      ),
+      publishedAt: item.isoDate || item.pubDate || null,
+      sourcePriority: source.priority,
+      ...(imageUrl ? { imageUrl } : {})
+    };
+  });
 }
 
 // WIKIMEDIA COMMONS GÖRSEL ARAMA
@@ -368,13 +488,6 @@ function buildSearchQueries(
   return queries;
 }
 
-/*
- * Görsel puanlaması:
- * - Sadece özel isim eşleşmesi artık yeterli değildir.
- * - Özel isim ile haber konusu birlikte eşleşmelidir.
- * - Özel isim bulunamıyorsa en az üç konu kelimesi eşleşmelidir.
- * - Tek veya iki genel kelimeyle alakasız fotoğraf kabul edilmez.
- */
 function scoreImage(
   page: CommonsPage,
   description: string,
@@ -397,20 +510,20 @@ function scoreImage(
   if (matchedEntities.length > 0 && matchedQueryWords.length >= 1) {
     return {
       score: 100 + matchedEntities.length * 5 + matchedQueryWords.length,
-      reason: `Özel isim ve konu eşleşti: ${matchedEntities.join(", ")}; ${matchedQueryWords.join(", ")}`
+      reason: "Özel isim ve haber konusu eşleşti"
     };
   }
 
   if (matchedQueryWords.length >= 3) {
     return {
       score: 10 + matchedQueryWords.length,
-      reason: `Konu kelimeleri eşleşti: ${matchedQueryWords.join(", ")}`
+      reason: "Haber konusu kelimeleri eşleşti"
     };
   }
 
   return {
     score: 0,
-    reason: `Yetersiz konu eşleşmesi (${matchedQueryWords.length} kelime)`
+    reason: "Yetersiz konu eşleşmesi"
   };
 }
 
@@ -430,21 +543,7 @@ export async function findCommonsImage(
     verifiedEntities
   );
 
-  if (queries.length === 0) {
-    console.log(
-      `[ULAK görsel] Arama atlandı: ${news.title} — kullanılabilir arama ifadesi yok.`
-    );
-    return null;
-  }
-
-  console.log(
-    `[ULAK görsel] Arama başladı: "${news.title}"`,
-    {
-      imageQuery: input.imageQuery,
-      verifiedEntities,
-      queries
-    }
-  );
+  if (queries.length === 0) return null;
 
   let bestImage: CommonsImage | null = null;
   let bestScore = 0;
@@ -476,22 +575,13 @@ export async function findCommonsImage(
         cache: "no-store"
       });
 
-      if (!response.ok) {
-        console.warn(
-          `[ULAK görsel] Commons isteği başarısız: ${response.status}`
-        );
-        continue;
-      }
+      if (!response.ok) continue;
 
       const data = await response.json();
 
       const pages = Object.values(
         data.query?.pages || {}
       ) as CommonsPage[];
-
-      console.log(
-        `[ULAK görsel] "${query}" araması ${pages.length} sonuç döndürdü.`
-      );
 
       for (const page of pages) {
         const info = page.imageinfo?.[0];
@@ -515,12 +605,7 @@ export async function findCommonsImage(
         const license = getMetadata(metadata, "LicenseShortName");
         const copyrighted = getMetadata(metadata, "Copyrighted");
 
-        if (!isAllowedLicense(license, copyrighted)) {
-          console.log(
-            `[ULAK görsel] Lisans nedeniyle reddedildi: ${page.title} (${license || "belirsiz"})`
-          );
-          continue;
-        }
+        if (!isAllowedLicense(license, copyrighted)) continue;
 
         const description = getMetadata(
           metadata,
@@ -534,19 +619,11 @@ export async function findCommonsImage(
           verifiedEntities
         );
 
-        if (match.score === 0) {
-          console.log(
-            `[ULAK görsel] Alaka nedeniyle reddedildi: ${page.title} — ${match.reason}`
-          );
-          continue;
-        }
-
         if (match.score <= bestScore) continue;
 
         const fileName = page.title.replace(/^File:/, "");
 
-        const attribution =
-          getMetadata(metadata, "Attribution");
+        const attribution = getMetadata(metadata, "Attribution");
 
         const artist =
           attribution ||
@@ -569,23 +646,10 @@ export async function findCommonsImage(
           imageArtist: artist,
           imageCredit: credit
         };
-
-        console.log(
-          `[ULAK görsel] Aday kabul edildi: ${page.title} — ${match.reason}`
-        );
       }
     } catch (error) {
-      console.error(
-        `[ULAK görsel] "${query}" aramasında hata:`,
-        error
-      );
+      console.error(`[ULAK görsel] Arama hatası: ${query}`, error);
     }
-  }
-
-  if (!bestImage) {
-    console.log(
-      `[ULAK görsel] Uygun görsel bulunamadı: ${news.title}`
-    );
   }
 
   return bestImage;
@@ -595,8 +659,6 @@ export async function findCommonsImage(
  * Haber seçimi:
  * Önce her bölgeden bir haber seçilir.
  * Ardından kalan haberler öncelik ve tarihe göre eklenir.
- * Haber sayısı 8'i geçmez; daha az nitelikli haber varsa
- * sonuç daha kısa kalır.
  */
 function balanceSources(items: CollectedNews[]): CollectedNews[] {
   const regions = [
@@ -620,7 +682,6 @@ function balanceSources(items: CollectedNews[]): CollectedNews[] {
   const newestFirst = (a: CollectedNews, b: CollectedNews) =>
     getDate(b) - getDate(a);
 
-  // Önce bölgelerin dengeli temsil edilmesini sağla.
   for (const region of regions) {
     if (selected.length >= MAX_DAILY_NEWS) break;
 
@@ -642,7 +703,6 @@ function balanceSources(items: CollectedNews[]): CollectedNews[] {
     }
   }
 
-  // Kalan yerleri kaynak önceliği ve yayın tarihine göre doldur.
   const remaining = items
     .filter((item) => !usedLinks.has(item.link))
     .sort((a, b) => {
@@ -710,6 +770,5 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
     }
   }
 
-  // Görsel araması, Gemini imageQuery ürettikten sonra presenter tarafından yapılır.
   return balanceSources(Array.from(uniqueNews.values()));
 }
