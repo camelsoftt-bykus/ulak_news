@@ -1,9 +1,39 @@
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_HOST = "upload.wikimedia.org";
+const ALLOWED_HOSTS = [
+  "upload.wikimedia.org",
+  "bbc.com",
+  "bbc.co.uk",
+  "bbci.co.uk",
+  "trthaber.com",
+  "tubitak.gov.tr",
+  "aa.com.tr",
+  "ntv.com.tr",
+  "hurriyet.com.tr",
+  "sozcu.com.tr",
+  "cumhuriyet.com.tr",
+  "haberturk.com",
+  "haberler.com",
+  "dw.com",
+  "nasa.gov",
+  "esa.int",
+  "theguardian.com",
+  "reuters.com",
+  "apnews.com",
+  "ap.org"
+];
+
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
+
+function isAllowedHost(hostname: string) {
+  const host = hostname.toLowerCase();
+
+  return ALLOWED_HOSTS.some(
+    (allowed) =>
+      host === allowed || host.endsWith("." + allowed)
+  );
+}
 
 export async function GET(request: Request) {
   try {
@@ -30,8 +60,10 @@ export async function GET(request: Request) {
 
     if (
       parsed.protocol !== "https:" ||
-      parsed.hostname !== ALLOWED_HOST ||
-      !parsed.pathname.startsWith("/wikipedia/commons/")
+      parsed.username ||
+      parsed.password ||
+      parsed.port ||
+      !isAllowedHost(parsed.hostname)
     ) {
       return Response.json(
         { error: "Bu görsel kaynağına izin verilmiyor." },
@@ -44,7 +76,8 @@ export async function GET(request: Request) {
         "User-Agent": "ULAK-News/1.0"
       },
       signal: AbortSignal.timeout(15000),
-      cache: "no-store"
+      cache: "no-store",
+      redirect: "error"
     });
 
     if (!upstream.ok) {
@@ -58,7 +91,9 @@ export async function GET(request: Request) {
       upstream.headers.get("content-type")?.split(";")[0] || "";
 
     if (
-      !["image/jpeg", "image/png", "image/webp"].includes(contentType)
+      !["image/jpeg", "image/png", "image/webp", "image/avif"].includes(
+        contentType
+      )
     ) {
       return Response.json(
         { error: "Desteklenmeyen görsel biçimi." },
@@ -94,7 +129,6 @@ export async function GET(request: Request) {
         "X-Content-Type-Options": "nosniff"
       }
     });
-
   } catch (error) {
     console.error("ULAK görsel sunucu hatası:", error);
 
