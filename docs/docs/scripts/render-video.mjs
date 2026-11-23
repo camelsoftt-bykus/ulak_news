@@ -96,7 +96,9 @@ async function main() {
 
     console.log("Haber metni animasyona aktarılıyor...");
 
-    await page.locator("#newsScript").fill(daily.script);
+    await page.locator("#newsScript").evaluate((element, script) => {
+      element.textContent = script;
+    }, daily.script);
 
     await page.waitForFunction(
       () => typeof window.setULAKNews === "function",
