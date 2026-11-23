@@ -610,7 +610,7 @@ export async function findCommonsImage(
 
         const rawArtist = getMetadata(metadata, "Artist");
         const credit = getMetadata(metadata, "Credit");
-        const isCcBy = /^cc by [1-4]\.0$/i.test(license.trim());
+        const isCcBy = /^cc by [1-4]\.0(?:\s|$)/i.test(license.trim());
 
         // CC BY lisansında fotoğrafçı/atıf ve lisans bağlantısı yoksa kullanma.
         if (isCcBy && (!licenseUrl || (!rawArtist && !credit))) continue;
