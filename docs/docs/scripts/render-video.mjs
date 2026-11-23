@@ -1,4 +1,3 @@
-
 import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
@@ -20,6 +19,23 @@ const daily = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 if (!daily.script) {
   throw new Error("Günlük sunum metni bulunamadı.");
 }
+
+const newsForAnimation = Array.isArray(daily.news)
+  ? daily.news.map((item) => ({
+      title: item.title || "",
+      summary: item.editorialSummary || item.summary || "",
+      whyImportant: item.whyImportant || "",
+      link: item.link || "",
+      sourceName: item.sourceName || "",
+      imageUrl: item.imageUrl || "",
+      imagePageUrl: item.imagePageUrl || "",
+      imageTitle: item.imageTitle || "",
+      imageLicense: item.imageLicense || "",
+      imageLicenseUrl: item.imageLicenseUrl || "",
+      imageArtist: item.imageArtist || "",
+      imageCredit: item.imageCredit || ""
+    }))
+  : [];
 
 const browser = await chromium.launch({ headless: true });
 
@@ -44,6 +60,15 @@ try {
     { timeout: 120000 }
   );
 
+  // Haber bilgilerini animasyon sayfasına aktar.
+  await page.evaluate((news) => {
+    window.ULAK_NEWS = news;
+  }, newsForAnimation);
+
+  console.log(
+    `Animasyona ${newsForAnimation.length} haber aktarıldı.`
+  );
+
   await page.locator("#newsScript").evaluate(
     (element, script) => {
       element.textContent = script;
@@ -53,7 +78,6 @@ try {
 
   await page.locator("#audInput").setInputFiles(audioPath);
 
-  // Sesin yükleme olayı gerçekleştiğini sayfadaki durum yazısından doğrula.
   await page.waitForFunction(
     () => document.querySelector("#status")?.textContent.startsWith("Ses yüklendi:"),
     null,
@@ -68,7 +92,6 @@ try {
 
   await page.locator("#recBtn").click();
 
-  // Kaydın gerçekten başladığını doğrula.
   await page.waitForFunction(
     () => document.querySelector("#status")?.textContent.startsWith("Kaydediliyor"),
     null,
