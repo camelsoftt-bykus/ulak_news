@@ -1,14 +1,6 @@
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-/*
- * Görsel proxy'si.
- * - Yalnızca tam host adı eşleşmesine izin verir (alt alan adı / wildcard yok).
- * - Her host için izinli yol önekleri tanımlıdır.
- * - Her yönlendirme adımında URL yeniden doğrulanır.
- * - Literal IP adresleri ve yerel/özel hostlar reddedilir.
- * - Hata yanıtları istemciye iç ayrıntı sızdırmaz.
- */
 
 const ALLOWED_HOSTS: Record<string, string[]> = {
   "upload.wikimedia.org": ["/wikipedia/commons/"],
@@ -37,14 +29,13 @@ class ProxyError extends Error {
   }
 }
 
-/* Literal IP adresleri ve yerel hostlar: hiçbir durumda izin verilmez */
 function isUnsafeHostname(hostname: string): boolean {
   const host = hostname.toLowerCase();
 
-  if (host.includes(":")) return true; // IPv6 literal
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return true; // IPv4 literal
+  if (host.includes(":")) return true;
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return true;
   if (host === "localhost" || host.endsWith(".localhost")) return true;
-  if (!host.includes(".")) return true; // tek parça ad (iç ağ olabilir)
+  if (!host.includes(".")) return true;
 
   return false;
 }
@@ -86,7 +77,6 @@ async function fetchImage(initialUrl: URL): Promise<Response> {
         throw new ProxyError("Görsel kaynağına ulaşılamadı.", 502);
       }
 
-      // Yönlendirme adresini mutlak URL'ye çevir; döngü başında yeniden doğrulanır
       currentUrl = new URL(location, currentUrl);
       continue;
     }
@@ -97,7 +87,6 @@ async function fetchImage(initialUrl: URL): Promise<Response> {
   throw new ProxyError("Görsel kaynağına ulaşılamadı.", 502);
 }
 
-/* Gövdeyi sınırlı okur: limit aşılırsa erken keser, tamamını belleğe almaz */
 async function readBodyWithLimit(response: Response): Promise<Uint8Array> {
   if (!response.body) {
     throw new ProxyError("Görsel boş geldi.", 502);
@@ -189,7 +178,11 @@ export async function GET(request: Request) {
 
     const bytes = await readBodyWithLimit(upstream);
 
-    return new Response(bytes, {
+    // Uint8Array verisini kesin ArrayBuffer biçimine dönüştür.
+    const body = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(body).set(bytes);
+
+    return new Response(body, {
       status: 200,
       headers: {
         "Content-Type": contentType,
@@ -203,7 +196,6 @@ export async function GET(request: Request) {
       return jsonError(error.message, error.status);
     }
 
-    // Ayrıntı yalnızca sunucu loguna yazılır
     console.error("[ULAK görsel] Proxy hatası:", error);
     return jsonError("Görsel yüklenirken hata oluştu.", 500);
   }
