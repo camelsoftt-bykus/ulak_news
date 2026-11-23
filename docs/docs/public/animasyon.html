@@ -1083,10 +1083,10 @@ function drawImageAttribution(item){
  const pad=Math.max(4,Math.round(fontSize*.45));
  const lineHeight=Math.round(fontSize*1.2);
  const sourceLines=[
-  (item.imageCaption||'Temsili görsel')+(item.imageTitle?' · '+item.imageTitle:''),
+  (item.imageCaption||'Temsili görsel')+(item.imageTitle?' · '+item.imageTitle.split('_').join(' ').split('-').join(' '):''),
   'Fotoğraf/atıf: '+(item.imageArtist||'Belirtilmemiş'),
-  'Lisans: '+(item.imageLicense||'Lisans bilgisi')+(item.imageLicenseUrl?' — '+item.imageLicenseUrl:''),
-  'Kaynak: '+(item.imagePageUrl||'https://commons.wikimedia.org')
+  'Lisans: '+(item.imageLicense||'Lisans bilgisi')+(item.imageLicenseUrl?' — '+item.imageLicenseUrl.split('/').join('/ '):''),
+  'Kaynak: '+(item.imagePageUrl||'https://commons.wikimedia.org').split('/').join('/ ')
  ];
  const maxWidth=Math.max(20,b.w-pad*2);
 
