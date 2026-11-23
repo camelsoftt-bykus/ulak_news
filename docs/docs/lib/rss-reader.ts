@@ -604,8 +604,16 @@ export async function findCommonsImage(
         const metadata = info.extmetadata;
         const license = getMetadata(metadata, "LicenseShortName");
         const copyrighted = getMetadata(metadata, "Copyrighted");
+        const licenseUrl = getMetadata(metadata, "LicenseUrl");
 
         if (!isAllowedLicense(license, copyrighted)) continue;
+
+        const rawArtist = getMetadata(metadata, "Artist");
+        const credit = getMetadata(metadata, "Credit");
+        const isCcBy = /^cc by [1-4]\\.0$/i.test(license.trim());
+
+        // CC BY lisansında fotoğrafçı/atıf ve lisans bağlantısı yoksa kullanma.
+        if (isCcBy && (!licenseUrl || (!rawArtist && !credit))) continue;
 
         const description = getMetadata(
           metadata,
@@ -627,11 +635,9 @@ export async function findCommonsImage(
 
         const artist =
           attribution ||
-          getMetadata(metadata, "Artist") ||
-          getMetadata(metadata, "Credit") ||
+          rawArtist ||
+          credit ||
           "Belirtilmemiş";
-
-        const credit = getMetadata(metadata, "Credit");
 
         bestScore = match.score;
 
