@@ -1,4 +1,3 @@
-
 import {
   collectRssNews,
   findCommonsImage
@@ -9,10 +8,17 @@ export const dynamic = "force-dynamic";
 
 type GeneratedStory = {
   index?: number;
+  narration?: string;
   summary?: string;
   whyImportant?: string;
   imageQuery?: string;
   imageEntities?: string[];
+};
+
+type GeneratedResult = {
+  intro?: string;
+  closing?: string;
+  stories?: GeneratedStory[];
 };
 
 function cleanImageQuery(value: unknown): string {
@@ -25,7 +31,6 @@ function cleanImageQuery(value: unknown): string {
     .filter(Boolean)
     .slice(0, 5);
 
-  // En az iki İngilizce arama kelimesi olmalı.
   if (words.length < 2) return "";
 
   return words.join(" ");
@@ -39,6 +44,11 @@ function cleanImageEntities(value: unknown): string[] {
     .map((item) => item.trim())
     .filter((item) => item.length >= 3 && item.length <= 80)
     .slice(0, 3);
+}
+
+function cleanNarration(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.replace(/\s+/g, " ").trim();
 }
 
 export async function GET() {
@@ -72,9 +82,7 @@ Yayın tarihi: ${item.publishedAt || "Belirtilmemiş"}
     const prompt = `
 Sen ULAK adlı Türkçe haber merkezinin editörüsün.
 
-Aşağıdaki haber kayıtlarını kullanarak haber kartları için
-ayrı ayrı açıklamalar, görsel arama bilgileri ve yaklaşık
-90 saniyelik bir sunucu metni hazırla.
+Aşağıdaki haber kayıtlarından, yaklaşık 90 saniyelik doğal bir Türkçe haber sunumu hazırla.
 
 DOĞRULUK KURALLARI:
 - Yalnızca verilen haber kayıtlarındaki bilgileri kullan.
@@ -83,15 +91,16 @@ DOĞRULUK KURALLARI:
 - Bir iddiayı kesinleşmiş gerçek gibi sunma.
 - Bilgi yetersizse bunu açıkça belirt.
 - Haberleri tarafsız ve anlaşılır Türkçeyle anlat.
+- Haber sayısı kadar stories kaydı oluştur.
+- Haber sırasını kesinlikle değiştirme.
 
 HER HABER İÇİN:
-- summary: Haberin ne olduğunu anlatan 2-3 kısa cümle.
+- narration: Ahmet'in seslendireceği metin. Başlığı da doğal biçimde anlatıma kat. Yaklaşık 2-3 kısa cümle kullan.
+- summary: Haber kartında gösterilecek 2-3 kısa cümle.
 - whyImportant: Bu gelişmenin neden önemli olduğunu, yalnızca verilen bilgilerden hareketle 1-2 cümleyle açıkla.
 - imageQuery: Wikimedia Commons'ta görsel aramak için İngilizce 2-5 kelimelik ifade.
-- imageEntities: Haber başlığında veya açıklamasında AYNEN geçen,
-  görsel aramasında işe yarayabilecek özel isimler.
-- imageEntities içine yalnızca haber kaydında gerçekten yazan
-  kişi, kurum, şehir, ülke, yapı veya proje isimlerini koy.
+- imageEntities: Haber başlığında veya açıklamasında AYNEN geçen, görsel aramasında işe yarayabilecek özel isimler.
+- imageEntities içine yalnızca haber kaydında gerçekten yazan kişi, kurum, şehir, ülke, yapı veya proje isimlerini koy.
 - Haberde geçmeyen özel isimleri kesinlikle ekleme.
 - Özel isim yoksa imageEntities boş dizi olsun.
 - imageQuery haberin gerçek konusunu tarif etsin.
@@ -103,22 +112,26 @@ YEREL ÖNCELİK:
 Sincan, Etimesgut, Ankara, Türkiye, dünya ve bilim/uzay.
 Önemli haberleri önceliklendir; önemsiz haberleri sırf sayıyı tamamlamak için büyütme.
 
-SUNUCU METNİ:
-- Doğal, akıcı ve düzgün Türkçe kullan.
-- Samimi ve güven veren bir haber sunucusu üslubu kullan.
-- Yaklaşık 90 saniyelik bir metin hazırla.
-- Selamlama ve kısa kapanış ekle.
-- Kaynak listesi veya URL yazma.
+SUNUM:
+- intro: Kısa selamlama ve günün haberlerine giriş. 1-2 cümle.
+- closing: Kısa, doğal kapanış. 1 cümle.
+- Her haberin narration metni tek başına seslendirildiğinde doğal duyulmalı.
+- Haber metinlerinde "bir sonraki haberimiz" gibi başka habere bağlı ifadeler kullanma.
+- Kaynak listesi, URL veya teknik açıklama seslendirme metinlerine ekleme.
+- Toplam sunum yaklaşık 90 saniye sürsün. Haber sayısı arttığında her haberin anlatımını kısalt.
+- Samimi, güven veren ve akıcı bir haber sunucusu üslubu kullan.
 
 ÇIKTI:
 Yalnızca geçerli JSON üret. Markdown veya kod bloğu kullanma.
 Aşağıdaki yapıyı aynen uygula:
 
 {
-  "script": "Sunucunun okuyacağı haber metni",
+  "intro": "Kısa açılış metni",
+  "closing": "Kısa kapanış metni",
   "stories": [
     {
       "index": 1,
+      "narration": "Bu haber için seslendirilecek metin",
       "summary": "Haberin kısa özeti",
       "whyImportant": "Neden önemli olduğu",
       "imageQuery": "English visual search phrase",
@@ -130,6 +143,7 @@ Aşağıdaki yapıyı aynen uygula:
 Her haber için stories listesinde bir kayıt oluştur.
 index numarası haber sırasıyla aynı olmalı.
 imageEntities her zaman bir dizi olmalı.
+narration her zaman dolu bir metin olmalı.
 
 HABER KAYITLARI:
 ${newsText}
@@ -154,11 +168,11 @@ ${newsText}
             ],
             generationConfig: {
               temperature: 0.2,
-              maxOutputTokens: 4000,
+              maxOutputTokens: 6000,
               responseMimeType: "application/json"
             }
           }),
-          signal: AbortSignal.timeout(25000),
+          signal: AbortSignal.timeout(30000),
           cache: "no-store"
         }
       );
@@ -201,10 +215,7 @@ ${newsText}
       );
     }
 
-    let result: {
-      script?: string;
-      stories?: GeneratedStory[];
-    };
+    let result: GeneratedResult;
 
     try {
       result = JSON.parse(generatedText);
@@ -217,12 +228,9 @@ ${newsText}
       );
     }
 
-    if (
-      typeof result.script !== "string" ||
-      !Array.isArray(result.stories)
-    ) {
+    if (!Array.isArray(result.stories)) {
       return Response.json(
-        { error: "Gemini yanıtında sunum veya haber özetleri eksik." },
+        { error: "Gemini yanıtında haber listesi eksik." },
         { status: 502 }
       );
     }
@@ -232,17 +240,23 @@ ${newsText}
         (entry) => entry.index === index + 1
       );
 
+      const narration =
+        cleanNarration(story?.narration) ||
+        cleanNarration(story?.summary) ||
+        cleanNarration(item.summary) ||
+        item.title;
+
       return {
         item,
         story,
+        narration,
         imageQuery: cleanImageQuery(story?.imageQuery),
         imageEntities: cleanImageEntities(story?.imageEntities)
       };
     });
 
-    // Görseller Gemini'nin imageQuery üretmesinden sonra aranır.
-    // Her haberin araması ayrı ayrı hata yakalar; bir görsel hatası
-    // bütün haber sunumunu durdurmaz.
+    // Her haberin görseli kendi haber kaydıyla eşleştirilir.
+    // Bir görsel aramasının başarısız olması diğer haberleri durdurmaz.
     const enrichedNews = await Promise.all(
       stories.map(async ({ item, story, imageQuery, imageEntities }) => {
         let image:
@@ -282,16 +296,50 @@ ${newsText}
       })
     );
 
+    // Açılış, her haber ve kapanış ayrı ses parçası olarak döndürülür.
+    const intro =
+      cleanNarration(result.intro) ||
+      "Merhaba, ULAK haber merkezine hoş geldiniz. Günün önemli gelişmeleriyle karşınızdayız.";
+
+    const closing =
+      cleanNarration(result.closing) ||
+      "Günün gelişmeleri şimdilik bu kadar. Yeniden görüşmek üzere.";
+
+    const speechSegments = [
+      {
+        type: "intro",
+        index: 0,
+        text: intro
+      },
+      ...stories.map((entry, index) => ({
+        type: "story",
+        index: index + 1,
+        text: entry.narration
+      })),
+      {
+        type: "closing",
+        index: stories.length + 1,
+        text: closing
+      }
+    ];
+
+    // Ekranda gösterilecek metin seslendirme metinlerinden oluşturulur.
+    // Kaynak listesi yalnızca ekranda kalır; speechSegments içine girmez.
+    const spokenScript = speechSegments
+      .map((segment) => segment.text)
+      .join("\n\n");
+
     const sourceList = news.map((item, index) =>
       `${index + 1}. ${item.sourceName}: ${item.title}\n${item.link}`
     ).join("\n\n");
 
-    const script = `${result.script.trim()}\n\nKaynaklar:\n${sourceList}`;
+    const script = `${spokenScript}\n\nKaynaklar:\n${sourceList}`;
 
     return Response.json(
       {
         count: enrichedNews.length,
         script,
+        speechSegments,
         news: enrichedNews
       },
       {
