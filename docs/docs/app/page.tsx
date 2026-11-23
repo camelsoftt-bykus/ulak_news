@@ -53,7 +53,7 @@ export default function Home() {
           </p>
 
           <a href="#video" className="primary-button">
-            Günün bültenini keşfet <span>→</span>
+            Günün bültenini izle <span>→</span>
           </a>
 
           <div className="hero-note">
@@ -83,8 +83,8 @@ export default function Home() {
       <section className="container video-section" id="video">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">ULAK ANİMASYON STÜDYOSU</div>
-            <h2 className="section-title">Günün bültenini hazırla</h2>
+            <div className="eyebrow">GÜNLÜK OTOMATİK SUNUM</div>
+            <h2 className="section-title">Günün ULAK bülteni</h2>
           </div>
 
           <span className="duration-pill">AHMET SESİ · VİDEO</span>
@@ -94,21 +94,59 @@ export default function Home() {
           <div className="video-info">
             <span className="content-tag">ULAK YAYINDA</span>
 
-            <h3>Artık ULAK senin için konuşuyor.</h3>
+            <h3>Günün haberleri hazır!</h3>
 
             <p>
-              Günün haberlerini getir, Ahmet sesiyle dinle
-              ve konuşan ULAK videosunu oluştur.
+              ULAK, günün önemli gelişmelerini Ahmet sesiyle
+              senin için sunuyor. Videoyu başlat ve gündemi takip et.
             </p>
 
             <a
-              href="/animasyon.html"
+              href="/data/daily.mp4"
               target="_blank"
               rel="noreferrer"
               className="primary-button"
             >
-              Stüdyoyu ayrı pencerede aç →
+              Videoyu ayrı aç →
             </a>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: "18px",
+            borderRadius: "16px",
+            overflow: "hidden",
+            background: "#1d1a17",
+            border: "1px solid #4a423b",
+          }}
+        >
+          <video
+            key="ulak-daily-video"
+            src="/data/daily.mp4"
+            controls
+            playsInline
+            preload="metadata"
+            style={{
+              display: "block",
+              width: "100%",
+              height: "auto",
+              aspectRatio: "1 / 1",
+              background: "#1d1a17",
+            }}
+          >
+            Tarayıcınız video oynatmayı desteklemiyor.
+          </video>
+        </div>
+
+        <p className="muted" style={{ marginTop: "12px", fontSize: "13px" }}>
+          Günlük sunum otomatik hazırlanır. En yeni bülteni buradan izleyebilirsin.
+        </p>
+
+        <div className="section-heading" style={{ marginTop: "42px" }}>
+          <div>
+            <div className="eyebrow">ULAK ANİMASYON STÜDYOSU</div>
+            <h2 className="section-title">Animasyon stüdyosu</h2>
           </div>
         </div>
 
@@ -136,8 +174,7 @@ export default function Home() {
         </div>
 
         <p className="muted" style={{ marginTop: "12px", fontSize: "13px" }}>
-          Videoyu oluşturduğunda cihazına indirebilirsin.
-          Stüdyo ayrı pencerede de kullanılabilir.
+          Stüdyoyu ayrıca açıp animasyon ayarlarını kullanabilirsin.
         </p>
       </section>
 
