@@ -1079,16 +1079,42 @@ function drawImageAttribution(item){
  if(item.imageKind!=='representative'||!windowBox)return;
 
  const b=windowBox;
- const fontSize=Math.max(10,Math.min(14,Math.round(imgW*.01)));
- const pad=Math.max(5,Math.round(fontSize*.5));
+ const fontSize=Math.max(8,Math.min(11,Math.round(imgW*.008)));
+ const pad=Math.max(4,Math.round(fontSize*.45));
  const lineHeight=Math.round(fontSize*1.2);
- const lines=[
-  (item.imageCaption||'Temsili görsel')+' · Wikimedia Commons',
-  'Lisans: '+(item.imageLicense||'Lisans bilgisi'),
-  'Fotoğraf: '+(item.imageArtist||'Belirtilmemiş'),
-  'Kaynak: '+(item.imagePageUrl||'commons.wikimedia.org'),
-  'Lisans bağlantısı: '+(item.imageLicenseUrl||'')
- ].filter(Boolean);
+ const sourceLines=[
+  (item.imageCaption||'Temsili görsel')+(item.imageTitle?' · '+item.imageTitle:''),
+  'Fotoğraf/atıf: '+(item.imageArtist||'Belirtilmemiş'),
+  'Lisans: '+(item.imageLicense||'Lisans bilgisi')+(item.imageLicenseUrl?' — '+item.imageLicenseUrl:''),
+  'Kaynak: '+(item.imagePageUrl||'https://commons.wikimedia.org')
+ ];
+ const maxWidth=Math.max(20,b.w-pad*2);
+
+ // Uzun atıf ve lisans bağlantılarını kesmek yerine satırlara böl.
+ const wrappedLines=[];
+ sourceLines.forEach((value)=>{
+  const words=String(value).split(/\\s+/);
+  let line='';
+  words.forEach((word)=>{
+   const candidate=line?line+' '+word:word;
+   ctx.font='400 '+fontSize+'px Arial, sans-serif';
+   if(line&&ctx.measureText(candidate).width>maxWidth){
+    wrappedLines.push(line);
+    line=word;
+   }else{
+    line=candidate;
+   }
+  });
+  if(line)wrappedLines.push(line);
+ });
+ const maxLines=Math.max(4,Math.floor((b.h*.48-pad*2)/lineHeight));
+ const lines=wrappedLines.slice(0,maxLines);
+ if(wrappedLines.length>maxLines&&lines.length){
+  let last=lines[lines.length-1];
+  ctx.font='400 '+fontSize+'px Arial, sans-serif';
+  while(last.length>3&&ctx.measureText(last+'…').width>maxWidth)last=last.slice(0,-1);
+  lines[lines.length-1]=last.trim()+'…';
+ }
  const boxHeight=pad*2+lineHeight*lines.length;
  const boxY=b.y+b.h-boxHeight;
 
@@ -1097,7 +1123,7 @@ function drawImageAttribution(item){
  ctx.rect(b.x,b.y,b.w,b.h);
  ctx.clip();
 
- ctx.globalAlpha=.84;
+ ctx.globalAlpha=.86;
  ctx.fillStyle='#17130f';
  ctx.fillRect(b.x,boxY,b.w,boxHeight);
 
@@ -1105,19 +1131,9 @@ function drawImageAttribution(item){
  ctx.fillStyle='#ffffff';
  ctx.textBaseline='top';
 
- const maxWidth=Math.max(20,b.w-pad*2);
- const fitText=(value)=>{
-  let text=String(value);
-  ctx.font='400 '+fontSize+'px Arial, sans-serif';
-  while(text.length>3&&ctx.measureText(text).width>maxWidth){
-   text=text.slice(0,-2);
-  }
-  return text.length<String(value).length?text.trim()+'…':text;
- };
-
  lines.forEach((line,index)=>{
   ctx.font=index===0?'600 '+fontSize+'px Arial, sans-serif':'400 '+fontSize+'px Arial, sans-serif';
-  ctx.fillText(fitText(line),b.x+pad,boxY+pad+lineHeight*index);
+  ctx.fillText(line,b.x+pad,boxY+pad+lineHeight*index);
  });
  ctx.restore();
 }
