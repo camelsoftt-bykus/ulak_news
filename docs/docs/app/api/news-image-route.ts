@@ -3,11 +3,12 @@ export const dynamic = "force-dynamic";
 
 const ALLOWED_HOSTS = [
   "upload.wikimedia.org",
+  "trt.com.tr",
+  "tubitak.gov.tr",
+  "sincan.bel.tr",
   "bbc.com",
   "bbc.co.uk",
   "bbci.co.uk",
-  "trthaber.com",
-  "tubitak.gov.tr",
   "aa.com.tr",
   "ntv.com.tr",
   "hurriyet.com.tr",
@@ -25,14 +26,60 @@ const ALLOWED_HOSTS = [
 ];
 
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
+const MAX_REDIRECTS = 4;
 
-function isAllowedHost(hostname: string) {
-  const host = hostname.toLowerCase();
+function isAllowedUrl(url: URL): boolean {
+  const host = url.hostname.toLowerCase();
 
-  return ALLOWED_HOSTS.some(
-    (allowed) =>
-      host === allowed || host.endsWith("." + allowed)
+  return (
+    url.protocol === "https:" &&
+    !url.username &&
+    !url.password &&
+    !url.port &&
+    ALLOWED_HOSTS.some(
+      (allowed) => host === allowed || host.endsWith("." + allowed)
+    )
   );
+}
+
+async function fetchImage(initialUrl: URL): Promise<Response> {
+  let currentUrl = initialUrl;
+
+  for (let attempt = 0; attempt <= MAX_REDIRECTS; attempt++) {
+    if (!isAllowedUrl(currentUrl)) {
+      throw new Error("Görsel yönlendirmesi izin verilmeyen bir adrese gidiyor.");
+    }
+
+    const response = await fetch(currentUrl.toString(), {
+      headers: {
+        "User-Agent": "ULAK-News/1.0",
+        "Accept": "image/avif,image/webp,image/png,image/jpeg,image/*"
+      },
+      signal: AbortSignal.timeout(15000),
+      cache: "no-store",
+      redirect: "manual"
+    });
+
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get("location");
+
+      if (!location || attempt === MAX_REDIRECTS) {
+        throw new Error("Görsel yönlendirme sınırına ulaşıldı.");
+      }
+
+      currentUrl = new URL(location, currentUrl);
+
+      if (!isAllowedUrl(currentUrl)) {
+        throw new Error("Görsel yönlendirme adresine izin verilmiyor.");
+      }
+
+      continue;
+    }
+
+    return response;
+  }
+
+  throw new Error("Görsel alınamadı.");
 }
 
 export async function GET(request: Request) {
@@ -58,45 +105,42 @@ export async function GET(request: Request) {
       );
     }
 
-    if (
-      parsed.protocol !== "https:" ||
-      parsed.username ||
-      parsed.password ||
-      parsed.port ||
-      !isAllowedHost(parsed.hostname)
-    ) {
+    if (!isAllowedUrl(parsed)) {
       return Response.json(
         { error: "Bu görsel kaynağına izin verilmiyor." },
         { status: 403 }
       );
     }
 
-    const upstream = await fetch(parsed.toString(), {
-      headers: {
-        "User-Agent": "ULAK-News/1.0"
-      },
-      signal: AbortSignal.timeout(15000),
-      cache: "no-store",
-      redirect: "error"
-    });
+    const upstream = await fetchImage(parsed);
 
     if (!upstream.ok) {
       return Response.json(
-        { error: "Görsel kaynağına ulaşılamadı." },
+        {
+          error: "Görsel kaynağına ulaşılamadı.",
+          upstreamStatus: upstream.status
+        },
         { status: 502 }
       );
     }
 
     const contentType =
-      upstream.headers.get("content-type")?.split(";")[0] || "";
+      upstream.headers.get("content-type")?.split(";")[0].toLowerCase() || "";
 
-    if (
-      !["image/jpeg", "image/png", "image/webp", "image/avif"].includes(
-        contentType
-      )
-    ) {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/avif",
+      "image/gif"
+    ];
+
+    if (!allowedTypes.includes(contentType)) {
       return Response.json(
-        { error: "Desteklenmeyen görsel biçimi." },
+        {
+          error: "Desteklenmeyen görsel biçimi.",
+          contentType
+        },
         { status: 415 }
       );
     }
@@ -126,15 +170,20 @@ export async function GET(request: Request) {
         "Content-Type": contentType,
         "Content-Length": String(image.byteLength),
         "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
-        "X-Content-Type-Options": "nosniff"
+        "X-Content-Type-Options": "nosniff",
+        "Access-Control-Allow-Origin": "*"
       }
     });
   } catch (error) {
     console.error("ULAK görsel sunucu hatası:", error);
 
     return Response.json(
-      { error: "Görsel yüklenirken hata oluştu." },
+      {
+        error: "Görsel yüklenirken hata oluştu.",
+        detail: error instanceof Error ? error.message : "Bilinmeyen hata"
+      },
       { status: 500 }
     );
   }
 }
+ 
