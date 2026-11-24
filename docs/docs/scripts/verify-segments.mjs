@@ -36,7 +36,7 @@ export async function verifySegments({ daily, dataDir, ffprobePath = "ffprobe" }
   }
 
   const actual = fs.readdirSync(dataDir)
-    .filter((filename) => /^seg-\\d+\\.wav$/.test(filename))
+    .filter((filename) => /^seg-\d+\.wav$/.test(filename))
     .sort();
   if (actual.length !== 10 || expected.some((filename, index) => actual[index] !== filename)) {
     throw new Error(`Diskte tam 10 WAV gerekli; bulunan: ${actual.length}.`);
