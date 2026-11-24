@@ -107,3 +107,28 @@ Claude'un ikinci tasarım revizyonu genel olarak kabul edilebilir; uygulamaya ge
 - Gemini/TTS çağrısı, production workflow tetiklemesi, deploy, ücretlendirme/model/secret değişikliği koordinatörün ve gerektiğinde proje sahibinin açık onayına tabidir.
 
 - **2026-11-24 – G-001 revizyonu:** Claude'un ikinci raporu incelendi. Yukarıdaki ek kararlar kaydedildi. Kod değişikliği veya workflow çalıştırması yapılmadı.
+
+
+## Proje sahibi onayı ve G-002 hazırlığı (2026-11-24)
+
+### Onaylanan bülten sözleşmesi
+- Bülten tam olarak **8 haber + intro + closing = 10 speechSegments** üretmelidir.
+- 8 haber elde edilemezse üretim başarısız sayılır; eksik bülten yayın dizinine yazılmaz ve önceki başarılı `daily.json` korunur.
+- İstenirse teşhis verisi ayrı, yayın dışı bir konumda tutulabilir; ham haberler veya başarısız JSON hiçbir zaman aktif `daily.json` üzerine yazılmaz.
+- Video yalnızca 10/10 WAV dosyasının varlığı, boş olmaması, codec/formatı ve pozitif süresinin ffprobe ile doğrulanmasından sonra başlar.
+- Kaynak havuzunun 8 haber sağlama kapasitesi ayrıca Gemini/TTS çağrısı gerektirmeyen bir ölçümle değerlendirilmelidir. Kaynak yetersizliği veya scraping hatası eksik bültenin yayınlanmasına gerekçe olamaz.
+- Eksik haber durumunda workflow açık hata ve teşhis özeti üretmeli; aynı çalıştırmada otomatik olarak Gemini/TTS tekrarına girmemelidir.
+
+### Secret geçiş koşulu
+- Secret zorunlu hâle getirilmeden önce GitHub Actions secret ve Vercel Production environment variable proje sahibi tarafından güvenli arayüzlerden eklenir.
+- Workflow'un yeni secret header'ını gönderdiği kod üzerinden doğrulanır; ardından secret koruması zorunlu hâle getirilir.
+- Aşama A/B geçişi takvim gününe değil, yeni header ile tamamlanmış **bir başarılı ve kota tüketmeyen doğrulama çalışmasına** bağlanır. Bu doğrulama mock/staging yolu ile yapılmalı; canlı Gemini/TTS çağrısı değildir.
+- Secret değeri koordinasyon dosyasına, sohbete veya loglara hiçbir koşulda yazılmaz. `?admin=1` yetkilendirme sayılmaz.
+
+### G-002 – İlk güvenli uygulama dilimi (öneri, henüz uygulama izni değil)
+- **Önerilen kapsam:** (a) günlük üretim workflow'undan kod push tetikleyicisini kaldırmak, (b) Gemini/TTS çağırmayan ayrı CI workflow'u eklemek, (c) presenter ve TTS kota hatalarının açıkça ayırt edilmesi ve yeniden denenmemesi için kod/test tasarımı, (d) mock WAV ile 10 segment doğrulama kapısını test etmek.
+- **Kapsam dışı:** Gerçek Gemini/TTS çağrısı, canlı günlük workflow tetiklemesi, secret zorunluluğunu açmak, ücretlendirme/model/anahtar/kota değişikliği, production deploy.
+- **Ön koşul:** Workflow değişikliğinin Vercel deploy veya başka üretim otomasyonunu tetikleyip tetiklemediği önceden kontrol edilmeli. Kod değişiklikleri mümkünse ayrı branch/PR üzerinden sunulmalı.
+- **Durum:** Proje sahibi bülten formatını onayladı; G-002 kodlama yetkisi ayrıca netleştirilecek.
+
+- **2026-11-24 – Proje sahibi kararı:** Tam 8 haber + intro + closing = 10 ses bölümü onaylandı. 8 haber yoksa aktif `daily.json` korunacak ve eksik bülten yayınlanmayacak. Video için 10/10 WAV doğrulaması zorunlu. Secret geçişi bir başarılı, kota tüketmeyen doğrulama çalışmasıyla ölçülecek.
