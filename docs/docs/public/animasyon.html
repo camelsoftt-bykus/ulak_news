@@ -495,7 +495,7 @@ async function prepareSpeechSegments(){
     btn.textContent='Ses hazırlanıyor '+(i+1)+'/'+speechSegments.length+'...';
 
     setStatus(
-     'ULAK'ın sesi hazırlanıyor: '+(i+1)+' / '+speechSegments.length
+     'ULAK’ın sesi hazırlanıyor: '+(i+1)+' / '+speechSegments.length
     );
 
     const response=await fetch('/api/tts',{
@@ -552,8 +552,8 @@ async function prepareSpeechSegments(){
 async function generateNewsAudio(text){
  const btn=$('speakNewsBtn');
  btn.disabled=true;
- btn.textContent='ULAK'ın sesi hazırlanıyor...';
- setStatus('Günlük haber metni ULAK'ın sesiyle hazırlanıyor. Lütfen bekleyin...');
+ btn.textContent='ULAK’ın sesi hazırlanıyor...';
+ setStatus('Günlük haber metni ULAK’ın sesiyle hazırlanıyor. Lütfen bekleyin...');
 
  try{
   audio.pause();
