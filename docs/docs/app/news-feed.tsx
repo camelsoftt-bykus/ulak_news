@@ -137,7 +137,7 @@ export default function NewsFeed() {
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   }, []);
 
-  if (loading) return <p className="muted">ULAK'ın haber sayfaları hazırlanıyor...</p>;
+  if (loading) return <p className="muted">ULAK’TAN HABERLER hazırlanıyor...</p>;
   if (error || !bulletin) return <p className="muted">Haberler şu anda yüklenemiyor. Lütfen biraz sonra yeniden dene.</p>;
 
   const stories = uniqueStories(bulletin.news);
