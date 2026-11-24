@@ -388,3 +388,5 @@ ${newsText}
 // Trigger the daily render after exposing the audio element to Playwright.
 
 // Trigger daily render after fixing the audio duration lookup.
+
+// Trigger publishing with the bounded video-recording fallback.
