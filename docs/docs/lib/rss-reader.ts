@@ -522,9 +522,10 @@ function scoreImage(
     };
   }
 
-  if (matchedQueryWords.length >= 3) {
+  // İki güçlü konu kelimesi de haberle ilgili bir görsel bulmak için yeterli.
+  if (matchedQueryWords.length >= 2) {
     return {
-      score: 10 + matchedQueryWords.length,
+      score: 20 + matchedQueryWords.length,
       reason: "Haber konusu kelimeleri eşleşti"
     };
   }
@@ -544,10 +545,12 @@ export async function findCommonsImage(
     input.imageEntities || []
   );
 
-  const imageQueryWords = getWords(input.imageQuery || "");
+  // Gemini görsel araması üretmese bile haber başlığından konu tabanlı arama yap.
+  const fallbackQuery = input.imageQuery || news.title;
+  const imageQueryWords = getWords(fallbackQuery);
 
   const queries = buildSearchQueries(
-    input.imageQuery || "",
+    fallbackQuery,
     verifiedEntities
   );
 
