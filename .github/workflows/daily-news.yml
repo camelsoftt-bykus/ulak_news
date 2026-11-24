@@ -96,22 +96,97 @@ jobs:
             '. + {generatedAt: $generatedAt}' \
             response.json > docs/docs/public/data/daily.json
 
-      - name: Gemini ile doğal haber sunumu sesi üret
+      - name: Tek parça WAV yedeğini üret
+        continue-on-error: true
         run: |
           set -e
+          mkdir -p docs/docs/public/data
 
           jq -n --arg text "$(jq -r '.script' response.json)" \
-            '{text: $text}' > tts-request.json
+            '{text: $text}' > tts-fallback-request.json
 
-          curl --fail --silent --show-error \
-            --max-time 180 \
+          if curl --fail --silent --show-error \
+            --connect-timeout 20 --max-time 180 \
             -X POST \
             -H "Content-Type: application/json" \
-            --data-binary @tts-request.json \
+            --data-binary @tts-fallback-request.json \
             "https://ulaknews-docs.vercel.app/api/tts" \
-            -o docs/docs/public/data/daily.wav
+            -o docs/docs/public/data/daily.wav && \
+            test -s docs/docs/public/data/daily.wav; then
+            echo "Tek parça WAV yedeği hazır."
+          else
+            echo "::warning::Tek parça WAV yedeği üretilemedi; segmentli akış kullanılacak."
+            rm -f docs/docs/public/data/daily.wav
+          fi
 
-          test -s docs/docs/public/data/daily.wav
+      - name: Her sunum segmenti için ayrı WAV üret
+        run: |
+          set -euo pipefail
+
+          data_dir="docs/docs/public/data"
+          mkdir -p "$data_dir"
+          jq -e '.speechSegments | type == "array" and length > 0' response.json > /dev/null
+
+          segment_count=$(jq '.speechSegments | length' response.json)
+          echo "Üretilecek ses segmenti: $segment_count"
+
+          files_json='[]'
+
+          for i in $(seq 0 $((segment_count - 1))); do
+            segment_text=$(jq -r --argjson i "$i" '.speechSegments[$i].text' response.json)
+            if [ -z "$segment_text" ] || [ "$segment_text" = "null" ]; then
+              echo "::error::Segment $i metni boş."
+              exit 1
+            fi
+
+            filename="seg-$(printf '%02d' "$i").wav"
+            output="$data_dir/$filename"
+            request_file="tts-segment-request-$i.json"
+
+            jq -n --arg text "$segment_text" '{text: $text}' > "$request_file"
+
+            success=false
+            for attempt in 1 2 3; do
+              rm -f "$output"
+              if curl --fail --silent --show-error \
+                --connect-timeout 20 --max-time 180 \
+                -X POST \
+                -H "Content-Type: application/json" \
+                --data-binary @"$request_file" \
+                "https://ulaknews-docs.vercel.app/api/tts" \
+                -o "$output" && \
+                test -s "$output" && \
+                ffprobe -v error -select_streams a:0 -show_entries stream=codec_name \
+                  -of default=noprint_wrappers=1 "$output" > /dev/null; then
+                success=true
+                break
+              fi
+
+              echo "Segment $i denemesi $attempt başarısız."
+              if [ "$attempt" -lt 3 ]; then sleep 10; fi
+            done
+
+            if [ "$success" != "true" ]; then
+              echo "::error::Ses segmenti üretilemedi: $filename. Yayın durduruldu."
+              exit 1
+            fi
+
+            echo "Hazır: $filename ($(stat -c%s "$output") bayt)"
+            files_json=$(jq -c --arg file "$filename" '. + [$file]' <<< "$files_json")
+            rm -f "$request_file"
+          done
+
+          if [ "$(jq 'length' <<< "$files_json")" -ne "$segment_count" ]; then
+            echo "::error::Üretilen WAV sayısı segment sayısıyla eşleşmiyor."
+            exit 1
+          fi
+
+          jq --argjson files "$files_json" \
+            '. + {audioSegments: $files}' \
+            "$data_dir/daily.json" > "$data_dir/daily.json.tmp"
+          mv "$data_dir/daily.json.tmp" "$data_dir/daily.json"
+
+          echo "Segment doğrulaması tamamlandı: $segment_count metin / $(jq 'length' <<< "$files_json") WAV"
 
       - name: Robot sunum videosunu üret
         working-directory: docs/docs
@@ -124,7 +199,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add docs/docs/public/data/daily.json
-          git add docs/docs/public/data/daily.wav
+          git add -A docs/docs/public/data/daily.wav
+          git add docs/docs/public/data/seg-*.wav
           git add docs/docs/public/data/daily.mp4
           git add docs/docs/public/data/daily-poster.jpg
 
