@@ -117,13 +117,27 @@ async function main() {
       window.setULAKNews(news);
     }, newsForAnimation);
 
-    console.log("Haber görselleri yükleniyor...");
-
+    console.log("Stüdyo görseli ve cam maskesi hazırlanıyor...");
     await page.waitForFunction(
-      () => window.ULAK_IMAGES_READY === true,
+      () => window.ULAK_STUDIO_READY === true,
       null,
       { timeout: 45000 }
     );
+
+    console.log("Haber görselleri yükleniyor...");
+    await page.waitForFunction(
+      () => window.ULAK_IMAGES_READY === true,
+      null,
+      { timeout: 60000 }
+    );
+
+    const imageStats = await page.evaluate(() => ({
+      loaded: window.ULAK_IMAGE_COUNT || 0
+    }));
+    console.log(`Yüklenen haber görseli: ${imageStats.loaded}`);
+    if (imageStats.loaded === 0) {
+      throw new Error("Hiçbir haber görseli yüklenmedi; görselsiz video yayınlanmayacak.");
+    }
 
     console.log("Ahmet'in ses dosyası yükleniyor...");
 
