@@ -392,3 +392,5 @@ ${newsText}
 // Trigger publishing with the bounded video-recording fallback.
 
 // Trigger publishing with direct browser video-blob capture.
+
+// Trigger publishing after disabling the automatic news refresh during video capture.
