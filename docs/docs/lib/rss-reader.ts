@@ -515,10 +515,10 @@ function scoreImage(
     searchableWords.has(word)
   );
 
-  if (matchedEntities.length > 0 && matchedQueryWords.length >= 1) {
+  if (matchedEntities.length > 0) {
     return {
       score: 100 + matchedEntities.length * 5 + matchedQueryWords.length,
-      reason: "Özel isim ve haber konusu eşleşti"
+      reason: "Haberde geçen özel isim eşleşti"
     };
   }
 
