@@ -471,6 +471,69 @@ function clearSegmentAudio(){
  segmentPreparationPromise=null;
 }
 
+/*
+ * OTOMASYON RENDER'I İÇİN DIŞARIDAN HAZIR SEGMENTLERİ YÜKLE
+ * audioSegments sırası speechSegments ile bire bir eşleşir.
+ * Her ses {base64, mimeType} biçiminde aktarılır; böylece Vercel'e
+ * yeni bir dağıtım yapılmasını beklemeden yerel workflow dosyaları oynatılır.
+ */
+window.ULAK_LOAD_SEGMENTS=function(payload){
+ if(!payload||!Array.isArray(payload.speechSegments)||!Array.isArray(payload.audioSegments)){
+  throw new Error('Segment verisi hatalı: speechSegments ve audioSegments dizileri gerekli.');
+ }
+
+ const segments=payload.speechSegments;
+ const files=payload.audioSegments;
+
+ if(!segments.length||segments.length!==files.length){
+  throw new Error('Segment ve ses dosyası sayıları eşleşmiyor: '+segments.length+' metin, '+files.length+' ses.');
+ }
+
+ for(let i=0;i<segments.length;i++){
+  const segment=segments[i];
+  const file=files[i];
+  if(!segment||!['intro','story','closing'].includes(segment.type)||!segment.text||
+     !file||typeof file.base64!=='string'||!file.base64){
+   throw new Error('Geçersiz ses segmenti veya dosyası: '+i);
+  }
+ }
+
+ audio.pause();
+ clearSegmentAudio();
+ speechSegments=segments.map(segment=>({
+  type:segment.type,
+  index:Number(segment.index),
+  text:String(segment.text)
+ }));
+
+ try{
+  segmentAudioUrls=files.map((file,index)=>{
+   const binary=atob(file.base64);
+   const bytes=new Uint8Array(binary.length);
+   for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+   const blob=new Blob([bytes],{type:file.mimeType||'audio/wav'});
+   if(!blob.size)throw new Error('Ses dosyası boş: '+index);
+   return URL.createObjectURL(blob);
+  });
+ }catch(error){
+  clearSegmentAudio();
+  throw new Error('Ses segmentleri çözümlenemedi: '+error.message);
+ }
+
+ segmentMode=false;
+ currentSegmentIndex=-1;
+ currentStoryIndex=-1;
+ audioSourceType='segments';
+ generatedSpeechText='';
+
+ setStatus('Hazır ses segmentleri yüklendi: '+segmentAudioUrls.length+' bölüm.');
+ return {
+  count:segmentAudioUrls.length,
+  storyCount:speechSegments.filter(segment=>segment.type==='story').length,
+  audioSourceType
+ };
+};
+
 /* HABERLERİN SESLERİNİ AYRI AYRI ÜRET */
 async function prepareSpeechSegments(){
  if(!speechSegments.length)return false;
