@@ -469,7 +469,8 @@ function getVerifiedEntities(
 
 function buildSearchQueries(
   imageQuery: string,
-  verifiedEntities: string[]
+  verifiedEntities: string[],
+  articleTitle: string
 ): string[] {
   const queries: string[] = [];
 
@@ -480,6 +481,20 @@ function buildSearchQueries(
     .slice(0, 120);
 
   if (cleanQuery) queries.push(cleanQuery);
+
+  // Modelin oluşturduğu görsel araması sonuç vermediğinde haber başlığını da ara.
+  const cleanTitle = articleTitle
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+
+  if (
+    cleanTitle &&
+    !queries.some((query) => normalizeText(query) === normalizeText(cleanTitle))
+  ) {
+    queries.push(cleanTitle);
+  }
 
   for (const entity of verifiedEntities) {
     if (queries.length >= 3) break;
@@ -532,11 +547,11 @@ function scoreImage(
 
   // Wikimedia başlıkları kısa olabildiği için tek, ayırt edici bir konu
   // kelimesi de yedek eşleşme kabul edilir; genel kelimeler kullanılmaz.
-  const strongMatches = matchedQueryWords.filter((word) => word.length >= 6);
+  const strongMatches = matchedQueryWords.filter((word) => word.length >= 4);
   if (strongMatches.length >= 1) {
     return {
-      score: 10 + strongMatches.length,
-      reason: "Ayırt edici haber konusu kelimesi eşleşti"
+      score: 8 + strongMatches.length,
+      reason: "Haber başlığı veya konusu kelimesi eşleşti"
     };
   }
 
@@ -561,7 +576,8 @@ export async function findCommonsImage(
 
   const queries = buildSearchQueries(
     fallbackQuery,
-    verifiedEntities
+    verifiedEntities,
+    news.title
   );
 
   if (queries.length === 0) return null;
