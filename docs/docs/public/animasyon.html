@@ -478,23 +478,24 @@ function clearSegmentAudio(){
  * yeni bir dağıtım yapılmasını beklemeden yerel workflow dosyaları oynatılır.
  */
 window.ULAK_LOAD_SEGMENTS=function(payload){
- if(!payload||!Array.isArray(payload.speechSegments)||!Array.isArray(payload.audioSegments)){
-  throw new Error('Segment verisi hatalı: speechSegments ve audioSegments dizileri gerekli.');
+ if(!payload||!Array.isArray(payload.speechSegments)||!Array.isArray(payload.audioUrls)){
+  throw new Error('Segment verisi hatalı: speechSegments ve audioUrls dizileri gerekli.');
  }
 
  const segments=payload.speechSegments;
- const files=payload.audioSegments;
+ const urls=payload.audioUrls;
 
- if(!segments.length||segments.length!==files.length){
-  throw new Error('Segment ve ses dosyası sayıları eşleşmiyor: '+segments.length+' metin, '+files.length+' ses.');
+ if(!segments.length||segments.length!==urls.length){
+  throw new Error('Segment ve ses dosyası sayıları eşleşmiyor: '+segments.length+' metin, '+urls.length+' ses.');
  }
 
  for(let i=0;i<segments.length;i++){
   const segment=segments[i];
-  const file=files[i];
-  if(!segment||!['intro','story','closing'].includes(segment.type)||!segment.text||
-     !file||typeof file.base64!=='string'||!file.base64){
-   throw new Error('Geçersiz ses segmenti veya dosyası: '+i);
+  const url=urls[i];
+  if(!segment||!['intro','story','closing'].includes(segment.type)||
+     !Number.isFinite(Number(segment.index))||!segment.text||
+     typeof url!=='string'||!url.startsWith('/__ulak_segments__/')){
+   throw new Error('Geçersiz ses segmenti veya dosya yolu: '+i);
   }
  }
 
@@ -506,18 +507,10 @@ window.ULAK_LOAD_SEGMENTS=function(payload){
   text:String(segment.text)
  }));
 
- try{
-  segmentAudioUrls=files.map((file,index)=>{
-   const binary=atob(file.base64);
-   const bytes=new Uint8Array(binary.length);
-   for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-   const blob=new Blob([bytes],{type:file.mimeType||'audio/wav'});
-   if(!blob.size)throw new Error('Ses dosyası boş: '+index);
-   return URL.createObjectURL(blob);
-  });
- }catch(error){
+ segmentAudioUrls=urls.map(url=>new URL(url,window.location.origin).href);
+ if(segmentAudioUrls.length!==speechSegments.length){
   clearSegmentAudio();
-  throw new Error('Ses segmentleri çözümlenemedi: '+error.message);
+  throw new Error('Segment ses dizisi eksik yüklendi.');
  }
 
  segmentMode=false;
@@ -525,6 +518,8 @@ window.ULAK_LOAD_SEGMENTS=function(payload){
  currentStoryIndex=-1;
  audioSourceType='segments';
  generatedSpeechText='';
+ window.ULAK_SEGMENT_COUNT=segmentAudioUrls.length;
+ window.ULAK_AUDIO_SOURCE_TYPE=audioSourceType;
 
  setStatus('Hazır ses segmentleri yüklendi: '+segmentAudioUrls.length+' bölüm.');
  return {
