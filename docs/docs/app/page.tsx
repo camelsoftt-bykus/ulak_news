@@ -48,7 +48,7 @@ export default function Home() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#766e64", fontSize: 12 }}>
             <span>{today}</span><span>ŞEHRİNDEN DÜNYAYA</span>
           </div>
-          <a href="/" style={{ display: "block", textAlign: "center", padding: "12px 0 10px", fontFamily: "Georgia, serif", fontSize: "clamp(42px, 7vw, 66px)", fontWeight: 800, letterSpacing: "-3px" }}>ULAK</a>
+          <a href="/" aria-label="ULAK’TAN HABERLER ana sayfa" style={{ display: "flex", justifyContent: "center", padding: "13px 0 12px" }}><img src="/ulaktan-haberler-logo.svg" alt="ULAK’TAN HABERLER" style={{ display: "block", width: "min(100%, 480px)", height: "auto" }} /></a>
           <nav style={{ borderTop: "3px double #3b352e", borderBottom: "1px solid #3b352e", padding: "10px 0", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "10px 28px", fontSize: 13, fontWeight: 700 }}>
             {sections.map((section) => <a key={section.id} href={"#" + section.id}>{section.name}</a>)}
           </nav>
@@ -56,9 +56,9 @@ export default function Home() {
       </header>
       <section className="container" style={{ paddingTop: 28, paddingBottom: 12 }}>
         <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, fontWeight: 800, color: "#9a5c2c" }}>GÜNÜN GAZETESİ</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, fontWeight: 800, color: "#9a5c2c" }}>ULAK’TAN HABERLER · GÜNÜN GAZETESİ</div>
           <h1 style={{ fontFamily: "Georgia, serif", fontSize: "clamp(28px, 4vw, 42px)", margin: "8px 0" }}>Gündem, olduğu gibi.</h1>
-          <p style={{ color: "#756d63", margin: 0 }}>Önce Sincan ve Etimesgut. Ardından Ankara, Türkiye ve dünya.</p>
+          <p style={{ color: "#756d63", margin: 0 }}>Türkiye’den ve dünyadan, doğru haberin adresi.</p>
         </div>
         <section aria-labelledby="ulak-sunuyor" style={{ margin: "0 0 34px", border: "1px solid #d8d0c4", background: "#211e1b", color: "#f8f1e7", borderRadius: 10, overflow: "hidden" }}>
           <div style={{ padding: "18px 20px 12px", borderBottom: "1px solid #50483f" }}>
@@ -97,8 +97,8 @@ export default function Home() {
       </section>
       <footer style={{ marginTop: 36, borderTop: "3px double #3b352e", background: "#f2ece1" }}>
         <div className="container" style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", paddingTop: 22, paddingBottom: 22, color: "#71695f", fontSize: 12 }}>
-          <strong style={{ fontFamily: "Georgia, serif", fontSize: 20, color: "#29231d" }}>ULAK</strong>
-          <span>Yerelden dünyaya, doğru ve anlaşılır haber.</span><span>© ULAK</span>
+          <strong style={{ fontFamily: "Georgia, serif", fontSize: 20, color: "#29231d" }}>ULAK’TAN HABERLER</strong>
+          <span>Türkiye’den ve dünyadan, doğru haberin adresi.</span><span>© ULAK’TAN HABERLER</span>
         </div>
       </footer>
     </main>
