@@ -219,12 +219,20 @@ async function main() {
       null,
       { timeout: 60000 }
     );
+    await page.waitForFunction(
+      () => window.ULAK_BROADCAST_IMAGES_READY === true,
+      null,
+      { timeout: 60000 }
+    );
 
     const imageStats = await page.evaluate(() => ({
-      loaded: window.ULAK_IMAGE_COUNT || 0
+      loaded: window.ULAK_IMAGE_COUNT || 0,
+      broadcast: window.ULAK_BROADCAST_IMAGE_COUNT || 0
     }));
-    console.log(`Yüklenen haber görseli: ${imageStats.loaded}`);
-    if (imageStats.loaded === 0) {
+    console.log(
+      `Yüklenen haber görseli: ${imageStats.loaded}; tam ekran yayın görseli: ${imageStats.broadcast}`
+    );
+    if (imageStats.loaded === 0 && imageStats.broadcast === 0) {
       throw new Error("Hiçbir haber görseli yüklenmedi; görselsiz video yayınlanmayacak.");
     }
 
