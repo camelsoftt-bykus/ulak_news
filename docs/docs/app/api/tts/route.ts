@@ -20,16 +20,21 @@ class GeminiProviderError extends Error {
 
 function failureResponse(error: unknown, fallback: string) {
   if (error instanceof GeminiProviderError) {
+    const quotaExceeded =
+      error.httpStatus === 429 ||
+      error.providerStatus === "RESOURCE_EXHAUSTED" ||
+      error.providerCode === "429";
+
     return Response.json(
       {
         error: {
           status: error.providerStatus ?? "UPSTREAM_HTTP_ERROR",
-          code: error.providerCode ?? "NO_PROVIDER_CODE",
+          code: quotaExceeded ? "QUOTA_EXCEEDED" : (error.providerCode ?? "NO_PROVIDER_CODE"),
           httpStatus: error.httpStatus,
           message: error.providerMessage ?? fallback,
         },
       },
-      { status: 502 }
+      { status: quotaExceeded ? 429 : 502 }
     );
   }
 
