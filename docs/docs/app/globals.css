@@ -1310,3 +1310,97 @@ a {
 .print-news-section .news-grid{grid-template-columns:1fr}
 .newspaper-footer .footer-inner{align-items:flex-start;flex-direction:column;justify-content:center;gap:10px;padding-top:18px;padding-bottom:18px}
 }
+
+/* Gazete haber kartlari: konu illusturasyonu ve matbaa tipografisi */
+.newspaper-page .print-news-section h2,
+.newspaper-page .print-news-section h3,
+.newspaper-page .print-news-section strong {
+  font-family: Georgia, "Times New Roman", serif;
+}
+.newspaper-page .print-news-section > div > section > h2 {
+  margin: 0 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #b8aa96;
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -.35px;
+}
+.print-news-section .news-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.print-news-section .news-card {
+  display: flex;
+  min-height: 0;
+  padding: 0 0 18px;
+  overflow: hidden;
+}
+.print-news-section .news-card-top {
+  padding: 13px 18px 0;
+}
+.print-news-section .news-card-art {
+  position: relative;
+  height: 132px;
+  margin-top: 12px;
+  overflow: hidden;
+  border-top: 1px solid #e0d5c5;
+  border-bottom: 1px solid #e0d5c5;
+}
+.print-news-section .news-card-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.print-news-section .news-card-art span {
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  padding: 4px 7px;
+  background: rgba(255,250,241,.9);
+  color: #51483d;
+  font: 700 9px/1 Arial, sans-serif;
+  letter-spacing: 1px;
+}
+.print-news-section .news-card h3 {
+  margin: 14px 18px 5px;
+  font-size: 23px;
+  line-height: 1.2;
+  letter-spacing: -.45px;
+  font-weight: 700;
+}
+.print-news-section .news-card > div:not(.news-card-top):not(.news-card-art) {
+  margin-right: 18px !important;
+  margin-left: 18px !important;
+}
+.print-news-section .news-card > div strong {
+  font-size: 15px;
+}
+.print-news-section .news-card p {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  line-height: 1.65;
+}
+.print-news-section .news-card .news-coming,
+.print-news-section .news-card > a {
+  margin-right: 18px;
+  margin-left: 18px;
+}
+.print-news-section .news-card > a {
+  margin-top: 12px;
+  font: 700 12px Arial, sans-serif;
+  color: #8a481d;
+}
+@media (max-width: 760px) {
+  .print-news-section .news-grid {
+    grid-template-columns: 1fr;
+  }
+  .print-news-section .news-card-art {
+    height: 118px;
+  }
+  .print-news-section .news-card h3 {
+    font-size: 22px;
+  }
+  .newspaper-page .print-news-section > div > section > h2 {
+    font-size: 25px;
+  }
+}
