@@ -30,18 +30,35 @@ Bu dosya ULAK projesinde ChatGPT ve Claude arasındaki ortak, kalıcı çalışm
 ## Aktif görevler
 
 ### G-001 – API güvenliği ve Gemini tüketimini azaltma tasarımı
-- **Durum:** Claude'dan teknik tasarım bekleniyor.
-- **Sorumlu:** Claude.
-- **Kapsam:** Hazır `daily.json` üzerinden ziyaretçi deneyimi; yalnızca kontrollü otomasyonla günlük üretim; TTS 429 davranışı; gereksiz tek parça WAV isteğinin kaldırılması; 10 WAV doğrulaması; mevcut arayüzün korunması.
-- **İzin:** Salt okunur analiz ve tasarım.
+- **Durum:** Claude tasarım raporu alındı; koordinatör incelemesi tamamlandı. Uygulama öncesi tasarım düzeltmesi bekleniyor.
+- **Sorumlu:** Claude (tasarım revizyonu); ChatGPT (bağımsız doğrulama ve uygulama koordinasyonu).
+- **Kapsam:** Hazır `daily.json` üzerinden ziyaretçi deneyimi; yalnızca kontrollü otomasyonla günlük üretim; TTS 429 davranışı; gereksiz tek parça WAV isteğinin kaldırılması; 10 WAV hedefinin netleştirilmesi; mevcut arayüzün korunması.
+- **İzin:** Şimdilik salt okunur analiz ve tasarım revizyonu.
 - **Yasak:** Dosya değiştirme, commit/push, deploy, workflow çalıştırma, Gemini/TTS isteği, sır görüntüleme.
-- **Kabul kriteri:** Değişecek dosyalar, güvenli yetkilendirme tasarımı, gerekli ortam değişkenleri, uyumluluk riskleri ve Gemini kullanmayan test planı açıkça listelenmeli.
+- **Kabul kriteri:** Değişecek dosyalar, güvenli yetkilendirme tasarımı, gerekli ortam değişkenleri, uyumluluk riskleri, Gemini kullanmayan test planı ve güvenli geçiş sırası açıkça listelenmeli.
 
 ## Koordinatör kararları
 
 - **2026-11-24:** Ücretsiz Gemini kotası dolduğu için kota yenilenene kadar TTS/Gemini testi ve üretim workflow'u çalıştırılmayacak.
 - **2026-11-24:** Öncelik, ziyaretçi sayfa açılışının Gemini çağrısı yapmasını önlemek ve API uçlarını kontrollü hale getirmek.
 - **2026-11-24:** Claude'un teknik tasarımı incelenmeden uygulama değişikliği başlatılmayacak.
+- **2026-11-24:** API yetkilendirmesi geçiş planının sonuna bırakılmayacak. Workflow yeni kimlik doğrulama yöntemiyle hazır olmadan public uçlar kapatılmayacak.
+- **2026-11-24:** Workflow'un `push.paths` listesi `animasyon.html` ve API dosyalarını içeriyor. Bu dosyalara push, günlük Gemini üretimini tetikleyebilir. Kod değişikliğinden önce bu otomatik tetiklenme güvenli biçimde devre dışı bırakılmalı veya kontrollü hale getirilmeli.
+- **2026-11-24:** Mevcut `daily.json` örneğinde 3 haber ve 5 `speechSegments` (intro + 3 story + closing) bulunuyor. Workflow sabit 10 WAV değil, dinamik olarak `speechSegments.length` kadar WAV üretiyor. Tam 10 segment gereksinimi korunacaksa sunum üretim kuralı da bunu garanti etmeli; yalnızca dosya sayısı kontrolü yeterli değil.
+- **2026-11-24:** `render-video.mjs` zaten segment/metin sayısı eşleşmesini, dosya varlığını/boş olmamasını ve ffprobe ile pozitif süreyi kontrol ediyor. Bu mevcut korumalar korunmalı ve eksik kontroller tamamlanmalı.
+- **2026-11-24:** `animasyon.html` içindeki haberleri seslendir düğmesi, mevcut kodda her segment için `/api/tts` çağırıyor. Statik haber yüklemesine ek olarak hazır WAV segmentlerini statik dosyalardan oynatma yolu tasarlanmalı; aksi hâlde kullanıcı tıklaması Gemini tüketmeye devam eder.
+- **2026-11-24:** TTS rotası Google sağlayıcısının HTTP 429 yanıtını şu an dışarıya HTTP 502 olarak döndürüyor. Workflow 502'yi tekrar denenebilir kabul ediyor. Kota hatası için açık 429/QUOTA_EXCEEDED davranışı ve presenter tarafında da kota hatasında tekrar etmeme kuralı gerekli.
+- **2026-11-24:** Kota tükenmesinin ziyaretçi trafiğinden kaynaklandığı kanıtlanmış değildir. Ziyaretçi ve public API çağrıları risk ve olası tüketim kaynağıdır; kök neden miktarı olarak sunulmamalıdır.
+- **2026-11-24:** Claude'un G-001 raporu, sohbet içinde paylaşılan eski kod ve loglara dayalıdır. Aşağıdaki güncel dosya SHA'ları GitHub'dan bağımsız olarak okundu; henüz çalışma zamanı testi yapılmadı.
+
+## Güncel depo kontrolü (2026-11-24)
+
+- `docs/docs/public/animasyon.html` — `bf94c0545a987c3bcf68c7b861706d7c64499f25`
+- `docs/docs/app/api/presenter/route.ts` — `4e50f96045d30fe1e3a790d203383f7f0a869479`
+- `docs/docs/app/api/tts/route.ts` — `502cee888393456a115e3bbd9987abea765d6da2`
+- `.github/workflows/daily-news.yml` — `6fdcdc562656c6935abd127e88dc7c25df576a30`
+- `docs/docs/public/data/daily.json` — `1dfbe56dcd85aff9a90948d3d1a7918654da9e10`
+- `docs/docs/scripts/render-video.mjs` — `d355ec70ac70a69e756a86bf56b3606c72387078`
 
 ## Claude – görev yanıtı şablonu
 
@@ -59,3 +76,4 @@ Her görev yanıtını şu başlıklarla ekle:
 ## İş günlüğü
 
 - **2026-11-24 – Başlangıç:** Ortak koordinasyon dosyası oluşturuldu. Bu dosyanın kendisi günlük haber workflow'unu tetiklemek üzere tanımlı bir kaynak dosya değildir. İlk aktif görev G-001 salt okunur tasarımdır.
+- **2026-11-24 – G-001 tasarım incelemesi:** Claude raporu alındı. ChatGPT güncel GitHub dosyalarını tekrar okudu ve yukarıdaki ek riskleri/uygulama koşullarını kaydetti. Henüz uygulama kodu değiştirilmedi; Gemini/TTS çağrısı veya workflow tetiklemesi yapılmadı.
