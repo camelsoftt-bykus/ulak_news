@@ -114,6 +114,7 @@ jobs:
           git add docs/docs/public/data/daily.json
           git add docs/docs/public/data/daily.mp3
           git add docs/docs/public/data/daily.mp4
+          git add docs/docs/public/data/daily-poster.jpg
 
           if ! git diff --cached --quiet; then
             git commit -m "Günlük ULAK haber, ses ve video bülteni"
