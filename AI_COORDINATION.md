@@ -160,3 +160,18 @@ Claude'un ikinci tasarım revizyonu genel olarak kabul edilebilir; uygulamaya ge
 - **PR şartı:** Ayrı branch + PR; PR merge edilmez. PR gövdesinde her dosya, değişiklik gerekçesi, çalıştırılan test ve tam sonuç, yapılmayan testler, canlı doğrulanmayanlar ve kalan riskler yazılır.
 - **Doğrulama dürüstlüğü:** Çalıştırılmayan test "geçti" yazılamaz. Kullanıcının yerelde test çalıştıramadığı dikkate alınarak CI kanıtı ve PR diff'i ChatGPT'nin incelemesine sunulur.
 - **2026-11-24 – Proje sahibi yetkisi:** İlk dilim için kod yazma ve ayrı PR hazırlama, Gemini/TTS'siz mock testleri çalıştırma izni verildi. main/merge/workflow/deploy/secret/gerçek API yetkisi verilmedi.
+
+
+## G-003 – Günde iki kez beş haberlik ayrı yazılı bülten (2026-11-24)
+
+- **Durum:** Proje sahibi kapsamı onayladı; ayrı özellik dalı açıldı. İlk PR dilimi uygulama planı ve koordinasyon kaydıdır.
+- **Sorumlu:** ChatGPT (koordinasyon, kapsam ve bağımsız inceleme); uygulama adımları ayrı küçük PR dilimleriyle yürütülecek.
+- **Onaylanan ürün kararı:** Her gün Europe/Istanbul saatine göre 08.00 ve 20.00'de en fazla 5 haberlik yazılı bülten. Mevcut sesli ve videolu Ulak yayın hattı korunacak ve bu işten bağımsız kalacak.
+- **Editoryal kurallar:** Sincan/Etimesgut > Ankara > Türkiye > siyaset/dünya > bilim/uzay; her haberde başlık, kısa özet, neden önemli, güvenilir kaynak bağlantısı ve tarih; doğrulanmamış iddialar işaretlenecek; tekrarlar birleştirilecek; sabah bülteni akşam yeni gelişme yoksa tekrarlanmayacak; sayı doldurulmayacak.
+- **İlk PR kapsamı:** Yalnızca `ULAK_DIGEST_IMPLEMENTATION_PLAN.md` ve bu koordinasyon kaydı. Kod, workflow, zamanlama, bildirim, veri veya production ayarı değişikliği yok.
+- **Özellik uygulaması için hedef kapsam (henüz ayrı uygulama yetkisi değil):** Ayrı yazılı digest veri sözleşmesi ve editoryal işlev; kalıcı baskı geçmişi; ana sayfada video modülünden bağımsız yazılı bülten; 08.00/20.00 zamanlayıcı; Web Push/abonelik keşfi ve güvenli bildirim. Uygulama aşamaları keşif sonuçlarına göre ayrıca kapsamlandırılacak.
+- **Koruma sınırı:** `daily-news.yml`, `/api/presenter`, TTS, mevcut `daily.json`, WAV/video varlıkları ve animasyon/ses oynatma arayüzü bu görevde değiştirilmeyecek. G-002 güvenlik çalışmasıyla dosya/iş akışı çakışması yaratılmayacak.
+- **Yasaklar:** Merge, production deploy, workflow tetikleme, gerçek Gemini/TTS çağrısı, gerçek push gönderimi, secret/kota/ücret/model ayarı değişikliği için ayrı açık onay gerekir.
+- **PR dalı:** `feat/twice-daily-five-story-digest`
+- **Kabul ölçütleri (özellik tamamlandığında):** 08.00 ve 20.00 baskıları bağımsız üretilir; 0–5 haber sınırı ve kaynak/tarih doğrulaması geçer; sabah-akşam tekrar kontrolü çalışır; başarısız üretim son başarılı baskıyı korur; bildirim izni olmayan kullanıcıya push gitmez; mevcut ses/video akışı regresyonsuz kalır.
+- **2026-11-24 – Proje sahibi kararı:** 5 haberlik yeni yazılı sistem onaylandı; mevcut sesli ve videolu Ulak yayını korunacak; plan ve ayrı PR çalışması başlatılacak.
