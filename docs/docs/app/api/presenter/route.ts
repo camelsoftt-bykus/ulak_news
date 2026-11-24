@@ -190,7 +190,7 @@ HER HABER İÇİN:
 - Uygun ifade oluşturulamıyorsa imageQuery boş olsun.
 
 SUNUM:
-- intro: “Merhaba, ULAK’TAN HABERLER’e hoş geldiniz” ifadesiyle başlayan kısa selamlama.
+- intro: Bülten saatine uygun selamlama kullan. Sabah yayınında mutlaka “Günaydın!”, akşam yayınında mutlaka “İyi akşamlar!” diye başla. İzleyiciye doğrudan seslenen, muhabir sıcaklığında kısa bir stüdyo açılışı yaz.
 - closing: Kısa kapanış.
 - Toplam süre yaklaşık 90 saniye olsun.
 - Doğal, samimi ve tarafsız bir sunucu üslubu kullan.
@@ -414,9 +414,18 @@ ${newsText}
       })
     );
 
-    const intro =
-      cleanNarration(result.intro) ||
-      "Merhaba, ULAK’TAN HABERLER’e hoş geldiniz. Günün önemli gelişmeleriyle karşınızdayız.";
+    // Yayın selamlamasını modelin tahminine bırakma; Türkiye saatine göre sabitle.
+    const istanbulHour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Istanbul",
+        hour: "2-digit",
+        hourCycle: "h23"
+      }).format(new Date())
+    );
+    const isMorningEdition = istanbulHour >= 5 && istanbulHour < 14;
+    const intro = isMorningEdition
+      ? "Günaydın! ULAK’TAN HABERLER başlıyor. Türkiye’den ve dünyadan, güne başlarken bilmeniz gereken gelişmeleri aktarıyoruz."
+      : "İyi akşamlar! ULAK’TAN HABERLER başlıyor. Günün öne çıkan gelişmelerini, önemli ayrıntılarıyla birlikte aktarıyoruz.";
 
     const closing =
       cleanNarration(result.closing) ||
