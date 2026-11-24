@@ -104,7 +104,7 @@ jobs:
             "https://ulaknews-docs.vercel.app/api/tts" \
             -o docs/docs/public/data/daily.wav
 
-          test -s docs/docs/public/data/daily.mp3
+          test -s docs/docs/public/data/daily.wav
 
       - name: Robot sunum videosunu üret
         working-directory: docs/docs
