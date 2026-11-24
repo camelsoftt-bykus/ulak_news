@@ -65,33 +65,13 @@ export default function Home() {
           <div style={{ padding: "18px 20px 12px", borderBottom: "1px solid #50483f" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", marginBottom: 16 }}>
               <img src="/1795512817665.jpg" alt="ULAK, Baş Haber Editörü" style={{ width: 116, height: 116, objectFit: "cover", objectPosition: "center", borderRadius: 12, border: "1px solid #8b684b", boxShadow: "0 8px 24px #0008" }} />
-              <div>
-                <div style={{ fontFamily: "Georgia, serif", fontSize: 25, fontWeight: 800, color: "#fff9ef" }}>ULAK</div>
-                <div style={{ marginTop: 4, color: "#e6ad70", fontSize: 12, letterSpacing: 1.5, fontWeight: 800, textTransform: "uppercase" }}>Baş Haber Editörü</div>
-              </div>
+              <div><div style={{ fontFamily: "Georgia, serif", fontSize: 25, fontWeight: 800, color: "#fff9ef" }}>ULAK</div><div style={{ marginTop: 4, color: "#e6ad70", fontSize: 12, letterSpacing: 1.5, fontWeight: 800, textTransform: "uppercase" }}>Baş Haber Editörü</div></div>
             </div>
             <div style={{ fontSize: 11, letterSpacing: 2.5, fontWeight: 800, color: "#e6ad70" }}>GÜNÜN MANŞETLERİ</div>
-            <h2 id="ulak-sunuyor" style={{ fontFamily: "Georgia, serif", fontSize: "clamp(23px, 3vw, 31px)", margin: "6px 0 4px", color: "#fff9ef" }}>Gündemin Öne Çıkanları</h2>
-            <p style={{ margin: 0, color: "#c8bdae", fontSize: 14 }}>Günün öne çıkan gelişmeleri, anlaşılır ve akıcı bir anlatımla.</p>
+            <h2 id="ulak-sunuyor" style={{ fontFamily: "Georgia, serif", fontSize: "clamp(23px, 3vw, 31px)", margin: "6px 0 4px", color: "#fff9ef" }}>ULAK’ın yazılı haber bülteni</h2>
+            <p style={{ margin: 0, color: "#c8bdae", fontSize: 14 }}>Video ve ses üretimi şimdilik kapalı. Güncel haberleri ve kaynaklarını aşağıda okuyabilirsiniz.</p>
           </div>
-          <div style={{ padding: 14 }}>
-            {presenterReady ? (
-              <>
-                <video controls playsInline preload="metadata" poster="/data/daily-poster.jpg" aria-label="ULAK günlük haber sunumu" style={{ display: "block", width: "100%", maxHeight: 620, objectFit: "contain", background: "#090807", borderRadius: 7 }}>
-                  <source src={"/data/daily.mp4?v=" + encodeURIComponent("latest")} type="video/mp4" />
-                  Tarayıcınız video oynatmayı desteklemiyor.
-                </video>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: "12px 2px 2px", color: "#c8bdae", fontSize: 12 }}>
-                  <span>Günün haber özeti</span>
-                </div>
-              </>
-            ) : (
-              <div style={{ padding: "28px 12px", textAlign: "center", color: "#e7d9c8" }}>
-                <div style={{ fontFamily: "Georgia, serif", fontSize: 20 }}>Günün yeni baskısı hazırlanıyor</div>
-                <p style={{ margin: "8px 0 0", fontSize: 13, color: "#c8bdae" }}>Günün haberleri editoryal kontrolden geçiyor. ULAK’ın görüntülü haber sunumu hazır olduğunda burada yayımlanacak.</p>
-              </div>
-            )}
-          </div>
+          <div style={{ padding: 18, color: "#e7d9c8", fontSize: 14, lineHeight: 1.7 }}><p style={{ margin: 0 }}>ULAK, Sincan ve Etimesgut başta olmak üzere Ankara’dan, Türkiye’den ve dünyadan önemli gelişmeleri derliyor. Her haberin özeti ve kaynağı aşağıdaki haber akışında yer alıyor.</p></div>
         </section>
         <NewsFeed />
       </section>
