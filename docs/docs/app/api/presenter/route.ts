@@ -384,3 +384,5 @@ ${newsText}
 }
 
 // Trigger refreshed daily video rendering after the recording reliability fix.
+
+// Trigger the daily render after exposing the audio element to Playwright.
