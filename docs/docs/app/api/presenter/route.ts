@@ -38,7 +38,7 @@ function normalizeStoryTitle(value: string): string {
   return value
     .toLocaleLowerCase("tr-TR")
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/ı/g, "i")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
@@ -169,8 +169,10 @@ Aşağıdaki haber kayıtlarından yaklaşık 90 saniyelik doğal bir Türkçe h
 DOĞRULUK:
 - Yalnızca verilen haber bilgilerini kullan.
 - Olay, kişi, kurum, tarih veya sayı uydurma.
-- Haberleri tarafsız ve anlaşılır Türkçeyle anlat.
+- Haberleri tarafsız, anlaşılır ve insanın konuştuğu doğal Türkçeyle anlat.
+- Başlığı aynen tekrar etme; dinleyiciye olayı kısa bir bağlamla anlat.
 - Haber sırasını değiştirme.
+- Kaynak adlarını, internet adreslerini, URL'leri, dosya uzantılarını veya teknik bağlantı metinlerini ASLA seslendirme.
 - Haber sayısı kadar stories kaydı oluştur.
 
 HER HABER İÇİN:
