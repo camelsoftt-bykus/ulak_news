@@ -522,11 +522,21 @@ function scoreImage(
     };
   }
 
-  // İki güçlü konu kelimesi de haberle ilgili bir görsel bulmak için yeterli.
+  // İki güçlü konu kelimesi en iyi eşleşmedir.
   if (matchedQueryWords.length >= 2) {
     return {
-      score: 20 + matchedQueryWords.length,
+      score: 30 + matchedQueryWords.length,
       reason: "Haber konusu kelimeleri eşleşti"
+    };
+  }
+
+  // Wikimedia başlıkları kısa olabildiği için tek, ayırt edici bir konu
+  // kelimesi de yedek eşleşme kabul edilir; genel kelimeler kullanılmaz.
+  const strongMatches = matchedQueryWords.filter((word) => word.length >= 6);
+  if (strongMatches.length >= 1) {
+    return {
+      score: 10 + strongMatches.length,
+      reason: "Ayırt edici haber konusu kelimesi eşleşti"
     };
   }
 
