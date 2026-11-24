@@ -92,7 +92,14 @@ async function main() {
     imageLicense: item.imageLicense || "",
     imageLicenseUrl: item.imageLicenseUrl || "",
     imageArtist: item.imageArtist || "",
-    imageCredit: item.imageCredit || ""
+    imageCredit: item.imageCredit || "",
+    broadcastImageUrl: item.broadcastImageUrl || "",
+    broadcastImagePageUrl: item.broadcastImagePageUrl || "",
+    broadcastImageTitle: item.broadcastImageTitle || "",
+    broadcastImageLicense: item.broadcastImageLicense || "",
+    broadcastImageLicenseUrl: item.broadcastImageLicenseUrl || "",
+    broadcastImageArtist: item.broadcastImageArtist || "",
+    broadcastImageCredit: item.broadcastImageCredit || ""
   }));
 
   console.log(`Haber sayısı: ${newsForAnimation.length}`);
