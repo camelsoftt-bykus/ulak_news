@@ -6,6 +6,39 @@ const MODEL = "gemini-3.8-flash-tts";
 const VOICE = "Charon";
 const MAX_TEXT_LENGTH = 15000;
 
+class GeminiProviderError extends Error {
+  constructor(
+    readonly httpStatus: number,
+    readonly providerStatus: string | null,
+    readonly providerCode: string | null,
+    readonly providerMessage: string | null,
+  ) {
+    super(`Gemini ses servisi HTTP ${httpStatus}`);
+    this.name = "GeminiProviderError";
+  }
+}
+
+function failureResponse(error: unknown, fallback: string) {
+  if (error instanceof GeminiProviderError) {
+    return Response.json(
+      {
+        error: {
+          status: error.providerStatus ?? "UPSTREAM_HTTP_ERROR",
+          code: error.providerCode ?? "NO_PROVIDER_CODE",
+          httpStatus: error.httpStatus,
+          message: error.providerMessage ?? fallback,
+        },
+      },
+      { status: 502 }
+    );
+  }
+
+  return Response.json(
+    { error: error instanceof Error ? error.message : fallback },
+    { status: 500 }
+  );
+}
+
 async function synthesize(text: string): Promise<Buffer> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("Gemini API anahtarı bulunamadı.");
@@ -40,8 +73,43 @@ async function synthesize(text: string): Promise<Buffer> {
 
   if (!response.ok) {
     const detail = await response.text();
-    console.error("[ULAK Gemini TTS]", response.status, detail.slice(0, 2000));
-    throw new Error(`Gemini ses servisi HTTP ${response.status}`);
+    let payload: unknown = null;
+    try {
+      payload = JSON.parse(detail);
+    } catch {
+      // Yanıt JSON değilse gövdeyi istemciye taşımıyoruz.
+    }
+
+    const root = payload && typeof payload === "object"
+      ? payload as Record<string, unknown>
+      : {};
+    const providerError = root.error && typeof root.error === "object"
+      ? root.error as Record<string, unknown>
+      : root;
+    const providerStatus = typeof providerError.status === "string"
+      ? providerError.status
+      : null;
+    const providerCode = typeof providerError.code === "string" || typeof providerError.code === "number"
+      ? String(providerError.code)
+      : null;
+    const providerMessage = typeof providerError.message === "string"
+      ? providerError.message.slice(0, 500)
+      : null;
+
+    console.error("[ULAK Gemini TTS]", JSON.stringify({
+      httpStatus: response.status,
+      providerStatus,
+      providerCode,
+      providerMessage,
+      responseType: payload === null ? "non_json" : typeof payload,
+    }));
+
+    throw new GeminiProviderError(
+      response.status,
+      providerStatus,
+      providerCode,
+      providerMessage,
+    );
   }
 
   const result = await response.json();
@@ -80,10 +148,7 @@ export async function GET() {
     ));
   } catch (error) {
     console.error("ULAK TTS test hatası:", error);
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Ses üretilemedi." },
-      { status: 500 }
-    );
+    return failureResponse(error, "Ses üretilemedi.");
   }
 }
 
@@ -102,9 +167,6 @@ export async function POST(request: Request) {
     return audioResponse(await synthesize(text));
   } catch (error) {
     console.error("ULAK TTS üretim hatası:", error);
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Ses üretimi tamamlanamadı." },
-      { status: 500 }
-    );
+    return failureResponse(error, "Ses üretimi tamamlanamadı.");
   }
 }
