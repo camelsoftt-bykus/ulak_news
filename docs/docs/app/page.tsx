@@ -1,214 +1,132 @@
-
 "use client";
 
-import { useState } from "react";
 import NewsFeed from "./news-feed";
 
 const newsCategories = [
-  { name: "Sincan & Etimesgut", id: "yerel-gundem" },
+  { name: "Sincan", id: "yerel-gundem" },
+  { name: "Etimesgut", id: "yerel-gundem" },
   { name: "Ankara", id: "ankara" },
   { name: "Türkiye", id: "turkiye" },
   { name: "Dünya", id: "dunya" },
-  { name: "Bilim & Uzay", id: "bilim-ve-uzay" },
+  { name: "Bilim ve Uzay", id: "bilim-ve-uzay" },
 ];
 
-export default function Home() {
-  const [activeCategory, setActiveCategory] = useState("yerel-gundem");
+function todayLabel() {
+  return new Intl.DateTimeFormat("tr-TR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Istanbul",
+  }).format(new Date());
+}
 
+function BrandMark() {
   return (
-    <main>
-      <header className="topbar">
-        <div className="container nav-inner">
-          <a href="/" className="brand">
-            <span className="brand-mark">U</span>
-            <span>ULAK</span>
-          </a>
+    <svg className="brand-globe" viewBox="0 0 64 64" role="img" aria-label="ULAK dünya küresi logosu">
+      <circle cx="31" cy="32" r="23" fill="#142844" />
+      <path d="M10 29c12-8 30-10 43-3M12 40c13 5 27 4 40-3M31 9c-8 13-8 33 1 46M39 11c-5 13-5 29 1 42" fill="none" stroke="#f7f0e4" strokeWidth="1.6" opacity=".9" />
+      <path d="M5 39C18 9 45 5 60 23" fill="none" stroke="#e47c32" strokeWidth="4" strokeLinecap="round" />
+      <path d="M55 17l7 6-9 2" fill="none" stroke="#e47c32" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
-          <nav className="nav-links">
-            <a href="#video">Günün videosu</a>
-            <a href="#gundem">Gündem</a>
-            <a href="#arsiv">Arşiv</a>
-          </nav>
+export default function Home() {
+  return (
+    <main className="newspaper-page">
+      <div className="edition-strip">
+        <span>DOĞRU HABER, GÜVENİLİR KAYNAK</span>
+        <span>{todayLabel()}</span>
+        <span>ŞEHRİNDEN DÜNYAYA</span>
+      </div>
 
-          <a href="#video" className="nav-button">
-            Güne başla <span>→</span>
-          </a>
-        </div>
+      <header className="masthead container">
+        <a href="/" className="masthead-brand" aria-label="ULAK ana sayfa">
+          <BrandMark />
+          <span className="masthead-word">ULAK</span>
+          <span className="masthead-subtitle">GÜNLÜK HABER GAZETESİ</span>
+        </a>
+        <p className="masthead-motto">Haberin en doğru hali.</p>
       </header>
 
-      <section className="hero container">
-        <div className="hero-copy">
-          <div className="eyebrow">
-            <span className="status-dot" /> KİŞİSEL SABAH BÜLTENİN
-          </div>
+      <div className="masthead-rule container"><span /></div>
 
-          <h1>
-            Günaydın!
-            <br />
-            Güne <span>hazır ol.</span>
-          </h1>
-
-          <p>
-            Şehrinden dünyaya, günün önemli gelişmeleri.
-            Lafı uzatmadan, güvenilir kaynaklarla.
-          </p>
-
-          <a href="#video" className="primary-button">
-            Günün bültenini izle <span>→</span>
-          </a>
-
-          <div className="hero-note">
-            Her sabah 08.00 · Yaklaşık 90 saniye
-          </div>
+      <nav className="newspaper-nav">
+        <div className="container newspaper-nav-inner">
+          <a className="nav-home" href="/" aria-label="Ana sayfa">⌂</a>
+          {newsCategories.map((category, index) => (
+            <a href={`#${category.id}`} key={`${category.name}-${index}`}>
+              {category.name}
+            </a>
+          ))}
+          <a href="#video" className="nav-video-link">Günün videosu</a>
         </div>
+      </nav>
 
-        <div className="mascot-stage">
-          <div className="sun-shape" />
-
-          <img
-            className="ulak-character"
-            src="/ulak-character.png"
-            alt="ULAK'ın maskotu"
-          />
-
-          <div className="mascot-caption">
-            <strong>Ben ULAK!</strong>
-            <span>Günün gündemini birlikte keşfedelim.</span>
-          </div>
-
-          <span className="floating-star star-one">✳</span>
-          <span className="floating-star star-two">✦</span>
+      <section className="container front-page">
+        <div className="front-page-intro">
+          <span className="print-kicker">GÜNÜN MANŞETİ</span>
+          <h1>Şehrinden dünyaya, gündem bir tık uzağında.</h1>
+          <p>Önce Sincan ve Etimesgut. Ardından Ankara, Türkiye ve dünyadan önemli gelişmeler.</p>
+        </div>
+        <div className="front-page-mascot">
+          <img src="/ulak-character.png" alt="ULAK haber sunucusu" />
+          <div className="mascot-stamp">GÜVENİLİR<br />HABER</div>
         </div>
       </section>
 
-      <section className="container video-section" id="video">
-        <div className="section-heading">
+      <section className="container video-section print-video-section" id="video">
+        <div className="section-heading print-section-heading">
           <div>
-            <div className="eyebrow">GÜNLÜK OTOMATİK SUNUM</div>
-            <h2 className="section-title">Günün ULAK bülteni</h2>
+            <div className="eyebrow">ULAK GÜNLÜK YAYINI</div>
+            <h2 className="section-title">Günün haber bülteni</h2>
           </div>
-
           <span className="duration-pill">AHMET SESİ · VİDEO</span>
         </div>
 
-        <div className="video-panel">
+        <div className="video-panel print-video-panel">
           <div className="video-info">
-            <span className="content-tag">ULAK YAYINDA</span>
-
-            <h3>Günün haberleri hazır!</h3>
-
-            <p>
-              ULAK, günün önemli gelişmelerini Ahmet sesiyle
-              senin için sunuyor. Videoyu başlat ve gündemi takip et.
-            </p>
-
-            <a
-              href="/data/daily.mp4"
-              target="_blank"
-              rel="noreferrer"
-              className="primary-button"
-            >
-              Videoyu ayrı aç →
+            <span className="content-tag">GÜNLÜK BÜLTEN</span>
+            <h3>Gündemi ULAK'tan takip edin.</h3>
+            <p>Günün önemli gelişmeleri, anlaşılır bir anlatım ve güvenilir kaynaklarla.</p>
+            <a href="/data/daily.mp4" target="_blank" rel="noreferrer" className="primary-button">
+              Videoyu ayrı aç <span>→</span>
             </a>
           </div>
+          <div className="print-video-frame">
+            <video
+              key="ulak-daily-video"
+              src="/data/daily.mp4"
+              controls
+              playsInline
+              preload="metadata"
+            >
+              Tarayıcınız video oynatmayı desteklemiyor.
+            </video>
+          </div>
         </div>
-
-        <div
-          style={{
-            marginTop: "18px",
-            borderRadius: "16px",
-            overflow: "hidden",
-            background: "#1d1a17",
-            border: "1px solid #4a423b",
-          }}
-        >
-          <video
-            key="ulak-daily-video"
-            src="/data/daily.mp4"
-            controls
-            playsInline
-            preload="metadata"
-            style={{
-              display: "block",
-              width: "100%",
-              height: "auto",
-              aspectRatio: "1 / 1",
-              background: "#1d1a17",
-            }}
-          >
-            Tarayıcınız video oynatmayı desteklemiyor.
-          </video>
-        </div>
-
-        <p className="muted" style={{ marginTop: "12px", fontSize: "13px" }}>
+        <p className="muted print-video-note">
           Günlük sunum otomatik hazırlanır. En yeni bülteni buradan izleyebilirsin.
         </p>
       </section>
 
-      <section className="container news-section" id="gundem">
-        <div className="section-heading">
+      <section className="container news-section print-news-section" id="gundem">
+        <div className="section-heading print-section-heading">
           <div>
-            <div className="eyebrow">ÖNCE YAKININDAN BAŞLAYALIM</div>
+            <div className="eyebrow">YERELDEN DÜNYAYA</div>
             <h2 className="section-title">Günün gündemi</h2>
           </div>
-
-          <span className="muted news-limit">
-            En fazla 5 önemli haber
-          </span>
+          <span className="muted news-limit">Güncel haberler ve kaynakları</span>
         </div>
-
-        <div className="category-list">
-          {newsCategories.map((category) => (
-            <a
-              href={`#${category.id}`}
-              key={category.id}
-              className="category-chip"
-              onClick={() => setActiveCategory(category.id)}
-              aria-current={
-                activeCategory === category.id ? "location" : undefined
-              }
-              style={
-                activeCategory === category.id
-                  ? {
-                      background: "#292929",
-                      color: "#ffffff",
-                      borderColor: "#292929",
-                    }
-                  : undefined
-              }
-            >
-              {category.name}
-            </a>
-          ))}
-        </div>
-
         <NewsFeed />
       </section>
 
-      <section className="container archive-section" id="arsiv">
-        <div className="archive-card">
-          <div className="archive-icon">▤</div>
-
-          <div>
-            <h2>Günün gündemi geçip gitmesin.</h2>
-            <p>
-              Geçmiş sabah bültenlerin ve haber arşivin burada saklanacak.
-            </p>
-          </div>
-
-          <span className="archive-coming">Arşiv yakında</span>
-        </div>
-      </section>
-
-      <footer className="footer">
+      <footer className="newspaper-footer">
         <div className="container footer-inner">
-          <a href="/" className="brand">
-            <span className="brand-mark">U</span>
-            <span>ULAK</span>
-          </a>
-
+          <a href="/" className="footer-brand"><BrandMark /><strong>ULAK</strong></a>
           <span>Şehrinden dünyaya, güne hazır ol.</span>
-          <span>© ULAK</span>
+          <span>© ULAK · Günlük Haber Gazetesi</span>
         </div>
       </footer>
     </main>
