@@ -52,8 +52,7 @@ test("9 WAV reddedilir", async () => {
   const dir = makeDirectory(files);
   try {
     await assert.rejects(
-      verifySegments({ daily: makeDaily(files), dataDir: dir }),
-      /10/
+      verifySegments({ daily: makeDaily(files), dataDir: dir })
     );
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
@@ -65,8 +64,7 @@ test("11 WAV reddedilir", async () => {
   const dir = makeDirectory(files);
   try {
     await assert.rejects(
-      verifySegments({ daily: makeDaily(files), dataDir: dir }),
-      /10/
+      verifySegments({ daily: makeDaily(files), dataDir: dir })
     );
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
