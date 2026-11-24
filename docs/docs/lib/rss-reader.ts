@@ -572,7 +572,15 @@ export async function findCommonsImage(
 
   // Gemini görsel araması üretmese bile haber başlığından konu tabanlı arama yap.
   const fallbackQuery = input.imageQuery || news.title;
-  const imageQueryWords = getWords(fallbackQuery);
+  // İngilizce model sorgusunun yanında haberin Türkçe başlık ve özetini de puanlamaya kat.
+  // Böylece Commons dosya adları Türkçe olduğunda da doğru görsel seçilebilir.
+  const imageQueryWords = [
+    ...new Set([
+      ...getWords(fallbackQuery),
+      ...getWords(news.title),
+      ...getWords(news.summary)
+    ])
+  ];
 
   const queries = buildSearchQueries(
     fallbackQuery,
