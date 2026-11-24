@@ -61,7 +61,7 @@ jobs:
             echo "Sunucunun hata yanıtı:"
             cat response.json 2>/dev/null || true
 
-            if [ "$attempt" -lt 3 ] && { [ "$curl_exit" -ne 0 ] || [ "$http_code" = "429" ] || [[ "${http_code:-}" =~ ^5 ]]; }; then
+            if [ "$attempt" -lt 3 ] && { [ "$curl_exit" -ne 0 ] || [[ "${http_code:-}" =~ ^5 ]]; }; then
               sleep 15
               continue
             fi
@@ -74,9 +74,16 @@ jobs:
             exit 1
           fi
 
-          if ! jq -e '.script and (.news | type == "array")' response.json > /dev/null; then
-            echo "::error::Haber sunucusu 200 döndürdü ancak yanıt biçimi geçersiz."
-            cat response.json
+          if ! jq -e '
+            (.script | type == "string" and length > 0) and
+            (.news | type == "array" and length == 8) and
+            (.speechSegments | type == "array" and length == 10) and
+            .speechSegments[0].type == "intro" and
+            ([.speechSegments[1:9][] | select(.type == "story")] | length == 8) and
+            .speechSegments[9].type == "closing"
+          ' response.json > /dev/null; then
+            echo "::error::Bülten 8 haber + açılış + kapanış koşulunu sağlamıyor; yayın durduruldu."
+            jq '{code, error, newsCount: (.news | length), segmentCount: (.speechSegments | length)}' response.json || true
             exit 1
           fi
 
@@ -85,29 +92,6 @@ jobs:
           jq --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             '. + {generatedAt: $generatedAt}' \
             response.json > docs/docs/public/data/daily.json
-
-      - name: Tek parça WAV yedeğini üret
-        continue-on-error: true
-        run: |
-          set -e
-          mkdir -p docs/docs/public/data
-
-          jq -n --arg text "$(jq -r '.script' response.json)" \
-            '{text: $text}' > tts-fallback-request.json
-
-          if curl --fail --silent --show-error \
-            --connect-timeout 20 --max-time 180 \
-            -X POST \
-            -H "Content-Type: application/json" \
-            --data-binary @tts-fallback-request.json \
-            "https://ulaknews-docs.vercel.app/api/tts" \
-            -o docs/docs/public/data/daily.wav && \
-            test -s docs/docs/public/data/daily.wav; then
-            echo "Tek parça WAV yedeği hazır."
-          else
-            echo "::warning::Tek parça WAV yedeği üretilemedi; segmentli akış kullanılacak."
-            rm -f docs/docs/public/data/daily.wav
-          fi
 
       - name: Her sunum segmenti için ayrı WAV üret
         run: |
@@ -119,6 +103,10 @@ jobs:
           jq -e '.speechSegments | type == "array" and length > 0' response.json > /dev/null
 
           segment_count=$(jq '.speechSegments | length' response.json)
+          if [ "$segment_count" -ne 10 ]; then
+            echo "::error::Tam 10 ses bölümü gerekli; bulunan: $segment_count"
+            exit 1
+          fi
           echo "Üretilecek ses segmenti: $segment_count"
 
           files_json='[]'
@@ -200,7 +188,6 @@ jobs:
               # için 502 de geçici upstream hatası olarak kabul edilir.
               retryable=false
               if [ "$curl_exit" -ne 0 ] || \
-                [ "$http_code" = "429" ] || \
                 [ "$http_code" = "502" ] || \
                 [ "$http_code" = "503" ]; then
                 retryable=true
