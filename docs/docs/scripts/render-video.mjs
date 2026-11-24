@@ -27,14 +27,38 @@ async function main() {
     throw new Error("daily.json dosyası bulunamadı.");
   }
 
-  if (!fs.existsSync(DAILY_WAV)) {
-    throw new Error("daily.wav dosyası bulunamadı.");
-  }
-
   const daily = JSON.parse(fs.readFileSync(DAILY_JSON, "utf8"));
 
   if (!daily.script || !Array.isArray(daily.news)) {
     throw new Error("Günlük haber verisi eksik veya hatalı.");
+  }
+
+  const hasSegments =
+    Array.isArray(daily.speechSegments) && daily.speechSegments.length > 0;
+
+  if (hasSegments) {
+    if (
+      !Array.isArray(daily.audioSegments) ||
+      daily.audioSegments.length !== daily.speechSegments.length
+    ) {
+      throw new Error(
+        `Segment sayısı uyuşmuyor: ${daily.speechSegments.length} metin / ${daily.audioSegments?.length ?? 0} ses dosyası.`
+      );
+    }
+
+    daily.audioSegments.forEach((filename, index) => {
+      if (typeof filename !== "string" || !/^seg-\\d{2,}\\.wav$/.test(filename)) {
+        throw new Error(`Geçersiz segment dosya adı: ${filename}`);
+      }
+      const audioPath = path.join(DATA_DIR, filename);
+      if (!fs.existsSync(audioPath) || fs.statSync(audioPath).size === 0) {
+        throw new Error(`Segment WAV dosyası eksik veya boş: ${filename} (sıra ${index})`);
+      }
+    });
+
+    console.log(`Segment doğrulaması: ${daily.speechSegments.length} metin / ${daily.audioSegments.length} WAV`);
+  } else if (!fs.existsSync(DAILY_WAV)) {
+    throw new Error("Segment verisi yok ve daily.wav yedeği de bulunamadı.");
   }
 
   const newsForAnimation = daily.news.map((item) => ({
@@ -88,6 +112,41 @@ async function main() {
       console.log("Sayfa hatası:", error.message);
     });
 
+    if (hasSegments) {
+      const segmentFiles = new Map(
+        daily.audioSegments.map((filename) => [
+          filename,
+          path.join(DATA_DIR, filename)
+        ])
+      );
+
+      await page.route("**/__ulak_segments__/*", async (route) => {
+        const requestUrl = new URL(route.request().url());
+        const filename = path.basename(decodeURIComponent(requestUrl.pathname));
+        const localPath = segmentFiles.get(filename);
+
+        if (!localPath) {
+          await route.fulfill({
+            status: 404,
+            contentType: "text/plain",
+            body: "Unknown ULAK audio segment"
+          });
+          return;
+        }
+
+        await route.fulfill({
+          status: 200,
+          contentType: "audio/wav",
+          body: fs.readFileSync(localPath),
+          headers: { "Cache-Control": "no-store" }
+        });
+      });
+    }
+
+    await page.addInitScript(() => {
+      window.ULAK_DISABLE_AUTO_NEWS = true;
+    });
+
     await page.goto(ANIMATION_URL, {
       waitUntil: "networkidle",
       timeout: 120000
@@ -96,11 +155,14 @@ async function main() {
     await page.waitForSelector("#newsScript");
     await page.waitForSelector("#recBtn");
 
-    console.log("Sayfanın otomatik haber yüklemesi bekleniyor...");
-    await page.waitForFunction(() => {
-      const status = document.querySelector("#status")?.textContent || "";
-      return window.ULAK_IMAGES_READY === true || status.startsWith("Haber servisine ulaşılamadı:");
-    }, null, { timeout: 120000 });
+    console.log("Otomatik haber yüklemesi kapalı; günlük veri doğrudan aktarılıyor...");
+    await page.waitForFunction(
+      () =>
+        typeof window.setULAKNews === "function" &&
+        (!window.ULAK_DISABLE_AUTO_NEWS || window.ULAK_DISABLE_AUTO_NEWS === true),
+      null,
+      { timeout: 60000 }
+    );
 
     console.log("Haber metni animasyona aktarılıyor...");
 
@@ -140,17 +202,79 @@ async function main() {
       throw new Error("Hiçbir haber görseli yüklenmedi; görselsiz video yayınlanmayacak.");
     }
 
-    console.log("Günün haber sunumu ses dosyası yükleniyor...");
+    let audioDuration = 0;
 
-    await page.locator("#audInput").setInputFiles(DAILY_WAV);
+    if (hasSegments) {
+      console.log("Hazır WAV segmentleri sayfaya tek tek aktarılıyor...");
 
-    await page.waitForFunction(() => {
-      const audio = window.ULAK_AUDIO;
-      return document.body.innerText.includes("Ses yüklendi:") && audio && audio.readyState >= 2 && Number.isFinite(audio.duration) && audio.duration > 0;
-    }, null, { timeout: 90000 });
+      const segmentResult = await page.evaluate(
+        ({ speechSegments, audioUrls }) =>
+          window.ULAK_LOAD_SEGMENTS({ speechSegments, audioUrls }),
+        {
+          speechSegments: daily.speechSegments,
+          audioUrls: daily.audioSegments.map(
+            (filename) => `/__ulak_segments__/${encodeURIComponent(filename)}`
+          )
+        }
+      );
 
-    const audioDuration = await page.evaluate(() => window.ULAK_AUDIO.duration);
-    console.log(`Ahmet ses süresi: ${Math.round(audioDuration)} saniye`);
+      if (
+        segmentResult.audioSourceType !== "segments" ||
+        segmentResult.count !== daily.speechSegments.length
+      ) {
+        throw new Error("Tarayıcı segmentleri eksiksiz yükleyemedi.");
+      }
+
+      const browserState = await page.evaluate(() => ({
+        source: window.ULAK_AUDIO_SOURCE_TYPE,
+        count: window.ULAK_SEGMENT_COUNT
+      }));
+
+      if (
+        browserState.source !== "segments" ||
+        browserState.count !== daily.speechSegments.length
+      ) {
+        throw new Error(
+          `Tarayıcı segment durumu hatalı: ${JSON.stringify(browserState)}`
+        );
+      }
+
+      console.log(
+        `audioSourceType='${browserState.source}', segmentAudioUrls=${browserState.count}`
+      );
+
+      for (const filename of daily.audioSegments) {
+        const audioPath = path.join(DATA_DIR, filename);
+        const { stdout } = await execFileAsync("ffprobe", [
+          "-v", "error",
+          "-show_entries", "format=duration",
+          "-of", "default=noprint_wrappers=1:nokey=1",
+          audioPath
+        ]);
+        const duration = Number(stdout.trim());
+        if (!Number.isFinite(duration) || duration <= 0) {
+          throw new Error(`WAV süresi okunamadı: ${filename}`);
+        }
+        audioDuration += duration;
+      }
+
+      console.log(
+        `Toplam segment ses süresi: ${audioDuration.toFixed(1)} saniye`
+      );
+    } else {
+      console.log("Segment bulunmadı; yedek daily.wav yükleniyor...");
+      await page.locator("#audInput").setInputFiles(DAILY_WAV);
+
+      await page.waitForFunction(() => {
+        const audio = window.ULAK_AUDIO;
+        return document.body.innerText.includes("Ses yüklendi:") &&
+          audio && audio.readyState >= 2 &&
+          Number.isFinite(audio.duration) && audio.duration > 0;
+      }, null, { timeout: 90000 });
+
+      audioDuration = await page.evaluate(() => window.ULAK_AUDIO.duration);
+      console.log(`Yedek WAV süresi: ${Math.round(audioDuration)} saniye`);
+    }
 
     const recordButton = page.locator("#recBtn");
 
@@ -162,15 +286,13 @@ async function main() {
 
     await recordButton.click();
 
-    await page.waitForFunction(() => {
-      const status = document.querySelector("#status")?.textContent || "";
-      return status.includes("Kaydediliyor") || status.includes("Kayıt tamamlandı");
-    }, null, { timeout: 30000 });
-
     await page.waitForFunction(
-      () => window.ULAK_AUDIO && window.ULAK_AUDIO.currentTime > 1,
+      () =>
+        window.ULAK_AUDIO &&
+        !window.ULAK_AUDIO.paused &&
+        window.ULAK_AUDIO.currentTime > 0.2,
       null,
-      { timeout: 20000 }
+      { timeout: 30000 }
     );
 
     try {
