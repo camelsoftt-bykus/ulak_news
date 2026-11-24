@@ -1099,9 +1099,43 @@ $('restartBtn').onclick=async()=>{
 };
 
 /*
- * HABER FOTOĞRAFINI CAM ALANINA ÇİZ
- * Yalnızca anlatılan haberin fotoğrafı gösterilir.
- * Görseli yoksa önceki haberin fotoğrafı gösterilmez.
+ * HABER FOTOĞRAFINI TAM KADRAJ ARKA PLAN OLARAK ÇİZ
+ * Fotoğraf, ULAK katmanının arkasında kalır; kadrajı doldurur,
+ * hafif bulanıklaştırılır ve koyu katmanla haber sunumuna uygun hale getirilir.
+ */
+function drawNewsBackdrop(){
+ if(!base||currentStoryIndex<0)return;
+
+ const item=newsSlides[currentStoryIndex];
+ if(!item||!item.image)return;
+
+ const photo=item.image;
+ const pw=photo.naturalWidth;
+ const ph=photo.naturalHeight;
+ if(!pw||!ph)return;
+
+ const scale=Math.max(imgW/pw,imgH/ph);
+ const dw=pw*scale;
+ const dh=ph*scale;
+ const dx=(imgW-dw)/2;
+ const dy=(imgH-dh)/2;
+
+ ctx.save();
+ ctx.globalCompositeOperation='source-over';
+ ctx.globalAlpha=1;
+ ctx.filter='blur(2px)';
+ ctx.drawImage(photo,dx-4,dy-4,dw+8,dh+8);
+ ctx.filter='none';
+
+ // ULAK ve haber başlıkları önde rahat seçilsin.
+ ctx.fillStyle='rgba(8,15,26,0.48)';
+ ctx.fillRect(0,0,imgW,imgH);
+ ctx.restore();
+}
+
+/*
+ * HABER FOTOĞRAFINI CAM ALANINA DA ÇİZ
+ * Bu katman tam kadraj arka plana ek olarak camların içinde net görünür.
  */
 function drawNewsBackground(){
  if(!base||!maskReady)return;
@@ -1120,7 +1154,7 @@ function drawNewsBackground(){
  ctx.restore();
 }
 
-/* GÖRÜNTÜ: base -> haber fotoğrafı (yalnızca cam) -> ağız */
+/* GÖRÜNTÜ: haber fotoğrafı arka plan -> ULAK -> cam fotoğrafı -> ağız */
 function render(){
  if(!base)return;
 
@@ -1128,6 +1162,9 @@ function render(){
  ctx.filter='none';
  ctx.globalCompositeOperation='source-over';
 
+ ctx.fillStyle='#101722';
+ ctx.fillRect(0,0,imgW,imgH);
+ drawNewsBackdrop();
  ctx.drawImage(base,0,0);
  drawNewsBackground();
 
