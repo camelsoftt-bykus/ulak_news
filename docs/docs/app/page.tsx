@@ -62,9 +62,9 @@ export default function Home() {
         </div>
         <section aria-labelledby="ulak-sunuyor" style={{ margin: "0 0 34px", border: "1px solid #d8d0c4", background: "#211e1b", color: "#f8f1e7", borderRadius: 10, overflow: "hidden" }}>
           <div style={{ padding: "18px 20px 12px", borderBottom: "1px solid #50483f" }}>
-            <div style={{ fontSize: 11, letterSpacing: 2.5, fontWeight: 800, color: "#e6ad70" }}>GÜNÜN HABER BÜLTENİ</div>
-            <h2 id="ulak-sunuyor" style={{ fontFamily: "Georgia, serif", fontSize: "clamp(23px, 3vw, 31px)", margin: "6px 0 4px", color: "#fff9ef" }}>Ulak sunuyor</h2>
-            <p style={{ margin: 0, color: "#c8bdae", fontSize: 14 }}>Günün önemli gelişmeleri, doğal bir haber sunumuyla.</p>
+            <div style={{ fontSize: 11, letterSpacing: 2.5, fontWeight: 800, color: "#e6ad70" }}>GÜNÜN MANŞETLERİ</div>
+            <h2 id="ulak-sunuyor" style={{ fontFamily: "Georgia, serif", fontSize: "clamp(23px, 3vw, 31px)", margin: "6px 0 4px", color: "#fff9ef" }}>Gündemin Öne Çıkanları</h2>
+            <p style={{ margin: 0, color: "#c8bdae", fontSize: 14 }}>Günün öne çıkan gelişmeleri, anlaşılır ve akıcı bir anlatımla.</p>
           </div>
           <div style={{ padding: 14 }}>
             {presenterReady ? (
@@ -74,14 +74,14 @@ export default function Home() {
                   Tarayıcınız video oynatmayı desteklemiyor.
                 </video>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: "12px 2px 2px", color: "#c8bdae", fontSize: 12 }}>
-                  <span>ULAK’ın günlük haber sunumu</span>
-                  <a href="/data/daily.mp3" style={{ color: "#f0bd83", fontWeight: 700 }}>Yalnızca sesi dinle ↗</a>
+                  <span>Günün haber özeti</span>
+                  <a href="/data/daily.wav" style={{ color: "#f0bd83", fontWeight: 700 }}>Sesli bülteni dinle ↗</a>
                 </div>
               </>
             ) : (
               <div style={{ padding: "28px 12px", textAlign: "center", color: "#e7d9c8" }}>
-                <div style={{ fontFamily: "Georgia, serif", fontSize: 20 }}>Yeni bülten hazırlanıyor</div>
-                <p style={{ margin: "8px 0 0", fontSize: 13, color: "#c8bdae" }}>Ulak, kaynak adreslerini okumayan ve tekrar haberlerden arındırılmış sunumuyla burada olacak. Eski kayıt yanlışlıkla yeni bülten gibi gösterilmeyecek.</p>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 20 }}>Günün yeni baskısı hazırlanıyor</div>
+                <p style={{ margin: "8px 0 0", fontSize: 13, color: "#c8bdae" }}>Günün haberleri editoryal kontrolden geçiyor. Yeni sesli ve görüntülü bülten hazır olduğunda burada yayımlanacak.</p>
               </div>
             )}
           </div>
