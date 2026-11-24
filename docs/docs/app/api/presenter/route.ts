@@ -23,6 +23,17 @@ type GeneratedResult = {
   stories?: GeneratedStory[];
 };
 
+function normalizeArticleLink(value: string): string {
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    url.search = "";
+    return url.toString().replace(/\/$/, "").toLowerCase();
+  } catch {
+    return value.trim().replace(/\/$/, "").toLowerCase();
+  }
+}
+
 function cleanImageQuery(value: unknown): string {
   if (typeof value !== "string") return "";
 
@@ -64,7 +75,37 @@ export async function GET() {
       );
     }
 
-    const news = await collectRssNews();
+    const collectedNews = await collectRssNews();
+
+    // Önceki günlük bültendeki aynı bağlantıları yeniden yayımlama.
+    let previousLinks = new Set<string>();
+    try {
+      const previousResponse = await fetch(
+        "https://ulaknews-docs.vercel.app/data/daily.json",
+        { cache: "no-store", signal: AbortSignal.timeout(8000) }
+      );
+      if (previousResponse.ok) {
+        const previousDaily = await previousResponse.json();
+        const previousGeneratedAt = new Date(previousDaily.generatedAt || "").getTime();
+        if (
+          Number.isFinite(previousGeneratedAt) &&
+          Date.now() - previousGeneratedAt < 36 * 60 * 60 * 1000 &&
+          Array.isArray(previousDaily.news)
+        ) {
+          previousLinks = new Set(
+            previousDaily.news
+              .map((item: { link?: string }) => normalizeArticleLink(item.link || ""))
+              .filter(Boolean)
+          );
+        }
+      }
+    } catch (error) {
+      console.warn("[ULAK tekrar kontrolü] Önceki bülten okunamadı:", error);
+    }
+
+    const news = collectedNews.filter(
+      (item) => !previousLinks.has(normalizeArticleLink(item.link))
+    );
 
     if (news.length === 0) {
       return Response.json(
