@@ -75,6 +75,10 @@ async function main() {
 
     const page = await context.newPage();
 
+    await page.addInitScript(() => {
+      window.ULAK_DISABLE_AUTO_NEWS = true;
+    });
+
     page.setDefaultTimeout(60000);
 
     page.on("console", (message) => {
@@ -139,12 +143,11 @@ async function main() {
 
     console.log("Robot sunumu kaydediliyor...");
 
-    const recordingTimeout = Math.min(TIMEOUT, Math.max(60000, audioDuration * 1000 + 30000));
     try {
       await page.waitForFunction(
-        () => window.ULAK_VIDEO_BLOB && window.ULAK_VIDEO_BLOB.size > 0,
+        () => window.ULAK_AUDIO?.ended === true,
         null,
-        { timeout: recordingTimeout }
+        { timeout: Math.min(TIMEOUT, Math.max(60000, audioDuration * 1000 + 30000)) }
       );
     } catch (error) {
       const recording = await page.evaluate(() => ({
@@ -153,19 +156,14 @@ async function main() {
         currentTime: window.ULAK_AUDIO?.currentTime,
         duration: window.ULAK_AUDIO?.duration
       }));
-      console.log("Kayıt otomatik bitmedi; durdurma bilgisi:", recording);
-      const stopButton = page.locator("#stopRecBtn");
-      if (await stopButton.isEnabled()) {
-        await stopButton.click();
-        await page.waitForFunction(
-          () => window.ULAK_VIDEO_BLOB && window.ULAK_VIDEO_BLOB.size > 0,
-          null,
-          { timeout: 30000 }
-        );
-      } else {
-        throw new Error(`Video kaydı tamamlanamadı: ${error.message}`);
-      }
+      throw new Error(`Ses tam olarak bitmeden kayıt durdu; eksik video yayınlanmayacak. ${JSON.stringify(recording)}; ${error.message}`);
     }
+
+    await page.waitForFunction(
+      () => window.ULAK_VIDEO_BLOB && window.ULAK_VIDEO_BLOB.size > 0,
+      null,
+      { timeout: 30000 }
+    );
 
     const videoData = await page.evaluate(async () => {
       const blob = window.ULAK_VIDEO_BLOB;
