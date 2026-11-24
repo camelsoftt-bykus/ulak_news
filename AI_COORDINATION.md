@@ -132,3 +132,31 @@ Claude'un ikinci tasarım revizyonu genel olarak kabul edilebilir; uygulamaya ge
 - **Durum:** Proje sahibi bülten formatını onayladı; G-002 kodlama yetkisi ayrıca netleştirilecek.
 
 - **2026-11-24 – Proje sahibi kararı:** Tam 8 haber + intro + closing = 10 ses bölümü onaylandı. 8 haber yoksa aktif `daily.json` korunacak ve eksik bülten yayınlanmayacak. Video için 10/10 WAV doğrulaması zorunlu. Secret geçişi bir başarılı, kota tüketmeyen doğrulama çalışmasıyla ölçülecek.
+
+
+## G-002 – İlk güvenli uygulama dilimi (2026-11-24)
+
+- **Durum:** Proje sahibi uygulama ve ayrı PR hazırlama yetkisini açıkça verdi. İnceleme/PR aşamasında; merge veya üretim izni verilmedi.
+- **Sorumlu:** Claude (uygulama ve PR); ChatGPT (bağımsız diff/güvenlik incelemesi ve kabul kararı).
+- **İzin verilenler:**
+  - Ayrı branch açmak ve yalnızca bu görev için kod yazmak.
+  - Gemini/TTS çağırmayan yerel/PR testleri; mock ve sahte WAV üretip test etmek.
+  - PR açıklamasında değişen dosyalar, test komutları/çıktıları, doğrulanmayanlar ve riskleri açıkça belirtmek.
+- **Kesin yasaklar:**
+  - `main` dalına commit/push; PR merge.
+  - Herhangi bir workflow'u manuel veya zamanlanmış olarak çalıştırmak; özellikle `daily-news.yml`.
+  - Gerçek Gemini/TTS isteği.
+  - Vercel deploy veya environment variable değişikliği.
+  - Secret/API key/kota ayarlarını görüntülemek, değiştirmek veya paylaşmak.
+- **İlk dilim kapsamı:**
+  1. `.github/workflows/daily-news.yml` içinden `push` tetikleyicisini kaldır; mevcut schedule ve workflow_dispatch davranışını değiştirme. Kod push'u tek başına günlük üretimi başlatmamalı.
+  2. `.github/workflows/ci.yml` ekle. Yalnızca Gemini/TTS içermeyen lint/typecheck/unit/mock testleri çalıştırmalı. Üretim workflow'una dispatch yapmamalı.
+  3. Presenter ve TTS sağlayıcı kota hatalarında (HTTP 429, RESOURCE_EXHAUSTED, QUOTA_EXCEEDED) yeniden denemeyi durduracak, dışarıya ayırt edilebilir hata döndürecek davranış ve Gemini'siz testler ekle. Workflow kota hatasında aynı segmenti veya sonraki segmentleri denememeli.
+  4. 10 WAV doğrulama kapısı için tekrar kullanılabilir test edilebilir fonksiyon/komut ekle: tam 10 geçerli WAV başarılı; 9 ve 11 dosya başarısız. Sahte WAV dosyalarıyla codec/format ve ffprobe pozitif süre doğrulaması da test edilmeli. Gerçek WAV üretimi/Gemini çağrısı yok.
+  5. Robot animasyonu ve ses oynatma akışına dokunma. Dokunmak zorunluysa gerekçeyi açıkla ve regresyon testi ekle; aksi hâlde bu görevde arayüz dosyalarını değiştirme.
+- **Ek zorunlu inceleme:** `daily-news.yml` içindeki 10/10 kapısının yayın adımlarından önce çalıştığını, başarısız üretimin aktif `daily.json` dosyasını ezmediğini doğrula. Presenter'ın 8 haber üretme davranışını kod üzerinden değerlendir; 8 haber yoksa eksik bülten yayınlanmamalı. Kaynak havuzu ölçümünü yalnızca mevcut/mock RSS verisiyle yap; canlı Gemini/TTS çağrısı yok.
+- **Kapsam dışı:** Secret doğrulamasını zorunlu kılmak veya geçişini uygulamak; ziyaretçi TTS akışını statik WAV'a geçirmek; canlı üretim, deploy, schedule değişikliği, ücret/model/secret/kota ayarı. Bunlar ayrı görev ve onay gerektirir.
+- **Kabul kriterleri:** (1) push trigger kaldırıldı; (2) 429/QUOTA_EXCEEDED retry yok; (3) Gemini'siz CI geçer; (4) 10 geçer, 9/11 kalır; (5) UI/ses akışı korunur veya regresyon testi eklenir; (6) aktif daily.json eksik üretimle ezilmez.
+- **PR şartı:** Ayrı branch + PR; PR merge edilmez. PR gövdesinde her dosya, değişiklik gerekçesi, çalıştırılan test ve tam sonuç, yapılmayan testler, canlı doğrulanmayanlar ve kalan riskler yazılır.
+- **Doğrulama dürüstlüğü:** Çalıştırılmayan test "geçti" yazılamaz. Kullanıcının yerelde test çalıştıramadığı dikkate alınarak CI kanıtı ve PR diff'i ChatGPT'nin incelemesine sunulur.
+- **2026-11-24 – Proje sahibi yetkisi:** İlk dilim için kod yazma ve ayrı PR hazırlama, Gemini/TTS'siz mock testleri çalıştırma izni verildi. main/merge/workflow/deploy/secret/gerçek API yetkisi verilmedi.
