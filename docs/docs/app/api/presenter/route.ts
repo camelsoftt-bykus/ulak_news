@@ -1,3 +1,4 @@
+// Daily presenter API; this comment also refreshes the scheduled publishing pipeline.
 import {
   collectRssNews,
   findCommonsImage
