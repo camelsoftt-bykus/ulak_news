@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   description:
     "Türkiye’den ve dünyadan önemli gelişmeler. Doğru haberin adresi.",
   applicationName: "ULAK’TAN HABERLER",
+  icons: { icon: "/favicon.svg", apple: "/favicon.svg" },
   appleWebApp: {
     capable: true,
     title: "ULAK’TAN HABERLER",
