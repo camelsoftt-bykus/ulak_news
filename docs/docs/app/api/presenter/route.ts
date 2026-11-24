@@ -338,47 +338,45 @@ ${newsText}
 
     const enrichedNews = await Promise.all(
       stories.map(async ({ item, story, imageQuery, imageEntities }) => {
-        // Önce haber kaynağının kendi fotoğrafını kullan.
-        // Kaynak fotoğrafı varsa Commons araması yapma.
-        let image: Awaited<
+        // Kaynak görseli birincil; her haber için ayrıca yedek, lisansı kontrol edilmiş
+        // Wikimedia görseli ara. Kaynak görseli tarayıcıda açılamazsa bu yedek kullanılır.
+        let commonsImage: Awaited<
           ReturnType<typeof findCommonsImage>
         > = null;
 
-        let imageSource = "none";
-
-        if (item.imageUrl) {
-          imageSource = "article";
-        } else if (imageQuery || imageEntities.length > 0) {
-          try {
-            image = await findCommonsImage(item, {
-              imageQuery,
-              imageEntities
-            });
-
-            if (image) {
-              imageSource = "commons";
-            }
-          } catch (error) {
-            console.error(
-              `[ULAK görsel] Haber görseli alınamadı: ${item.title}`,
-              error
-            );
-          }
+        try {
+          commonsImage = await findCommonsImage(item, {
+            imageQuery: imageQuery || item.title,
+            imageEntities
+          });
+        } catch (error) {
+          console.error(
+            `[ULAK görsel] Yedek görsel aranamadı: ${item.title}`,
+            error
+          );
         }
 
-        const finalImage = image
-          ? { ...image, imageSource }
-          : item.imageUrl
-            ? { imageSource }
-            : { imageSource };
+        const primaryIsArticle = Boolean(item.imageUrl);
+        const primaryImage = primaryIsArticle
+          ? { imageUrl: item.imageUrl, imageSource: "article" }
+          : commonsImage
+            ? { ...commonsImage, imageSource: "commons" }
+            : { imageSource: "none" };
 
         return {
           ...item,
-          ...finalImage,
+          ...primaryImage,
+          fallbackImageUrl: primaryIsArticle ? commonsImage?.imageUrl || "" : "",
+          fallbackImagePageUrl: primaryIsArticle ? commonsImage?.imagePageUrl || "" : "",
+          fallbackImageTitle: primaryIsArticle ? commonsImage?.imageTitle || "" : "",
+          fallbackImageLicense: primaryIsArticle ? commonsImage?.imageLicense || "" : "",
+          fallbackImageLicenseUrl: primaryIsArticle ? commonsImage?.imageLicenseUrl || "" : "",
+          fallbackImageArtist: primaryIsArticle ? commonsImage?.imageArtist || "" : "",
+          fallbackImageCredit: primaryIsArticle ? commonsImage?.imageCredit || "" : "",
           editorialSummary:
             typeof story?.summary === "string" && story.summary.trim()
               ? story.summary.trim()
-              : item.summary || "Bu haber için ayrı özet oluşturulamadı.",
+              : item.summary || "Bu haber için özet bulunamadı.",
           whyImportant:
             typeof story?.whyImportant === "string" && story.whyImportant.trim()
               ? story.whyImportant.trim()
