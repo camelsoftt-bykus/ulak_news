@@ -1,2 +1,5 @@
-# ulak_news
-ULAK - Kişisel ve aile kullanımı için akıllı sabah haber platformu yaz.
+# ULAK’TAN HABERLER
+
+Türkiye’den ve dünyadan, doğru haberin adresi.
+
+ULAK, gazetenin baş haber editörü ve dijital haber sunucusudur.
