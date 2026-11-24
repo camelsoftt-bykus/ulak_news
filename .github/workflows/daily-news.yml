@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "docs/docs/app/api/presenter/route.ts"
+      - "docs/docs/app/api/news-image/route.ts"
       - "docs/docs/lib/rss-reader.ts"
       - "docs/docs/public/animasyon.html"
       - "docs/docs/scripts/render-video.mjs"
