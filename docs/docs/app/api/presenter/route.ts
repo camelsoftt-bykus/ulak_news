@@ -185,7 +185,7 @@ HER HABER İÇİN:
 - Uygun ifade oluşturulamıyorsa imageQuery boş olsun.
 
 SUNUM:
-- intro: Kısa selamlama.
+- intro: “Merhaba, ULAK’TAN HABERLER’e hoş geldiniz” ifadesiyle başlayan kısa selamlama.
 - closing: Kısa kapanış.
 - Toplam süre yaklaşık 90 saniye olsun.
 - Doğal, samimi ve tarafsız bir sunucu üslubu kullan.
