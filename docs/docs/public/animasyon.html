@@ -359,6 +359,10 @@ function setULAKNews(news){
      });
      item.image=fallback;
      item.imageTitle=item.fallbackImageTitle||item.imageTitle;
+     item.imageLicense=item.fallbackImageLicense||item.imageLicense||'';
+     item.imageLicenseUrl=item.fallbackImageLicenseUrl||item.imageLicenseUrl||'';
+     item.imageArtist=item.fallbackImageArtist||item.imageArtist||'';
+     item.imageCredit=item.fallbackImageCredit||item.imageCredit||'';
      item.imageError=null;
      if(maskReady)createNewsLayer(item);
      console.info('[ULAK görsel] Yedek görsel kullanıldı:',item.title);
