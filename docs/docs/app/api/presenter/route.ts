@@ -394,3 +394,5 @@ ${newsText}
 // Trigger publishing with direct browser video-blob capture.
 
 // Trigger publishing after disabling the automatic news refresh during video capture.
+
+// Trigger the final daily run after fixing the recording start and page initialization order.
