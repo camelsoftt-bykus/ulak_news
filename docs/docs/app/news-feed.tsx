@@ -83,7 +83,6 @@ export default function NewsFeed() {
   const [bulletin, setBulletin] = useState<DailyBulletin | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [speaking, setSpeaking] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -104,41 +103,6 @@ export default function NewsFeed() {
     return () => { active = false; };
   }, []);
 
-  function spokenText() {
-    return (bulletin?.script || "").split(/\n\s*Kaynaklar:\s*\n/i)[0]
-      .replace(/https?:\/\/\S+/gi, "").replace(/\bwww\.\S+/gi, "").trim();
-  }
-
-  function toggleSpeaking() {
-    if (!("speechSynthesis" in window)) {
-      alert("Tarayıcın sesli okumayı desteklemiyor.");
-      return;
-    }
-    if (speaking) {
-      window.speechSynthesis.cancel();
-      setSpeaking(false);
-      return;
-    }
-    const text = spokenText();
-    if (!text) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "tr-TR";
-    utterance.rate = 0.94;
-    utterance.pitch = 1;
-    const voice = window.speechSynthesis.getVoices()
-      .find((item) => item.lang.toLowerCase().startsWith("tr"));
-    if (voice) utterance.voice = voice;
-    utterance.onstart = () => setSpeaking(true);
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
-    window.speechSynthesis.speak(utterance);
-  }
-
-  useEffect(() => () => {
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-  }, []);
-
   if (loading) return <p className="muted">ULAK’TAN HABERLER hazırlanıyor...</p>;
   if (error || !bulletin) return <p className="muted">Haberler şu anda yüklenemiyor. Lütfen biraz sonra yeniden dene.</p>;
 
@@ -151,9 +115,6 @@ export default function NewsFeed() {
           <div style={{ fontFamily: "Georgia, serif", fontSize: 22, marginTop: 4 }}>Bugünün manşetleri</div>
           <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{formatGeneratedAt(bulletin.generatedAt)} · {stories.length} haber</div>
         </div>
-        <button type="button" className="primary-button" onClick={toggleSpeaking}>
-          {speaking ? "■ Dinlemeyi durdur" : "▶ Haberleri dinle"}
-        </button>
       </div>
 
       {sections.map((section) => {
