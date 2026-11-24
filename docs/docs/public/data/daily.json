@@ -1,47 +1,271 @@
 {
-  "count": 1,
-  "imageCount": 1,
+  "count": 8,
+  "imageCount": 3,
   "articleImageCount": 1,
-  "commonsImageCount": 0,
-  "script": "Merhaba, ULAK’TAN HABERLER’e hoş geldiniz. Bugünün önemli gelişmeleriyle karşınızdayım.\n\nAile ve Sosyal Hizmetler Bakanı Mahinur Özdemir Göktaş, kreşlerin yaygınlaştırılması amacıyla yeni bir teşvik paketinin devreye alınacağını duyurdu. Bakan Göktaş, genç çiftlere yönelik kredi desteğinin de süreceğini ve toplam tutarın 24 milyar 83 milyon liraya ulaştığını belirtti.\n\nBöylece bültenimizin sonuna geldik. ULAK’TAN HABERLER’de tekrar buluşmak dileğiyle, hoşça kalın.",
+  "commonsImageCount": 2,
+  "script": "Merhaba, ULAK’TAN HABERLER’e hoş geldiniz. Günün öne çıkan gelişmelerini aktarıyoruz.\n\nAnkara Sincan'da yaşayanlar bugün su kesintisiyle karşı karşıya kaldı. Vatandaşlar suların ne zaman geleceğini merak ediyor.\n\nIsparta'ya Ankara'dan ikinci yol müjdesi verildi. Bu gelişme bölge halkı tarafından memnuniyetle karşılandı.\n\nFransa'da polis okulu öğrencilerinin paylaştığı ırkçı mesajlar soruşturuluyor. Olayla ilgili resmi süreç devam ediyor.\n\nİran'ın Sistan ve Beluçistan eyaletinde bir askeri kışla yakınında patlama meydana geldi. Olayın detayları araştırılıyor.\n\nGünün astronomi fotoğrafında NGC 7771 grubundaki galaksilerin mücadelesi yer aldı. Uzayın derinliklerindeki bu görüntü bilim dünyasının ilgisini çekiyor.\n\nTürkistan’ın Öncüleri Hoca Ahmed Yesevi Sempozyumu yarın Sincan'da kapılarını açacak. Etkinlik için hazırlıklar tamamlandı.\n\nAnkara Etimesgut için bugünkü saatlik hava durumu verileri açıklandı. Gün boyunca hava koşullarının nasıl olacağı merak ediliyor.\n\nAnkara genelinde bugün elektrik kesintisi yaşanıyor. On yedi ilçe mahalle mahalle kesinti saatlerini öğrenmeye çalışıyor.\n\nBültenimizin sonuna geldik. Yeniden görüşmek üzere, iyi günler dileriz.",
   "sources": [
     {
-      "sourceName": "TRT Haber - Türkiye",
-      "title": "Bakan Göktaş: Kreşlerin yaygınlaştırılması için teşvik paketini devreye alıyoruz",
-      "link": "https://www.trthaber.com/haber/turkiye/bakan-goktas-kreslerin-yayginlastirilmasi-icin-tesvik-paketini-devreye-aliyoruz-964307.html"
+      "sourceName": "Google Haberler - Sincan ve Etimesgut",
+      "title": "24 Kasım 2026 Ankara Sincan SU KESİNTİSİ! Sular ne zaman, saat kaçta gelecek? - haber asır",
+      "link": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxQZ1FzYkNXRTV5NjRHLWJWNXVzd3FQZkdzMG5EbENFVzZiY0kwVVBPSE1xZGNieGpfNEdTNU5aMFI2UFAzUUJSdkZUZDdoNEczVGVuM1ZyVUZ4MFJpUDNCWHNoRlFnU0NDSlNzdTdjRVgwSldGVXFrRXBmRVFMNVRnbmxxbEJYU0dONUhKNUw0bnVwdG9EWUhIdURQN3o4NlNyQldQb0NZZDNJQQ?oc=5"
+    },
+    {
+      "sourceName": "Google Haberler - Ankara",
+      "title": "Isparta’ya Ankara’dan İkinci Yol Müjdesi - Demokrat32.com",
+      "link": "https://news.google.com/rss/articles/CBMic0FVX3lxTE0yMjRHanR6SUNsTk13dXVMLXBDdkpPY3Y2RlpGYUFyS3RGOGYyR3RZZmZVYmE3MEFxeU9ad3dLclJjTWJNSGpOMmdhVHV0QTQ2ZEloZmF0WFVaYkd3dFdlZ3Z5T3YyRHkzLU1IQ1daREtmSnM?oc=5"
+    },
+    {
+      "sourceName": "Anadolu Ajansı - Güncel",
+      "title": "Fransa'da polis okulu öğrencilerinin ırkçı mesajları soruşturuluyor",
+      "link": "https://www.aa.com.tr/tr/dunya/fransada-polis-okulu-ogrencilerinin-irkci-mesajlari-sorusturuluyor/4135578"
+    },
+    {
+      "sourceName": "TRT Haber - Dünya",
+      "title": "İranda bir askeri kışla yakınında patlama meydana geldi",
+      "link": "https://www.trthaber.com/haber/dunya/iranda-bir-askeri-kisla-yakininda-patlama-meydana-geldi-964308.html"
+    },
+    {
+      "sourceName": "NASA",
+      "title": "APOD: 2026 November 24 – Galaxies Battle in the NGC 7771 Group",
+      "link": "https://science.nasa.gov/image-article/apod-2026-november-24-galaxies-battle-in-the-ngc-7771-group/"
+    },
+    {
+      "sourceName": "Google Haberler - Sincan ve Etimesgut",
+      "title": "“Türkistan’ın Öncüleri Hoca Ahmed Yesevi Sempozyumu“ 25 Kasım'da Sincan'da kapılarını açıyor - Başkent Postası",
+      "link": "https://news.google.com/rss/articles/CBMitAFBVV95cUxPWktUelVLbDI4VElsMkRnd2lQRG5mWndKdXJMdUwzMDRIOGhBYVdqOC1TNFhKSUh0THh4R3E2akhhN05DTTdHQndsUXhiUTVnVGJsUTFJdktCMHozdHN4YmllYlJEWDlkRElCTDFvQkJLUlFFeE85cGdnTUFBMW5NSW4tbksxdFRRQThfNUYxR1paWDRrVmV6dTlLeUJ0OVJnQjlFcjc0cThCTVhLejA4TmN2UGI?oc=5"
+    },
+    {
+      "sourceName": "Google Haberler - Sincan ve Etimesgut",
+      "title": "24 Kasım Ankara Etimesgut Bugün Saatlik Hava Durumu - Onedio",
+      "link": "https://news.google.com/rss/articles/CBMifkFVX3lxTFAxTzRlakZ4eTBEclM1bU9JNnVLdnRMeVBYZXVZNkxqMW9PLUdmMWxIckNIcDVlVGFoOWE2QW1mUHJiMjBnbU9qWngyN3Q2M3BKSl8yaGgxLVBzNkdua1FzVk1JU3JQRTE0RUNOQXVyTDRZVUFSM2xUcDNXaXFsUQ?oc=5"
+    },
+    {
+      "sourceName": "Google Haberler - Sincan ve Etimesgut",
+      "title": "Ankara'da bugün elektrik kesintisi! 24 Kasım'da 17 ilçede elektrikler ne zaman gelecek? Mahalle mahalle kesinti saatleri - Haberton",
+      "link": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxOaDdBY1JpZGh4dFhFR2IwNy1YV2FUWUlaeGhneVJ1d241UHhCSGhWS0tIUy05cXoyc0k4cEFkQWpNYmZicFJVX0h4eUI0eEotXy1odWZ2Xy1YaGdvMWEzTDJGeU4tVTN5eUxTM0REUDlMWWFIZmktcEJwWXZDYW15QmpDNS1WRklaRVBNQ2hKQ0MwcVJXYmVsZWpwVk0yNWdCQ2ZzUVg1ZmEzMWpSRXJEUGJCekJHOC1mVFg4YTB1Qzd2MGhUa2FacW1PQmlXLWJ6dF81dg?oc=5"
     }
   ],
   "speechSegments": [
     {
       "type": "intro",
       "index": 0,
-      "text": "Merhaba, ULAK’TAN HABERLER’e hoş geldiniz. Bugünün önemli gelişmeleriyle karşınızdayım."
+      "text": "Merhaba, ULAK’TAN HABERLER’e hoş geldiniz. Günün öne çıkan gelişmelerini aktarıyoruz."
     },
     {
       "type": "story",
       "index": 1,
-      "text": "Aile ve Sosyal Hizmetler Bakanı Mahinur Özdemir Göktaş, kreşlerin yaygınlaştırılması amacıyla yeni bir teşvik paketinin devreye alınacağını duyurdu. Bakan Göktaş, genç çiftlere yönelik kredi desteğinin de süreceğini ve toplam tutarın 24 milyar 83 milyon liraya ulaştığını belirtti."
+      "text": "Ankara Sincan'da yaşayanlar bugün su kesintisiyle karşı karşıya kaldı. Vatandaşlar suların ne zaman geleceğini merak ediyor."
+    },
+    {
+      "type": "story",
+      "index": 2,
+      "text": "Isparta'ya Ankara'dan ikinci yol müjdesi verildi. Bu gelişme bölge halkı tarafından memnuniyetle karşılandı."
+    },
+    {
+      "type": "story",
+      "index": 3,
+      "text": "Fransa'da polis okulu öğrencilerinin paylaştığı ırkçı mesajlar soruşturuluyor. Olayla ilgili resmi süreç devam ediyor."
+    },
+    {
+      "type": "story",
+      "index": 4,
+      "text": "İran'ın Sistan ve Beluçistan eyaletinde bir askeri kışla yakınında patlama meydana geldi. Olayın detayları araştırılıyor."
+    },
+    {
+      "type": "story",
+      "index": 5,
+      "text": "Günün astronomi fotoğrafında NGC 7771 grubundaki galaksilerin mücadelesi yer aldı. Uzayın derinliklerindeki bu görüntü bilim dünyasının ilgisini çekiyor."
+    },
+    {
+      "type": "story",
+      "index": 6,
+      "text": "Türkistan’ın Öncüleri Hoca Ahmed Yesevi Sempozyumu yarın Sincan'da kapılarını açacak. Etkinlik için hazırlıklar tamamlandı."
+    },
+    {
+      "type": "story",
+      "index": 7,
+      "text": "Ankara Etimesgut için bugünkü saatlik hava durumu verileri açıklandı. Gün boyunca hava koşullarının nasıl olacağı merak ediliyor."
+    },
+    {
+      "type": "story",
+      "index": 8,
+      "text": "Ankara genelinde bugün elektrik kesintisi yaşanıyor. On yedi ilçe mahalle mahalle kesinti saatlerini öğrenmeye çalışıyor."
     },
     {
       "type": "closing",
-      "index": 2,
-      "text": "Böylece bültenimizin sonuna geldik. ULAK’TAN HABERLER’de tekrar buluşmak dileğiyle, hoşça kalın."
+      "index": 9,
+      "text": "Bültenimizin sonuna geldik. Yeniden görüşmek üzere, iyi günler dileriz."
     }
   ],
   "news": [
     {
-      "sourceId": "trt-turkiye",
-      "sourceName": "TRT Haber - Türkiye",
-      "title": "Bakan Göktaş: Kreşlerin yaygınlaştırılması için teşvik paketini devreye alıyoruz",
-      "link": "https://www.trthaber.com/haber/turkiye/bakan-goktas-kreslerin-yayginlastirilmasi-icin-tesvik-paketini-devreye-aliyoruz-964307.html",
-      "summary": "Bakan Göktaş, \"2027 yılında kreşlerin kamu ve özel sektör eliyle yaygınlaştırılması için ilk defa bir teşvik paketini devreye alıyoruz\" açıklamasını yaptı. Genç çiftlere kredi desteği sağlamaya devam edeceklerini söyleyen Göktaş, \"Bugüne kadar sağlanan kredi tutarı 24 milyar 83 milyon liraya ulaştı\" dedi.",
-      "publishedAt": "2026-11-24T09:25:00.000Z",
+      "sourceId": "google-sincan",
+      "sourceName": "Google Haberler - Sincan ve Etimesgut",
+      "title": "24 Kasım 2026 Ankara Sincan SU KESİNTİSİ! Sular ne zaman, saat kaçta gelecek? - haber asır",
+      "link": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxQZ1FzYkNXRTV5NjRHLWJWNXVzd3FQZkdzMG5EbENFVzZiY0kwVVBPSE1xZGNieGpfNEdTNU5aMFI2UFAzUUJSdkZUZDdoNEczVGVuM1ZyVUZ4MFJpUDNCWHNoRlFnU0NDSlNzdTdjRVgwSldGVXFrRXBmRVFMNVRnbmxxbEJYU0dONUhKNUw0bnVwdG9EWUhIdURQN3o4NlNyQldQb0NZZDNJQQ?oc=5",
+      "summary": "24 Kasım 2026 Ankara Sincan SU KESİNTİSİ! Sular ne zaman, saat kaçta gelecek? haber asır",
+      "publishedAt": "2026-11-24T09:32:00.000Z",
+      "sourcePriority": 1,
+      "imageSource": "none",
+      "fallbackImageUrl": "",
+      "fallbackImagePageUrl": "",
+      "fallbackImageTitle": "",
+      "fallbackImageLicense": "",
+      "fallbackImageLicenseUrl": "",
+      "fallbackImageArtist": "",
+      "fallbackImageCredit": "",
+      "editorialSummary": "24 Kasım 2026 tarihinde Sincan'da su kesintisi yaşanıyor ve suların ne zaman geleceği araştırılıyor.",
+      "whyImportant": "Günlük yaşamı doğrudan etkileyen altyapı kesintileri halkın bilgilenmesi açısından önem taşır."
+    },
+    {
+      "sourceId": "google-ankara",
+      "sourceName": "Google Haberler - Ankara",
+      "title": "Isparta’ya Ankara’dan İkinci Yol Müjdesi - Demokrat32.com",
+      "link": "https://news.google.com/rss/articles/CBMic0FVX3lxTE0yMjRHanR6SUNsTk13dXVMLXBDdkpPY3Y2RlpGYUFyS3RGOGYyR3RZZmZVYmE3MEFxeU9ad3dLclJjTWJNSGpOMmdhVHV0QTQ2ZEloZmF0WFVaYkd3dFdlZ3Z5T3YyRHkzLU1IQ1daREtmSnM?oc=5",
+      "summary": "Isparta’ya Ankara’dan İkinci Yol Müjdesi Demokrat32.com",
+      "publishedAt": "2026-11-24T09:13:00.000Z",
+      "sourcePriority": 2,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/1/10/Ankara_districts.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imagePageUrl": "https://commons.wikimedia.org/wiki/File%3AAnkara_districts.png",
+      "imageTitle": "Ankara districts.png",
+      "imageLicense": "Public domain",
+      "imageLicenseUrl": "",
+      "imageArtist": "No machine-readable author provided. Rarelibra assumed (based on copyright claims).",
+      "imageCredit": "No machine-readable source provided. Own work assumed (based on copyright claims).",
+      "imageSource": "commons",
+      "fallbackImageUrl": "",
+      "fallbackImagePageUrl": "",
+      "fallbackImageTitle": "",
+      "fallbackImageLicense": "",
+      "fallbackImageLicenseUrl": "",
+      "fallbackImageArtist": "",
+      "fallbackImageCredit": "",
+      "editorialSummary": "Ankara'dan Isparta'ya yapılacak ikinci yol için müjde duyuruldu.",
+      "whyImportant": "Ulaşım imkanlarını geliştirecek projeler bölge halkı için büyük önem arz ediyor."
+    },
+    {
+      "sourceId": "aa-guncel",
+      "sourceName": "Anadolu Ajansı - Güncel",
+      "title": "Fransa'da polis okulu öğrencilerinin ırkçı mesajları soruşturuluyor",
+      "link": "https://www.aa.com.tr/tr/dunya/fransada-polis-okulu-ogrencilerinin-irkci-mesajlari-sorusturuluyor/4135578",
+      "summary": "Fransa'da polis okulu öğrencilerinin ırkçı mesajlarına ilişkin soruşturma yürütüldüğü belirtildi.",
+      "publishedAt": "2026-11-24T09:51:18.000Z",
       "sourcePriority": 3,
-      "imageUrl": "https://trthaberstatic.cdn.wp.trt.com.tr/resimler/2504000/mahinur-ozdemir-goktasaa-2505809.jpg",
+      "imageSource": "none",
+      "fallbackImageUrl": "",
+      "fallbackImagePageUrl": "",
+      "fallbackImageTitle": "",
+      "fallbackImageLicense": "",
+      "fallbackImageLicenseUrl": "",
+      "fallbackImageArtist": "",
+      "fallbackImageCredit": "",
+      "editorialSummary": "Fransa'da polis okulu öğrencilerinin ırkçı mesajlarına ilişkin soruşturma açıldığı belirtildi.",
+      "whyImportant": "Eğitim kurumlarındaki ayrımcılık iddiaları kamuoyu ve hukuk açısından yakından takip ediliyor."
+    },
+    {
+      "sourceId": "trt-dunya",
+      "sourceName": "TRT Haber - Dünya",
+      "title": "İranda bir askeri kışla yakınında patlama meydana geldi",
+      "link": "https://www.trthaber.com/haber/dunya/iranda-bir-askeri-kisla-yakininda-patlama-meydana-geldi-964308.html",
+      "summary": "İran’ın Sistan ve Beluçistan eyaletinde bir askeri kışla yakınında patlama meydana geldiği bildirildi.",
+      "publishedAt": "2026-11-24T09:43:00.000Z",
+      "sourcePriority": 4,
+      "imageUrl": "https://trthaberstatic.cdn.wp.trt.com.tr/resimler/1484000/iran-harita-trthaber-1485298.jpg",
       "imageSource": "article",
-      "editorialSummary": "Bakan Göktaş, 2027'de kreşleri yaygınlaştırmak için teşvik paketi uygulanacağını açıkladı ve genç çiftlere sağlanan kredi desteğinin 24 milyar 83 milyon liraya ulaştığını bildirdi.",
-      "whyImportant": "Çocuk bakım hizmetlerinin yaygınlaşması ve ailelere sunulan finansal desteklerin sürdürülebilirliği açısından önem taşıyor."
+      "fallbackImageUrl": "",
+      "fallbackImagePageUrl": "",
+      "fallbackImageTitle": "",
+      "fallbackImageLicense": "",
+      "fallbackImageLicenseUrl": "",
+      "fallbackImageArtist": "",
+      "fallbackImageCredit": "",
+      "editorialSummary": "İran'ın Sistan ve Beluçistan eyaletindeki askeri kışla yakınında patlama yaşandı.",
+      "whyImportant": "Bölgesel güvenliği ilgilendiren güvenlik olayları yakından izlenmektedir."
+    },
+    {
+      "sourceId": "nasa",
+      "sourceName": "NASA",
+      "title": "APOD: 2026 November 24 – Galaxies Battle in the NGC 7771 Group",
+      "link": "https://science.nasa.gov/image-article/apod-2026-november-24-galaxies-battle-in-the-ngc-7771-group/",
+      "summary": "APOD Science APOD APOD: 2026 November 24 –… Today’s APOD Archive Submissions Index Search Calendar RSS Education About Discuss APOD Astronomy Picture of the Day Discover the cosmos! Each day a different image or photograph of our fascinating universe is featured, along with a brief explanation written by a professional astronomer. Galaxies Battle in […]",
+      "publishedAt": "2026-11-24T05:05:00.000Z",
+      "sourcePriority": 5,
+      "imageSource": "none",
+      "fallbackImageUrl": "",
+      "fallbackImagePageUrl": "",
+      "fallbackImageTitle": "",
+      "fallbackImageLicense": "",
+      "fallbackImageLicenseUrl": "",
+      "fallbackImageArtist": "",
+      "fallbackImageCredit": "",
+      "editorialSummary": "NASA'nın günün astronomi fotoğrafında NGC 7771 grubundaki galaksiler sergilendi.",
+      "whyImportant": "Evrenin keşfi ve astronomi çalışmaları hakkında toplumsal farkındalık yaratır."
+    },
+    {
+      "sourceId": "google-sincan",
+      "sourceName": "Google Haberler - Sincan ve Etimesgut",
+      "title": "“Türkistan’ın Öncüleri Hoca Ahmed Yesevi Sempozyumu“ 25 Kasım'da Sincan'da kapılarını açıyor - Başkent Postası",
+      "link": "https://news.google.com/rss/articles/CBMitAFBVV95cUxPWktUelVLbDI4VElsMkRnd2lQRG5mWndKdXJMdUwzMDRIOGhBYVdqOC1TNFhKSUh0THh4R3E2akhhN05DTTdHQndsUXhiUTVnVGJsUTFJdktCMHozdHN4YmllYlJEWDlkRElCTDFvQkJLUlFFeE85cGdnTUFBMW5NSW4tbksxdFRRQThfNUYxR1paWDRrVmV6dTlLeUJ0OVJnQjlFcjc0cThCTVhLejA4TmN2UGI?oc=5",
+      "summary": "“Türkistan’ın Öncüleri Hoca Ahmed Yesevi Sempozyumu“ 25 Kasım'da Sincan'da kapılarını açıyor Başkent Postası",
+      "publishedAt": "2026-11-24T09:26:34.000Z",
+      "sourcePriority": 1,
+      "imageSource": "none",
+      "fallbackImageUrl": "",
+      "fallbackImagePageUrl": "",
+      "fallbackImageTitle": "",
+      "fallbackImageLicense": "",
+      "fallbackImageLicenseUrl": "",
+      "fallbackImageArtist": "",
+      "fallbackImageCredit": "",
+      "editorialSummary": "Hoca Ahmed Yesevi Sempozyumu 25 Kasım'da Sincan'da başlıyor.",
+      "whyImportant": "Kültürel ve akademik etkinlikler tarihi figürlerin anılmasına katkı sağlar."
+    },
+    {
+      "sourceId": "google-sincan",
+      "sourceName": "Google Haberler - Sincan ve Etimesgut",
+      "title": "24 Kasım Ankara Etimesgut Bugün Saatlik Hava Durumu - Onedio",
+      "link": "https://news.google.com/rss/articles/CBMifkFVX3lxTFAxTzRlakZ4eTBEclM1bU9JNnVLdnRMeVBYZXVZNkxqMW9PLUdmMWxIckNIcDVlVGFoOWE2QW1mUHJiMjBnbU9qWngyN3Q2M3BKSl8yaGgxLVBzNkdua1FzVk1JU3JQRTE0RUNOQXVyTDRZVUFSM2xUcDNXaXFsUQ?oc=5",
+      "summary": "24 Kasım Ankara Etimesgut Bugün Saatlik Hava Durumu Onedio",
+      "publishedAt": "2026-11-24T06:48:01.000Z",
+      "sourcePriority": 1,
+      "imageSource": "none",
+      "fallbackImageUrl": "",
+      "fallbackImagePageUrl": "",
+      "fallbackImageTitle": "",
+      "fallbackImageLicense": "",
+      "fallbackImageLicenseUrl": "",
+      "fallbackImageArtist": "",
+      "fallbackImageCredit": "",
+      "editorialSummary": "24 Kasım tarihinde Ankara Etimesgut'un saatlik hava durumu bilgileri paylaşıldı.",
+      "whyImportant": "Günlük planlamalar için hava durumu bilgileri önem taşır."
+    },
+    {
+      "sourceId": "google-sincan",
+      "sourceName": "Google Haberler - Sincan ve Etimesgut",
+      "title": "Ankara'da bugün elektrik kesintisi! 24 Kasım'da 17 ilçede elektrikler ne zaman gelecek? Mahalle mahalle kesinti saatleri - Haberton",
+      "link": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxOaDdBY1JpZGh4dFhFR2IwNy1YV2FUWUlaeGhneVJ1d241UHhCSGhWS0tIUy05cXoyc0k4cEFkQWpNYmZicFJVX0h4eUI0eEotXy1odWZ2Xy1YaGdvMWEzTDJGeU4tVTN5eUxTM0REUDlMWWFIZmktcEJwWXZDYW15QmpDNS1WRklaRVBNQ2hKQ0MwcVJXYmVsZWpwVk0yNWdCQ2ZzUVg1ZmEzMWpSRXJEUGJCekJHOC1mVFg4YTB1Qzd2MGhUa2FacW1PQmlXLWJ6dF81dg?oc=5",
+      "summary": "Ankara'da bugün elektrik kesintisi! 24 Kasım'da 17 ilçede elektrikler ne zaman gelecek? Mahalle mahalle kesinti saatleri Haberton",
+      "publishedAt": "2026-11-24T06:07:20.000Z",
+      "sourcePriority": 1,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/1/10/Ankara_districts.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imagePageUrl": "https://commons.wikimedia.org/wiki/File%3AAnkara_districts.png",
+      "imageTitle": "Ankara districts.png",
+      "imageLicense": "Public domain",
+      "imageLicenseUrl": "",
+      "imageArtist": "No machine-readable author provided. Rarelibra assumed (based on copyright claims).",
+      "imageCredit": "No machine-readable source provided. Own work assumed (based on copyright claims).",
+      "imageSource": "commons",
+      "fallbackImageUrl": "",
+      "fallbackImagePageUrl": "",
+      "fallbackImageTitle": "",
+      "fallbackImageLicense": "",
+      "fallbackImageLicenseUrl": "",
+      "fallbackImageArtist": "",
+      "fallbackImageCredit": "",
+      "editorialSummary": "24 Kasım'da Ankara'nın 17 ilçesinde mahalle mahalle elektrik kesintisi saatleri duyuruldu.",
+      "whyImportant": "Elektrik kesintileri günlük hayatı ve iş süreçlerini doğrudan etkilemektedir."
     }
   ],
-  "generatedAt": "2026-11-24T09:46:00Z"
+  "generatedAt": "2026-11-24T09:59:18Z"
 }
