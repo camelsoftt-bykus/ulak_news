@@ -44,6 +44,7 @@ async function main() {
     link: item.link || "",
     sourceName: item.sourceName || "",
     imageUrl: item.imageUrl || "",
+    fallbackImageUrl: item.fallbackImageUrl || "",
     imagePageUrl: item.imagePageUrl || "",
     imageTitle: item.imageTitle || "",
     imageLicense: item.imageLicense || "",
