@@ -183,11 +183,24 @@ jobs:
               if [ "$curl_exit" -eq 0 ] && [ -s "$response_file" ] && \
                 jq -e . "$response_file" > /dev/null 2>&1; then
                 jq -r '
-                  "Hata kodu: " +
-                  ((.error.status // .status // "bilinmiyor") | tostring
-                    | gsub("[[:cntrl:]]"; " ")
-                    | .[0:80])
+                  (.error // .) as $e
+                  | "Hata türü: " + ((.error // null) | type)
+                    + " | status: " +
+                      (if ($e | type) == "object"
+                       then ($e.status // .status // "yok")
+                       else (.status // "yok") end | tostring)
+                    + " | code: " +
+                      (if ($e | type) == "object"
+                       then ($e.code // .code // "yok")
+                       else (.code // "yok") end | tostring)
                 ' "$response_file" || echo "Hata kodu okunamadı."
+
+                jq -r '
+                  if type == "object"
+                  then "JSON anahtarları: " + (keys | join(","))
+                  else "JSON kök türü: " + type
+                  end
+                ' "$response_file" || true
               else
                 echo "Yanıt JSON değil veya boş; yanıt gövdesi loglanmadı."
               fi
