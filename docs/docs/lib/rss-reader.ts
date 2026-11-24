@@ -302,51 +302,55 @@ async function collectPageNews(
   );
 }
 
-function getRssImage(item: any, articleUrl: string): string {
+type RssRecord = Record<string, unknown>;
+
+function asRssRecord(value: unknown): RssRecord | null {
+  return value !== null && typeof value === "object"
+    ? value as RssRecord
+    : null;
+}
+
+function getRssString(record: RssRecord | null, key: string): string {
+  const value = record?.[key];
+  return typeof value === "string" ? value : "";
+}
+
+function getRssImage(item: RssRecord, articleUrl: string): string {
   const candidates: string[] = [];
+  const enclosure = asRssRecord(item.enclosure);
+  const image = asRssRecord(item.image);
+  const itunes = asRssRecord(item.itunes);
 
-  if (typeof item.enclosure?.url === "string") {
-    candidates.push(item.enclosure.url);
+  const enclosureUrl = getRssString(enclosure, "url");
+  const imageUrl = getRssString(image, "url");
+  const itunesImage = getRssString(itunes, "image");
+  if (enclosureUrl) candidates.push(enclosureUrl);
+  if (imageUrl) candidates.push(imageUrl);
+  if (itunesImage) candidates.push(itunesImage);
+
+  const mediaFields = [item.mediaContent, item.mediaThumbnail]
+    .flatMap((value) => Array.isArray(value) ? value : value ? [value] : []);
+
+  for (const value of mediaFields) {
+    const media = asRssRecord(value);
+    const attributes = asRssRecord(media?.$);
+    const attributeUrl = getRssString(attributes, "url");
+    const directUrl = getRssString(media, "url");
+    if (attributeUrl) candidates.push(attributeUrl);
+    if (directUrl) candidates.push(directUrl);
   }
 
-  if (typeof item.image?.url === "string") {
-    candidates.push(item.image.url);
-  }
-
-  if (typeof item.itunes?.image === "string") {
-    candidates.push(item.itunes.image);
-  }
-
-  const mediaFields = [
-    item.mediaContent,
-    item.mediaThumbnail
-  ].flatMap((value: any) =>
-    Array.isArray(value) ? value : value ? [value] : []
-  );
-
-  for (const media of mediaFields) {
-    if (typeof media?.$?.url === "string") {
-      candidates.push(media.$.url);
-    }
-
-    if (typeof media?.url === "string") {
-      candidates.push(media.url);
-    }
-  }
-
-  const content = String(item.content || item["content:encoded"] || "");
-
+  const content = getRssString(item, "content") ||
+    getRssString(item, "content:encoded");
   const contentImage = content.match(
-    /<img\b[^>]*src=["']([^"']+)["']/i
+    /<img\\b[^>]*src=["']([^"']+)["']/i
   );
 
-  if (contentImage?.[1]) {
-    candidates.push(contentImage[1]);
-  }
+  if (contentImage?.[1]) candidates.push(contentImage[1]);
 
   for (const candidate of candidates) {
-    const imageUrl = normalizeImageUrl(candidate, articleUrl);
-    if (imageUrl) return imageUrl;
+    const normalizedUrl = normalizeImageUrl(candidate, articleUrl);
+    if (normalizedUrl) return normalizedUrl;
   }
 
   return "";
@@ -373,19 +377,27 @@ async function collectRssSource(
   const xml = await response.text();
   const feed = await parser.parseString(xml);
 
-  return feed.items.slice(0, 20).map((item: any) => {
-    const link = item.link || source.url;
+  return feed.items.slice(0, 20).map((rawItem) => {
+    const item = rawItem as unknown as RssRecord;
+    const link = getRssString(item, "link") || source.url;
     const imageUrl = getRssImage(item, link);
+    const title = getRssString(item, "title");
+    const summary =
+      getRssString(item, "contentSnippet") ||
+      getRssString(item, "content") ||
+      getRssString(item, "summary");
+    const publishedAt =
+      getRssString(item, "isoDate") ||
+      getRssString(item, "pubDate") ||
+      null;
 
     return {
       sourceId: source.id,
       sourceName: source.name,
-      title: cleanText(item.title || ""),
+      title: cleanText(title),
       link,
-      summary: cleanText(
-        item.contentSnippet || item.content || item.summary || ""
-      ),
-      publishedAt: item.isoDate || item.pubDate || null,
+      summary: cleanText(summary),
+      publishedAt,
       sourcePriority: source.priority,
       ...(imageUrl ? { imageUrl } : {})
     };
