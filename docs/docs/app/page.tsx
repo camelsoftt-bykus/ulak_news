@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import NewsFeed from "./news-feed";
 
 const sections = [
@@ -11,6 +12,30 @@ const sections = [
 ];
 
 export default function Home() {
+  const [presenterReady, setPresenterReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/data/daily.json?t=" + Date.now(), { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error("Bülten alınamadı");
+        return response.json();
+      })
+      .then((data) => {
+        const script = typeof data.script === "string" ? data.script : "";
+        // Eski, kaynak URL'lerini seslendiren bültenleri yeni sunum gibi göstermeyiz.
+        if (active) setPresenterReady(
+          Array.isArray(data.news) &&
+          Boolean(data.generatedAt) &&
+          !/kaynaklar\\s*:/i.test(script) &&
+          !/https?:\\/\\//i.test(script) &&
+          data.news.length > 0
+        );
+      })
+      .catch(() => { if (active) setPresenterReady(false); });
+    return () => { active = false; };
+  }, []);
+
   const today = new Intl.DateTimeFormat("tr-TR", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
     timeZone: "Europe/Istanbul",
@@ -42,21 +67,23 @@ export default function Home() {
             <p style={{ margin: 0, color: "#c8bdae", fontSize: 14 }}>Günün önemli gelişmeleri, doğal bir haber sunumuyla.</p>
           </div>
           <div style={{ padding: 14 }}>
-            <video
-              controls
-              playsInline
-              preload="metadata"
-              poster="/data/daily-poster.jpg"
-              aria-label="ULAK günlük haber sunumu"
-              style={{ display: "block", width: "100%", maxHeight: 620, objectFit: "contain", background: "#090807", borderRadius: 7 }}
-            >
-              <source src="/data/daily.mp4" type="video/mp4" />
-              Tarayıcınız video oynatmayı desteklemiyor.
-            </video>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: "12px 2px 2px", color: "#c8bdae", fontSize: 12 }}>
-              <span>ULAK’ın günlük haber sunumu</span>
-              <a href="/data/daily.mp3" style={{ color: "#f0bd83", fontWeight: 700 }}>Yalnızca sesi dinle ↗</a>
-            </div>
+            {presenterReady ? (
+              <>
+                <video controls playsInline preload="metadata" poster="/data/daily-poster.jpg" aria-label="ULAK günlük haber sunumu" style={{ display: "block", width: "100%", maxHeight: 620, objectFit: "contain", background: "#090807", borderRadius: 7 }}>
+                  <source src={"/data/daily.mp4?v=" + encodeURIComponent("latest")} type="video/mp4" />
+                  Tarayıcınız video oynatmayı desteklemiyor.
+                </video>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: "12px 2px 2px", color: "#c8bdae", fontSize: 12 }}>
+                  <span>ULAK’ın günlük haber sunumu</span>
+                  <a href="/data/daily.mp3" style={{ color: "#f0bd83", fontWeight: 700 }}>Yalnızca sesi dinle ↗</a>
+                </div>
+              </>
+            ) : (
+              <div style={{ padding: "28px 12px", textAlign: "center", color: "#e7d9c8" }}>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 20 }}>Yeni bülten hazırlanıyor</div>
+                <p style={{ margin: "8px 0 0", fontSize: 13, color: "#c8bdae" }}>Ulak, kaynak adreslerini okumayan ve tekrar haberlerden arındırılmış sunumuyla burada olacak. Eski kayıt yanlışlıkla yeni bülten gibi gösterilmeyecek.</p>
+              </div>
+            )}
           </div>
         </section>
         <NewsFeed />
