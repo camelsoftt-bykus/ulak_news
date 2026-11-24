@@ -125,6 +125,7 @@ export default function Home() {
           <video
             key="ulak-daily-video"
             src="/data/daily.mp4"
+            poster="/data/daily-poster.jpg"
             controls
             playsInline
             preload="metadata"
@@ -132,7 +133,7 @@ export default function Home() {
               display: "block",
               width: "100%",
               height: "auto",
-              aspectRatio: "1 / 1",
+              aspectRatio: "16 / 9",
               background: "#1d1a17",
             }}
           >
