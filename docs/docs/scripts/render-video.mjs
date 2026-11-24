@@ -139,8 +139,9 @@ async function main() {
 
     console.log("Robot sunumu kaydediliyor...");
 
+    const downloadWaitMs = Math.min(TIMEOUT, Math.max(60000, audioDuration * 1000 + 30000));
     const downloadPromise = page.waitForEvent("download", {
-      timeout: TIMEOUT
+      timeout: downloadWaitMs
     });
 
     await recordButton.click();
@@ -162,8 +163,13 @@ async function main() {
       }));
       console.log("Kayıt indirme bekleme bilgisi:", recording);
       const stopButton = page.locator("#stopRecBtn");
-      if (await stopButton.isEnabled()) await stopButton.click();
-      throw new Error(`Video indirme olayı oluşmadı: ${error.message}`);
+      const forcedDownloadPromise = page.waitForEvent("download", { timeout: 30000 });
+      if (await stopButton.isEnabled()) {
+        await stopButton.click();
+        download = await forcedDownloadPromise;
+      } else {
+        throw new Error(`Video indirme olayı oluşmadı: ${error.message}`);
+      }
     }
     const downloadError = await download.failure();
 
