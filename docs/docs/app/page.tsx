@@ -62,6 +62,13 @@ export default function Home() {
         </div>
         <section aria-labelledby="ulak-sunuyor" style={{ margin: "0 0 34px", border: "1px solid #d8d0c4", background: "#211e1b", color: "#f8f1e7", borderRadius: 10, overflow: "hidden" }}>
           <div style={{ padding: "18px 20px 12px", borderBottom: "1px solid #50483f" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", marginBottom: 16 }}>
+              <img src="/1795512817665.jpg" alt="ULAK, Baş Haber Editörü" style={{ width: 116, height: 116, objectFit: "cover", objectPosition: "center", borderRadius: 12, border: "1px solid #8b684b", boxShadow: "0 8px 24px #0008" }} />
+              <div>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 25, fontWeight: 800, color: "#fff9ef" }}>ULAK</div>
+                <div style={{ marginTop: 4, color: "#e6ad70", fontSize: 12, letterSpacing: 1.5, fontWeight: 800, textTransform: "uppercase" }}>Baş Haber Editörü</div>
+              </div>
+            </div>
             <div style={{ fontSize: 11, letterSpacing: 2.5, fontWeight: 800, color: "#e6ad70" }}>GÜNÜN MANŞETLERİ</div>
             <h2 id="ulak-sunuyor" style={{ fontFamily: "Georgia, serif", fontSize: "clamp(23px, 3vw, 31px)", margin: "6px 0 4px", color: "#fff9ef" }}>Gündemin Öne Çıkanları</h2>
             <p style={{ margin: 0, color: "#c8bdae", fontSize: 14 }}>Günün öne çıkan gelişmeleri, anlaşılır ve akıcı bir anlatımla.</p>
