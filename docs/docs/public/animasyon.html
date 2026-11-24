@@ -1225,6 +1225,7 @@ async function startRecording(){
   const type=mime.split(';')[0];
   const ext=type.includes('mp4')?'mp4':'webm';
   const blob=new Blob(recChunks,{type});
+  window.ULAK_VIDEO_BLOB=blob;
   const url=URL.createObjectURL(blob);
 
   const a=document.createElement('a');
