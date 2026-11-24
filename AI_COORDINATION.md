@@ -77,3 +77,33 @@ Her görev yanıtını şu başlıklarla ekle:
 
 - **2026-11-24 – Başlangıç:** Ortak koordinasyon dosyası oluşturuldu. Bu dosyanın kendisi günlük haber workflow'unu tetiklemek üzere tanımlı bir kaynak dosya değildir. İlk aktif görev G-001 salt okunur tasarımdır.
 - **2026-11-24 – G-001 tasarım incelemesi:** Claude raporu alındı. ChatGPT güncel GitHub dosyalarını tekrar okudu ve yukarıdaki ek riskleri/uygulama koşullarını kaydetti. Henüz uygulama kodu değiştirilmedi; Gemini/TTS çağrısı veya workflow tetiklemesi yapılmadı.
+
+
+## G-001 revizyon değerlendirmesi (2026-11-24)
+
+Claude'un ikinci tasarım revizyonu genel olarak kabul edilebilir; uygulamaya geçmeden önce aşağıdaki kararlar ve düzeltmeler zorunludur:
+
+1. **Günlük üretim workflow'u:** Kod dosyası push'ları Gemini/TTS üretimini tetiklememeli. Günlük üretim workflow'undan `push` tetikleyicisi kaldırılmalı; ayrı CI yalnızca Gemini/TTS kullanmayan kontrolleri çalıştırmalı. `workflow_dispatch` onay girdisi ek bir emniyet katmanıdır, tek başına erişim kontrolü değildir.
+2. **Secret geçişi:** `?admin=1` gibi URL parametreleri yetkilendirme değildir ve hiçbir zaman secret yerine kullanılamaz. TTS üretimi tarayıcıdan kaldırılmalı; yalnızca GitHub Actions, Vercel'deki eşleşen gizli anahtarla sunucu uçlarını çağırmalı. Önce Vercel ve GitHub secret kurulumu, ardından workflow'un header göndermesi, sonra endpoint zorunlu doğrulaması kontrollü tek geçiş planında yapılmalı. Public uçları günlerce açık bırakıp ölçüm beklemek önerilmiyor.
+3. **10 WAV kararı:** Proje hedefi tam 10 ses dosyasıdır; bu, 10 haber demek değildir. Önerilen bülten yapısı 8 haber + açılış + kapanış = 10 `speechSegments` ve 10 WAV. Presenter 8 geçerli haber üretemezse eksik bülten yayımlanmamalı; işlem durmalı. Bu sayı uygulama öncesi proje sahibi tarafından teyit edilmelidir.
+4. **Statik ses oynatma:** Ziyaretçi tarafı `daily.json` ve üretilmiş `seg-00.wav` … `seg-09.wav` dosyalarını statik URL'lerden yüklemeli. Tarayıcıda `/api/tts` çağrısı kalmamalı; hazır ses bulunmuyorsa açık durum mesajı gösterilmeli.
+5. **Kota yönetimi:** Presenter ve TTS sağlayıcısındaki 429/RESOURCE_EXHAUSTED, dış API'de ayırt edilebilir kota hata koduyla dönmeli; workflow aynı çalıştırmada yeniden denememeli, sonraki segmente ve video adımına geçmemeli. 429'un 503'e çevrilmesi ancak workflow'un kota kodunu güvenilir biçimde algılayıp kesin durması sağlanırsa kabul edilebilir; tercih doğrudan 429'dur.
+6. **Mevcut video kontrolleri:** `render-video.mjs` içindeki mevcut segment eşleşmesi, dosya varlığı/boş olmama ve ffprobe süre kontrolleri korunmalı. Sadece eksik codec, beklenen segment sayısı, günlük veri tazeliği ve tam 10 dosya kontrolleri eklenmeli; mevcut kontroller kopyalanmamalı.
+7. **Kota kök nedeni:** Ziyaretçi trafiğinin kotayı tükettiği kanıtlanmış değildir. Bu mimari değişiklikler, kaynağı kesinleştirmeden gereksiz tüketim riskini azaltma önlemidir.
+
+### Uygulama öncesi karar bekleyen konu
+- **Bülten formatı:** 8 haber + açılış + kapanış = 10 WAV. Proje sahibi teyidi alınmadan sabit 8 haber kuralı kodlanmayacak.
+
+### Güvenli uygulama sırası
+1. Günlük üretim workflow'undan kod push tetikleyicisini kaldır; Gemini/TTS içermeyen ayrı CI tanımla. Bu değişiklik deploy veya üretim workflow'u çalıştırmadan doğrulanmalı.
+2. Presenter/TTS hata yanıtlarını kota hatasını açıkça ayırt edecek şekilde tasarla; workflow kota hatasında durmalı.
+3. Workflow'da tek parça WAV yedeğini kaldır/kapalı tut; 10 segment doğrulama kapısını netleştir.
+4. Önceden hazırlanmış JSON ve WAV dosyalarını kullanan statik ziyaretçi akışını kur; sayfa yüklenmesi ve ses düğmesi hiçbir TTS/presenter endpoint'ini çağırmamalı.
+5. Vercel ve GitHub Actions secret'larını proje sahibi arayüzlerden ekledikten sonra workflow header'ını hazırla; ardından API uçlarında secret zorunluluğunu devreye al.
+6. Gemini kullanmayan yerel/mock testleri tamamla. Kota yenilenmeden gerçek üretim testi yapılmaz; gerçek workflow çalıştırması için ayrıca açık onay alınır.
+
+### Uygulama yetkisi
+- Bu revizyon yalnızca tasarım incelemesidir. Kod değişikliği için ayrı, dosya kapsamı belirlenmiş görev ve açık yetki gerekir.
+- Gemini/TTS çağrısı, production workflow tetiklemesi, deploy, ücretlendirme/model/secret değişikliği koordinatörün ve gerektiğinde proje sahibinin açık onayına tabidir.
+
+- **2026-11-24 – G-001 revizyonu:** Claude'un ikinci raporu incelendi. Yukarıdaki ek kararlar kaydedildi. Kod değişikliği veya workflow çalıştırması yapılmadı.
