@@ -470,7 +470,8 @@ function getVerifiedEntities(
 function buildSearchQueries(
   imageQuery: string,
   verifiedEntities: string[],
-  articleTitle: string
+  articleTitle: string,
+  articleSummary: string
 ): string[] {
   const queries: string[] = [];
 
@@ -505,6 +506,17 @@ function buildSearchQueries(
       )
     ) {
       queries.push(entity);
+    }
+  }
+
+  // Özel isim içermeyen haberlerde, kısa ve anlamlı özet kelimeleri ek arama sağlar.
+  if (queries.length < 3) {
+    const summaryQuery = [...new Set(getWords(articleSummary))].slice(0, 5).join(" ");
+    if (
+      summaryQuery &&
+      !queries.some((query) => normalizeText(query) === normalizeText(summaryQuery))
+    ) {
+      queries.push(summaryQuery);
     }
   }
 
@@ -585,7 +597,8 @@ export async function findCommonsImage(
   const queries = buildSearchQueries(
     fallbackQuery,
     verifiedEntities,
-    news.title
+    news.title,
+    news.summary
   );
 
   if (queries.length === 0) return null;
