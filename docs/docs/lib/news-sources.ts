@@ -39,11 +39,38 @@ export const newsSources: NewsSource[] = [
     enabled: true
   },
   {
+    id: "google-sincan",
+    name: "Google Haberler - Sincan ve Etimesgut",
+    region: "local",
+    url: "https://news.google.com/rss/search?q=Sincan+OR+Etimesgut+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    rssUrl: "https://news.google.com/rss/search?q=Sincan+OR+Etimesgut+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    priority: 1,
+    enabled: true
+  },
+  {
+    id: "google-ankara",
+    name: "Google Haberler - Ankara",
+    region: "ankara",
+    url: "https://news.google.com/rss/search?q=Ankara+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    rssUrl: "https://news.google.com/rss/search?q=Ankara+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    priority: 2,
+    enabled: true
+  },
+  {
     id: "trt-turkiye",
     name: "TRT Haber - Türkiye",
     region: "turkey",
     url: "https://www.trthaber.com/turkiye_articles.rss",
     rssUrl: "https://www.trthaber.com/turkiye_articles.rss",
+    priority: 3,
+    enabled: true
+  },
+  {
+    id: "aa-guncel",
+    name: "Anadolu Ajansı - Güncel",
+    region: "turkey",
+    url: "https://www.aa.com.tr/tr/rss/default?cat=guncel",
+    rssUrl: "https://www.aa.com.tr/tr/rss/default?cat=guncel",
     priority: 3,
     enabled: true
   },
@@ -62,6 +89,24 @@ export const newsSources: NewsSource[] = [
     region: "world",
     url: "https://www.trthaber.com/dunya_articles.rss",
     rssUrl: "https://www.trthaber.com/dunya_articles.rss",
+    priority: 4,
+    enabled: true
+  },
+  {
+    id: "aa-dunya",
+    name: "Anadolu Ajansı - Dünya",
+    region: "world",
+    url: "https://www.aa.com.tr/tr/rss/default?cat=dunya",
+    rssUrl: "https://www.aa.com.tr/tr/rss/default?cat=dunya",
+    priority: 4,
+    enabled: true
+  },
+  {
+    id: "bbc-dunya",
+    name: "BBC News - Dünya",
+    region: "world",
+    url: "https://feeds.bbci.co.uk/news/world/rss.xml",
+    rssUrl: "https://feeds.bbci.co.uk/news/world/rss.xml",
     priority: 4,
     enabled: true
   },
