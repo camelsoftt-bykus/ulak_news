@@ -102,9 +102,26 @@ export async function GET() {
       );
     }
 
+    const now = new Date();
+    const istanbulDate = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Istanbul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(now);
+    const istanbulHour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Istanbul",
+        hour: "2-digit",
+        hourCycle: "h23"
+      }).format(now)
+    );
+    const edition = istanbulHour >= 5 && istanbulHour < 14 ? "morning" : "evening";
+
     const collectedNews = await collectRssNews();
 
-    // Önceki günlük bültendeki aynı bağlantıları yeniden yayımlama.
+    // Yalnızca aynı takvim günündeki önceki bültenin haberlerini tekrar etme.
+    // Böylece akşam sabahı dışlar; ertesi sabah önceki akşamın haberlerine takılmaz.
     let previousLinks = new Set<string>();
     let previousTitles = new Set<string>();
     try {
@@ -114,10 +131,17 @@ export async function GET() {
       );
       if (previousResponse.ok) {
         const previousDaily = await previousResponse.json();
-        const previousGeneratedAt = new Date(previousDaily.generatedAt || "").getTime();
+        const previousGeneratedAt = new Date(previousDaily.generatedAt || "");
+        const previousIstanbulDate = Number.isNaN(previousGeneratedAt.getTime())
+          ? ""
+          : new Intl.DateTimeFormat("en-CA", {
+              timeZone: "Europe/Istanbul",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit"
+            }).format(previousGeneratedAt);
         if (
-          Number.isFinite(previousGeneratedAt) &&
-          Date.now() - previousGeneratedAt < 36 * 60 * 60 * 1000 &&
+          previousIstanbulDate === istanbulDate &&
           Array.isArray(previousDaily.news)
         ) {
           previousLinks = new Set(
@@ -479,6 +503,8 @@ ${newsText}
     return Response.json(
       {
         count: enrichedNews.length,
+        edition,
+        editionDate: istanbulDate,
         imageCount,
         articleImageCount,
         commonsImageCount,
