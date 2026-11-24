@@ -3,13 +3,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ULAK | Şehrinden dünyaya",
+  title: "ULAK’TAN HABERLER | Türkiye’den ve dünyadan",
   description:
-    "Her sabah şehrinden ve dünyadan önemli gelişmeler. Güne hazır ol.",
-  applicationName: "ULAK",
+    "Türkiye’den ve dünyadan önemli gelişmeler. Doğru haberin adresi.",
+  applicationName: "ULAK’TAN HABERLER",
   appleWebApp: {
     capable: true,
-    title: "ULAK",
+    title: "ULAK’TAN HABERLER",
     statusBarStyle: "default"
   }
 };
