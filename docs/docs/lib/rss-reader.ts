@@ -514,10 +514,16 @@ function scoreImage(
     };
   }
 
-  if (matchedQueryWords.length >= 3) {
+  // Özel isim doğrulanamıyorsa genel konu eşleşmesinde gevşek
+  // 3-kelime eşiği kullanma: arama ifadesinin tamamı dosya adı/açıklamada
+  // bulunmalı. Böylece aynı genel kelimeleri taşıyan alakasız görseller elenir.
+  if (
+    uniqueQueryWords.length >= 2 &&
+    matchedQueryWords.length === uniqueQueryWords.length
+  ) {
     return {
       score: 10 + matchedQueryWords.length,
-      reason: "Haber konusu kelimeleri eşleşti"
+      reason: "Arama ifadesinin tamamı eşleşti"
     };
   }
 
