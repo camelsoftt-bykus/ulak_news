@@ -3,7 +3,7 @@ name: ULAK Günlük Haber Otomasyonu
 on:
   push:
     paths:
-      - "docs/docs/app/api/presenter/route.ts"
+      - "docs/docs/app/api/presenter/route.ts"\n      - "docs/docs/app/api/tts/route.ts"
       - "docs/docs/app/api/news-image/route.ts"
       - "docs/docs/lib/rss-reader.ts"
       - "docs/docs/public/animasyon.html"
@@ -89,7 +89,7 @@ jobs:
             '. + {generatedAt: $generatedAt}' \
             response.json > docs/docs/public/data/daily.json
 
-      - name: Ahmet sesiyle otomatik ses üret
+      - name: Gemini ile doğal haber sunumu sesi üret
         run: |
           set -e
 
@@ -102,7 +102,7 @@ jobs:
             -H "Content-Type: application/json" \
             --data-binary @tts-request.json \
             "https://ulaknews-docs.vercel.app/api/tts" \
-            -o docs/docs/public/data/daily.mp3
+            -o docs/docs/public/data/daily.wav
 
           test -s docs/docs/public/data/daily.mp3
 
@@ -117,7 +117,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add docs/docs/public/data/daily.json
-          git add docs/docs/public/data/daily.mp3
+          git add docs/docs/public/data/daily.wav
           git add docs/docs/public/data/daily.mp4
           git add docs/docs/public/data/daily-poster.jpg
 
