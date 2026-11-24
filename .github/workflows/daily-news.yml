@@ -2,7 +2,7 @@ name: ULAK Günlük Haber Otomasyonu
 
 on:
   schedule:
-    - cron: "0 5 * * *"
+    - cron: "0 5,17 * * *"
   workflow_dispatch:
 
 permissions:
