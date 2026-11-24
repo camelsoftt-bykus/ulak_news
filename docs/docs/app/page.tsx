@@ -27,8 +27,8 @@ export default function Home() {
         if (active) setPresenterReady(
           Array.isArray(data.news) &&
           Boolean(data.generatedAt) &&
-          !/kaynaklar\\s*:/i.test(script) &&
-          !/https?:\\/\\//i.test(script) &&
+          !/kaynaklar\s*:/i.test(script) &&
+          !/https?:\/\//i.test(script) &&
           data.news.length > 0
         );
       })
