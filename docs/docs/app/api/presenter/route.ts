@@ -34,6 +34,16 @@ function normalizeArticleLink(value: string): string {
   }
 }
 
+function normalizeStoryTitle(value: string): string {
+  return value
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/ı/g, "i")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 function cleanImageQuery(value: unknown): string {
   if (typeof value !== "string") return "";
 
@@ -79,6 +89,7 @@ export async function GET() {
 
     // Önceki günlük bültendeki aynı bağlantıları yeniden yayımlama.
     let previousLinks = new Set<string>();
+    let previousTitles = new Set<string>();
     try {
       const previousResponse = await fetch(
         "https://ulaknews-docs.vercel.app/data/daily.json",
@@ -97,6 +108,11 @@ export async function GET() {
               .map((item: { link?: string }) => normalizeArticleLink(item.link || ""))
               .filter(Boolean)
           );
+          previousTitles = new Set(
+            previousDaily.news
+              .map((item: { title?: string }) => normalizeStoryTitle(item.title || ""))
+              .filter(Boolean)
+          );
         }
       }
     } catch (error) {
@@ -104,7 +120,9 @@ export async function GET() {
     }
 
     const news = collectedNews.filter(
-      (item) => !previousLinks.has(normalizeArticleLink(item.link))
+      (item) =>
+        !previousLinks.has(normalizeArticleLink(item.link)) &&
+        !previousTitles.has(normalizeStoryTitle(item.title))
     );
 
     if (news.length === 0) {
