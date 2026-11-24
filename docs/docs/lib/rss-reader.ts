@@ -514,10 +514,16 @@ function scoreImage(
     };
   }
 
-  if (matchedQueryWords.length >= 3) {
+  // Özel isim doğrulanamıyorsa genel konu eşleşmesinde gevşek
+  // 3-kelime eşiği kullanma: arama ifadesinin tamamı dosya adı/açıklamada
+  // bulunmalı. Böylece aynı genel kelimeleri taşıyan alakasız görseller elenir.
+  if (
+    uniqueQueryWords.length >= 2 &&
+    matchedQueryWords.length === uniqueQueryWords.length
+  ) {
     return {
       score: 10 + matchedQueryWords.length,
-      reason: "Haber konusu kelimeleri eşleşti"
+      reason: "Arama ifadesinin tamamı eşleşti"
     };
   }
 
@@ -604,8 +610,16 @@ export async function findCommonsImage(
         const metadata = info.extmetadata;
         const license = getMetadata(metadata, "LicenseShortName");
         const copyrighted = getMetadata(metadata, "Copyrighted");
+        const licenseUrl = getMetadata(metadata, "LicenseUrl");
 
         if (!isAllowedLicense(license, copyrighted)) continue;
+
+        const rawArtist = getMetadata(metadata, "Artist");
+        const credit = getMetadata(metadata, "Credit");
+        const isCcBy = /^cc by [1-4]\.0(?:\s|$)/i.test(license.trim());
+
+        // CC BY lisansında fotoğrafçı/atıf ve lisans bağlantısı yoksa kullanma.
+        if (isCcBy && (!licenseUrl || (!rawArtist && !credit))) continue;
 
         const description = getMetadata(
           metadata,
@@ -627,11 +641,9 @@ export async function findCommonsImage(
 
         const artist =
           attribution ||
-          getMetadata(metadata, "Artist") ||
-          getMetadata(metadata, "Credit") ||
+          rawArtist ||
+          credit ||
           "Belirtilmemiş";
-
-        const credit = getMetadata(metadata, "Credit");
 
         bestScore = match.score;
 

@@ -254,39 +254,47 @@ ${newsText}
 
     const enrichedNews = await Promise.all(
       stories.map(async ({ item, story, imageQuery, imageEntities }) => {
-        // Önce haber kaynağının kendi fotoğrafını kullan.
-        // Kaynak fotoğrafı varsa Commons araması yapma.
+        // Haber sitelerindeki og:image/RSS fotoğraflarının lisansı
+        // doğrulanamadığından doğrudan kullanma. Yalnızca lisansı
+        // Wikimedia Commons metadata'sından doğrulanan görselleri seç.
         let image: Awaited<
           ReturnType<typeof findCommonsImage>
         > = null;
 
-        let imageSource = "none";
-
-        if (item.imageUrl) {
-          imageSource = "article";
-        } else if (imageQuery || imageEntities.length > 0) {
-          try {
+        try {
+          if (imageQuery || imageEntities.length > 0) {
             image = await findCommonsImage(item, {
               imageQuery,
               imageEntities
             });
-
-            if (image) {
-              imageSource = "commons";
-            }
-          } catch (error) {
-            console.error(
-              `[ULAK görsel] Haber görseli alınamadı: ${item.title}`,
-              error
-            );
           }
+        } catch (error) {
+          console.error(
+            `[ULAK görsel] Lisanslı temsili görsel bulunamadı: ${item.title}`,
+            error
+          );
         }
 
         const finalImage = image
-          ? { ...image, imageSource }
-          : item.imageUrl
-            ? { imageSource }
-            : { imageSource };
+          ? {
+              ...image,
+              imageUrl: image.imageUrl,
+              imageSource: "commons",
+              imageKind: "representative",
+              imageCaption: "Temsili görsel"
+            }
+          : {
+              imageUrl: "",
+              imagePageUrl: "",
+              imageTitle: "",
+              imageLicense: "",
+              imageLicenseUrl: "",
+              imageArtist: "",
+              imageCredit: "",
+              imageSource: "none",
+              imageKind: "none",
+              imageCaption: ""
+            };
 
         return {
           ...item,
