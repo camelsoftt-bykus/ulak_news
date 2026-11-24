@@ -3,6 +3,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
 import { chromium } from "playwright";
+import { verifySegments } from "./verify-segments.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -35,6 +36,11 @@ async function main() {
 
   const hasSegments =
     Array.isArray(daily.speechSegments) && daily.speechSegments.length > 0;
+
+  if (hasSegments) {
+    await verifySegments({ daily, dataDir: DATA_DIR });
+    console.log("10/10 WAV doğrulaması başarılı.");
+  }
 
   if (hasSegments) {
     if (daily.news.length !== 8 || daily.speechSegments.length !== 10) {
