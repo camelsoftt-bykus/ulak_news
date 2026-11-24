@@ -71,7 +71,24 @@ function cleanImageEntities(value: unknown): string[] {
 
 function cleanNarration(value: unknown): string {
   if (typeof value !== "string") return "";
-  return value.replace(/\s+/g, " ").trim();
+  return value
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/\bwww\.\S+/gi, "")
+    .replace(/\b(?:kaynak|link|url)\s*:?\s*/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function storySimilarity(a: string, b: string): boolean {
+  const ignored = new Set(["icin", "olan", "olarak", "ile", "bir", "bu", "de", "da", "sonra", "yeni", "haber", "gundem", "sincan", "etimesgut"]);
+  const words = (value: string) => new Set(
+    normalizeStoryTitle(value).split(/\s+/).filter((word) => word.length > 2 && !ignored.has(word))
+  );
+  const left = words(a);
+  const right = words(b);
+  if (left.size < 2 || right.size < 2) return false;
+  const common = [...left].filter((word) => right.has(word)).length;
+  return common >= 2 && common / Math.min(left.size, right.size) >= 0.65;
 }
 
 export async function GET() {
@@ -119,10 +136,14 @@ export async function GET() {
       console.warn("[ULAK tekrar kontrolü] Önceki bülten okunamadı:", error);
     }
 
-    const news = collectedNews.filter(
+    const filteredNews = collectedNews.filter(
       (item) =>
         !previousLinks.has(normalizeArticleLink(item.link)) &&
         !previousTitles.has(normalizeStoryTitle(item.title))
+    );
+    // Aynı olay farklı başlıklarla ve farklı kaynaklarda yayımlanmışsa tek haber olarak tut.
+    const news = filteredNews.filter((item, index) =>
+      !filteredNews.slice(0, index).some((prior) => storySimilarity(item.title, prior.title))
     );
 
     if (news.length === 0) {
@@ -153,7 +174,7 @@ DOĞRULUK:
 - Haber sayısı kadar stories kaydı oluştur.
 
 HER HABER İÇİN:
-- narration: Ahmet'in seslendireceği 2-3 kısa cümle.
+- narration: Ahmet'in seslendireceği 2-3 kısa, akıcı cümle. Bir televizyon haber sunucusu gibi doğal konuş.
 - summary: 2-3 kısa cümlelik haber özeti.
 - whyImportant: Neden önemli olduğunu açıkla.
 - imageQuery: Haber konusunu somut biçimde anlatan İngilizce 2-5 kelime.
@@ -394,11 +415,14 @@ ${newsText}
       .map((segment) => segment.text)
       .join("\n\n");
 
-    const sourceList = news.map((item, index) =>
-      `${index + 1}. ${item.sourceName}: ${item.title}\n${item.link}`
-    ).join("\n\n");
-
-    const script = `${spokenScript}\n\nKaynaklar:\n${sourceList}`;
+    // Seslendirme metninde yalnızca sunucunun okuyacağı doğal konuşma bulunur.
+    // Kaynaklar haber kartlarında ayrı bağlantılar olarak gösterilir.
+    const script = spokenScript;
+    const sources = news.map((item) => ({
+      sourceName: item.sourceName,
+      title: item.title,
+      link: item.link
+    }));
 
     const imageCount = enrichedNews.filter(
       (item) => typeof item.imageUrl === "string" && item.imageUrl.length > 0
@@ -419,6 +443,7 @@ ${newsText}
         articleImageCount,
         commonsImageCount,
         script,
+        sources,
         speechSegments,
         news: enrichedNews
       },
