@@ -13,6 +13,7 @@ const DAILY_JSON = path.join(DATA_DIR, "daily.json");
 const DAILY_MP3 = path.join(DATA_DIR, "daily.mp3");
 const DAILY_MP4 = path.join(DATA_DIR, "daily.mp4");
 const RAW_VIDEO = path.join(DATA_DIR, "daily-raw.webm");
+const DAILY_POSTER = path.join(DATA_DIR, "daily-poster.jpg");
 
 const ANIMATION_URL =
   "https://ulaknews-docs.vercel.app/animasyon.html";
@@ -123,8 +124,12 @@ async function main() {
     await page.locator("#audInput").setInputFiles(DAILY_MP3);
 
     await page.waitForFunction(() => {
-      return document.body.innerText.includes("Ses yüklendi:");
-    }, null, { timeout: 60000 });
+      const audio = document.querySelector("audio");
+      return document.body.innerText.includes("Ses yüklendi:") && audio && audio.readyState >= 2 && Number.isFinite(audio.duration) && audio.duration > 0;
+    }, null, { timeout: 90000 });
+
+    const audioDuration = await page.locator("audio").evaluate((audio) => audio.duration);
+    console.log(`Ahmet ses süresi: ${Math.round(audioDuration)} saniye`);
 
     const recordButton = page.locator("#recBtn");
 
@@ -140,7 +145,26 @@ async function main() {
 
     await recordButton.click();
 
-    const download = await downloadPromise;
+    await page.waitForFunction(() => {
+      const status = document.querySelector("#status")?.textContent || "";
+      return status.includes("Kaydediliyor") || status.includes("Kayıt tamamlandı");
+    }, null, { timeout: 30000 });
+
+    let download;
+    try {
+      download = await downloadPromise;
+    } catch (error) {
+      const recording = await page.evaluate(() => ({
+        status: document.querySelector("#status")?.textContent || "",
+        ended: document.querySelector("audio")?.ended,
+        currentTime: document.querySelector("audio")?.currentTime,
+        duration: document.querySelector("audio")?.duration
+      }));
+      console.log("Kayıt indirme bekleme bilgisi:", recording);
+      const stopButton = page.locator("#stopRecBtn");
+      if (await stopButton.isEnabled()) await stopButton.click();
+      throw new Error(`Video indirme olayı oluşmadı: ${error.message}`);
+    }
     const downloadError = await download.failure();
 
     if (downloadError) {
@@ -176,7 +200,6 @@ async function main() {
 
     console.log("ULAK videosu başarıyla oluşturuldu.");
 
-    const DAILY_POSTER = path.join(__dirname, "../public/data/daily-poster.jpg");
     await execFileAsync("ffmpeg", [
       "-y",
       "-ss", "1",
