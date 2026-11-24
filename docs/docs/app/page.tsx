@@ -35,6 +35,30 @@ export default function Home() {
           <h1 style={{ fontFamily: "Georgia, serif", fontSize: "clamp(28px, 4vw, 42px)", margin: "8px 0" }}>Gündem, olduğu gibi.</h1>
           <p style={{ color: "#756d63", margin: 0 }}>Önce Sincan ve Etimesgut. Ardından Ankara, Türkiye ve dünya.</p>
         </div>
+        <section aria-labelledby="ulak-sunuyor" style={{ margin: "0 0 34px", border: "1px solid #d8d0c4", background: "#211e1b", color: "#f8f1e7", borderRadius: 10, overflow: "hidden" }}>
+          <div style={{ padding: "18px 20px 12px", borderBottom: "1px solid #50483f" }}>
+            <div style={{ fontSize: 11, letterSpacing: 2.5, fontWeight: 800, color: "#e6ad70" }}>GÜNÜN HABER BÜLTENİ</div>
+            <h2 id="ulak-sunuyor" style={{ fontFamily: "Georgia, serif", fontSize: "clamp(23px, 3vw, 31px)", margin: "6px 0 4px", color: "#fff9ef" }}>Ulak sunuyor</h2>
+            <p style={{ margin: 0, color: "#c8bdae", fontSize: 14 }}>Günün önemli gelişmeleri, doğal bir haber sunumuyla.</p>
+          </div>
+          <div style={{ padding: 14 }}>
+            <video
+              controls
+              playsInline
+              preload="metadata"
+              poster="/data/daily-poster.jpg"
+              aria-label="ULAK günlük haber sunumu"
+              style={{ display: "block", width: "100%", maxHeight: 620, objectFit: "contain", background: "#090807", borderRadius: 7 }}
+            >
+              <source src="/data/daily.mp4" type="video/mp4" />
+              Tarayıcınız video oynatmayı desteklemiyor.
+            </video>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: "12px 2px 2px", color: "#c8bdae", fontSize: 12 }}>
+              <span>ULAK’ın günlük haber sunumu</span>
+              <a href="/data/daily.mp3" style={{ color: "#f0bd83", fontWeight: 700 }}>Yalnızca sesi dinle ↗</a>
+            </div>
+          </div>
+        </section>
         <NewsFeed />
       </section>
       <footer style={{ marginTop: 36, borderTop: "3px double #3b352e", background: "#f2ece1" }}>
