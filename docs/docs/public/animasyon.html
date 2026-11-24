@@ -132,6 +132,8 @@ let newsImagesLoading=false;
 let newsRequestRunning=false;
 
 window.ULAK_IMAGES_READY=false;
+window.ULAK_STUDIO_READY=false;
+window.ULAK_IMAGE_COUNT=0;
 
 function setStatus(msg){
  statusEl.textContent=msg;
@@ -200,6 +202,7 @@ function loadWindowMask(){
 
    maskReady=true;
    maskLoading=false;
+   window.ULAK_STUDIO_READY=true;
 
    newsSlides.forEach(item=>{
     item.layer=null;
@@ -215,6 +218,7 @@ function loadWindowMask(){
   }catch(error){
    maskLoading=false;
    maskFailed=true;
+   window.ULAK_STUDIO_READY=false;
    setStatus('Cam maskesi hazırlanamadı: '+error.message);
   }
  };
@@ -222,6 +226,7 @@ function loadWindowMask(){
  maskImage.onerror=()=>{
   maskLoading=false;
   maskFailed=true;
+  window.ULAK_STUDIO_READY=false;
   setStatus('Cam maskesi yüklenemedi. public/koruma_maske_v2.png dosyasını kontrol edin.');
  };
 
@@ -356,6 +361,7 @@ function setULAKNews(news){
   });
 
   const readyCount=newsSlides.filter(item=>item.image).length;
+  window.ULAK_IMAGE_COUNT=readyCount;
   const failed=newsSlides.filter(item=>item.imageUrl&&!item.image).length;
   setStatus(
    'Haber görselleri hazır: '+readyCount+' / '+newsSlides.length+
