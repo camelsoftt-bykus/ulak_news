@@ -317,6 +317,41 @@ function createNewsLayer(item){
  lctx.globalCompositeOperation='destination-in';
  lctx.drawImage(windowMaskCanvas,0,0,imgW,imgH);
 
+ // Wikimedia yedek görsellerinde sanatçı ve lisans bilgisini videoda görünür tut.
+ const artist=String(item.imageArtist||item.imageCredit||'').trim().slice(0,100);
+ const license=String(item.imageLicense||'').trim().slice(0,50);
+ if(artist||license){
+  const creditCanvas=document.createElement('canvas');
+  creditCanvas.width=imgW;
+  creditCanvas.height=imgH;
+  const cctx=creditCanvas.getContext('2d');
+  const fontSize=Math.max(10,Math.round(imgW/120));
+  const creditText='Görsel: '+(artist||'Kaynak belirtilmemiş')+(license?' · '+license:'');
+  cctx.font='600 '+fontSize+'px system-ui, sans-serif';
+  const maxTextWidth=Math.max(40,b.w-32);
+  let visibleText=creditText;
+  while(visibleText.length>12&&cctx.measureText(visibleText).width>maxTextWidth){
+   visibleText=visibleText.slice(0,-2).trimEnd()+'…';
+  }
+  const textWidth=Math.min(maxTextWidth,cctx.measureText(visibleText).width);
+  const padX=8;
+  const padY=5;
+  const creditWidth=Math.min(b.w-16,textWidth+padX*2);
+  const creditHeight=fontSize+padY*2;
+  const creditX=b.x+8;
+  const creditY=b.y+b.h-creditHeight-8;
+  cctx.fillStyle='rgba(0,0,0,.76)';
+  cctx.fillRect(creditX,creditY,creditWidth,creditHeight);
+  cctx.fillStyle='#fff';
+  cctx.textBaseline='middle';
+  cctx.fillText(visibleText,creditX+padX,creditY+creditHeight/2,maxTextWidth);
+
+  cctx.globalCompositeOperation='destination-in';
+  cctx.drawImage(windowMaskCanvas,0,0,imgW,imgH);
+  lctx.globalCompositeOperation='source-over';
+  lctx.drawImage(creditCanvas,0,0);
+ }
+
  item.layer=layer;
  return layer;
 }
