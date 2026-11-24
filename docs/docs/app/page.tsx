@@ -82,13 +82,12 @@ export default function Home() {
                 </video>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: "12px 2px 2px", color: "#c8bdae", fontSize: 12 }}>
                   <span>Günün haber özeti</span>
-                  <a href="/data/daily.wav" style={{ color: "#f0bd83", fontWeight: 700 }}>Sesli bülteni dinle ↗</a>
                 </div>
               </>
             ) : (
               <div style={{ padding: "28px 12px", textAlign: "center", color: "#e7d9c8" }}>
                 <div style={{ fontFamily: "Georgia, serif", fontSize: 20 }}>Günün yeni baskısı hazırlanıyor</div>
-                <p style={{ margin: "8px 0 0", fontSize: 13, color: "#c8bdae" }}>Günün haberleri editoryal kontrolden geçiyor. Yeni sesli ve görüntülü bülten hazır olduğunda burada yayımlanacak.</p>
+                <p style={{ margin: "8px 0 0", fontSize: 13, color: "#c8bdae" }}>Günün haberleri editoryal kontrolden geçiyor. ULAK’ın görüntülü haber sunumu hazır olduğunda burada yayımlanacak.</p>
               </div>
             )}
           </div>
