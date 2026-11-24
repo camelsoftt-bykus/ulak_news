@@ -145,36 +145,65 @@ jobs:
             request_file="tts-segment-request-$i.json"
 
             jq -n --arg text "$segment_text" '{text: $text}' > "$request_file"
+            text_length=$(printf '%s' "$segment_text" | wc -m | tr -d ' ')
 
             success=false
             for attempt in 1 2 3; do
               rm -f "$output"
-              if curl --fail --silent --show-error \
+              response_file=$(mktemp)
+              http_code=""
+              curl_exit=0
+
+              if http_code=$(curl --silent --show-error \
                 --connect-timeout 20 --max-time 180 \
                 -X POST \
                 -H "Content-Type: application/json" \
                 --data-binary @"$request_file" \
                 "https://ulaknews-docs.vercel.app/api/tts" \
-                -o "$output" && \
-                test -s "$output" && \
+                --output "$response_file" \
+                --write-out "%{http_code}"); then
+                curl_exit=0
+              else
+                curl_exit=$?
+              fi
+
+              if [ "$curl_exit" -eq 0 ] && \
+                [ "$http_code" = "200" ] && \
+                test -s "$response_file" && \
                 ffprobe -v error -select_streams a:0 -show_entries stream=codec_name \
-                  -of default=noprint_wrappers=1 "$output" > /dev/null; then
+                  -of default=noprint_wrappers=1 "$response_file" > /dev/null; then
+                mv "$response_file" "$output"
                 success=true
+                echo "Hazır: $filename ($(stat -c%s "$output") bayt), metin ${text_length} karakter, deneme ${attempt}."
                 break
               fi
 
-              echo "Segment $i denemesi $attempt başarısız."
+              echo "Segment $i denemesi $attempt başarısız. HTTP=${http_code:-yok}, curl çıkışı=${curl_exit}, metin=${text_length} karakter."
+
+              if [ "$curl_exit" -eq 0 ] && [ -s "$response_file" ] && \
+                jq -e . "$response_file" > /dev/null 2>&1; then
+                jq -r '
+                  "Hata kodu: " +
+                  ((.error.status // .status // "bilinmiyor") | tostring
+                    | gsub("[[:cntrl:]]"; " ")
+                    | .[0:80])
+                ' "$response_file" || echo "Hata kodu okunamadı."
+              else
+                echo "Yanıt JSON değil veya boş; yanıt gövdesi loglanmadı."
+              fi
+
+              rm -f "$response_file"
               if [ "$attempt" -lt 3 ]; then sleep 10; fi
             done
+
+            rm -f "$request_file"
 
             if [ "$success" != "true" ]; then
               echo "::error::Ses segmenti üretilemedi: $filename. Yayın durduruldu."
               exit 1
             fi
 
-            echo "Hazır: $filename ($(stat -c%s "$output") bayt)"
             files_json=$(jq -c --arg file "$filename" '. + [$file]' <<< "$files_json")
-            rm -f "$request_file"
           done
 
           if [ "$(jq 'length' <<< "$files_json")" -ne "$segment_count" ]; then
