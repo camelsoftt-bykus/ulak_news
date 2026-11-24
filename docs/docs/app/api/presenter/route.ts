@@ -146,10 +146,15 @@ export async function GET() {
       !filteredNews.slice(0, index).some((prior) => storySimilarity(item.title, prior.title))
     );
 
-    if (news.length === 0) {
+    if (news.length !== 8) {
       return Response.json(
-        { error: "Sunum için haber bulunamadı." },
-        { status: 404 }
+        {
+          error: "Tam 8 farklı haber bulunamadığı için bülten üretimi durduruldu.",
+          code: "INSUFFICIENT_NEWS",
+          requiredNews: 8,
+          availableNews: news.length
+        },
+        { status: 503 }
       );
     }
 
@@ -250,8 +255,10 @@ ${newsText}
         lastGeminiError
       );
 
+      // Kota/rate-limit yanıtında tekrar deneme yapma; her istek kotayı tüketebilir.
       if (
-        ![429, 500, 502, 503, 504].includes(response.status) ||
+        response.status === 429 ||
+        ![500, 502, 503, 504].includes(response.status) ||
         attempt === 2
       ) {
         break;
@@ -265,13 +272,15 @@ ${newsText}
     }
 
     if (!response.ok) {
+      const quotaExceeded = response.status === 429;
       return Response.json(
         {
-          error: "Gemini hatası",
+          error: quotaExceeded ? "Gemini kullanım kotası aşıldı." : "Gemini hatası",
+          code: quotaExceeded ? "QUOTA_EXCEEDED" : "GEMINI_UPSTREAM_ERROR",
           geminiStatus: response.status,
           detail: lastGeminiError.slice(0, 1500)
         },
-        { status: 502 }
+        { status: quotaExceeded ? 429 : 502 }
       );
     }
 
@@ -309,9 +318,21 @@ ${newsText}
       );
     }
 
-    if (!Array.isArray(result.stories)) {
+    if (
+      !Array.isArray(result.stories) ||
+      result.stories.length !== 8 ||
+      new Set(result.stories.map((story) => story.index)).size !== 8 ||
+      !Array.from({ length: 8 }, (_, index) =>
+        result.stories?.some((story) => story.index === index + 1)
+      ).every(Boolean)
+    ) {
       return Response.json(
-        { error: "Gemini yanıtında haber listesi eksik." },
+        {
+          error: "Gemini yanıtı tam 8 farklı haber içermiyor; eksik bülten yayınlanmadı.",
+          code: "INVALID_STORY_COUNT",
+          requiredNews: 8,
+          receivedStories: Array.isArray(result.stories) ? result.stories.length : 0
+        },
         { status: 502 }
       );
     }
