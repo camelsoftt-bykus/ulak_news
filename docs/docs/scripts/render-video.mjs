@@ -47,7 +47,7 @@ async function main() {
     }
 
     daily.audioSegments.forEach((filename, index) => {
-      if (typeof filename !== "string" || !/^seg-\\d{2,}\\.wav$/.test(filename)) {
+      if (typeof filename !== "string" || !/^seg-\d{2,}\.wav$/.test(filename)) {
         throw new Error(`Geçersiz segment dosya adı: ${filename}`);
       }
       const audioPath = path.join(DATA_DIR, filename);
@@ -157,10 +157,11 @@ async function main() {
 
     console.log("Otomatik haber yüklemesi kapalı; günlük veri doğrudan aktarılıyor...");
     await page.waitForFunction(
-      () =>
+      (requireSegments) =>
         typeof window.setULAKNews === "function" &&
-        (!window.ULAK_DISABLE_AUTO_NEWS || window.ULAK_DISABLE_AUTO_NEWS === true),
-      null,
+        window.ULAK_DISABLE_AUTO_NEWS === true &&
+        (!requireSegments || typeof window.ULAK_LOAD_SEGMENTS === "function"),
+      hasSegments,
       { timeout: 60000 }
     );
 
