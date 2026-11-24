@@ -339,16 +339,37 @@ function setULAKNews(news){
 
    await new Promise((resolve,reject)=>{
     image.onload=resolve;
-    image.onerror=()=>reject(new Error('görsel yüklenemedi'));
+    image.onerror=()=>reject(new Error('kaynak görsel yüklenemedi'));
     image.src=proxyUrl;
    });
 
    item.image=image;
    if(maskReady)createNewsLayer(item);
 
-  }catch(error){
-   item.imageError=error.message;
-   console.warn('[ULAK görsel] Haber '+(index+1)+' görseli yüklenemedi:',item.title,error);
+  }catch(primaryError){
+   // Kaynak sitenin görseli erişime kapalıysa lisansı kontrol edilmiş yedek görseli dene.
+   if(item.fallbackImageUrl){
+    try{
+     const fallback=new Image();
+     fallback.crossOrigin='anonymous';
+     await new Promise((resolve,reject)=>{
+      fallback.onload=resolve;
+      fallback.onerror=()=>reject(new Error('yedek görsel de yüklenemedi'));
+      fallback.src='/api/news-image?url='+encodeURIComponent(item.fallbackImageUrl);
+     });
+     item.image=fallback;
+     item.imageTitle=item.fallbackImageTitle||item.imageTitle;
+     item.imageError=null;
+     if(maskReady)createNewsLayer(item);
+     console.info('[ULAK görsel] Yedek görsel kullanıldı:',item.title);
+     return;
+    }catch(fallbackError){
+     item.imageError=fallbackError.message;
+    }
+   }else{
+    item.imageError=primaryError.message;
+   }
+   console.warn('[ULAK görsel] Haber '+(index+1)+' görseli yüklenemedi:',item.title,item.imageError);
   }
  });
 
