@@ -46,7 +46,7 @@ export default function Home() {
       <header style={{ borderBottom: "1px solid #d8d0c4", background: "#fbf8f1" }}>
         <div className="container" style={{ paddingTop: 18, paddingBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#766e64", fontSize: 12 }}>
-            <span>{today}</span><span>ŞEHRİNDEN DÜNYAYA</span>
+            <span>{today}</span><span>TÜRKİYE’DEN DÜNYAYA</span>
           </div>
           <a href="/" aria-label="ULAK’TAN HABERLER ana sayfa" style={{ display: "flex", justifyContent: "center", padding: "13px 0 12px" }}><img src="/ulaktan-haberler-logo.svg" alt="ULAK’TAN HABERLER" style={{ display: "block", width: "min(100%, 480px)", height: "auto" }} /></a>
           <nav style={{ borderTop: "3px double #3b352e", borderBottom: "1px solid #3b352e", padding: "10px 0", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "10px 28px", fontSize: 13, fontWeight: 700 }}>
