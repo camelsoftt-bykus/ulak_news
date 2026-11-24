@@ -270,8 +270,16 @@ async function collectPageNews(
         getMetaContent(articleHtml, "description") ||
         getMetaContent(articleHtml, "twitter:description");
 
+      const jsonLdDates = Array.from(
+        articleHtml.matchAll(/"datePublished"\s*:\s*"([^"]+)"/gi)
+      ).map((match) => match[1]);
+      const timeDate =
+        articleHtml.match(/<time\b[^>]*datetime=["']([^"']+)["']/i)?.[1] || "";
       const publishedAt =
         getMetaContent(articleHtml, "article:published_time") ||
+        getMetaContent(articleHtml, "date") ||
+        timeDate ||
+        jsonLdDates[0] ||
         null;
 
       const imageUrl = getArticleImage(articleHtml, link);
@@ -758,9 +766,28 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
   lastSourceStatus = results.map((result) => result.status);
 
   const collected = results.flatMap((result) => result.items);
+  const now = Date.now();
+  const maxAgeMs = 48 * 60 * 60 * 1000;
+  const freshNews = collected.filter((item) => {
+    if (!item.publishedAt) {
+      console.warn("[ULAK haber] Yayın tarihi bulunamadığı için atlandı:", item.title);
+      return false;
+    }
+    const published = new Date(item.publishedAt).getTime();
+    if (!Number.isFinite(published)) {
+      console.warn("[ULAK haber] Yayın tarihi okunamadığı için atlandı:", item.title);
+      return false;
+    }
+    const age = now - published;
+    if (age < -60 * 60 * 1000 || age > maxAgeMs) {
+      console.info("[ULAK haber] Güncellik filtresi nedeniyle atlandı:", item.title, item.publishedAt);
+      return false;
+    }
+    return true;
+  });
   const uniqueNews = new Map<string, CollectedNews>();
 
-  for (const item of collected) {
+  for (const item of freshNews) {
     if (!isValidNews(item)) continue;
 
     const key = item.link.replace(/\/$/, "").toLowerCase();
