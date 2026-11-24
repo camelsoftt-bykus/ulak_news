@@ -128,12 +128,19 @@ let recChunks=[];
 
 let newsSlides=[];
 let currentStoryIndex=-1;
+let visualFromStoryIndex=-1;
+let visualToStoryIndex=-1;
+let visualTransitionStarted=0;
 let newsImagesLoading=false;
 let newsRequestRunning=false;
 
 window.ULAK_IMAGES_READY=false;
 window.ULAK_STUDIO_READY=false;
 window.ULAK_IMAGE_COUNT=0;
+window.ULAK_BROADCAST_IMAGE_COUNT=0;
+window.ULAK_BROADCAST_IMAGES_READY=false;
+window.ULAK_BROADCAST_IMAGE_COUNT=0;
+window.ULAK_BROADCAST_IMAGES_READY=false;
 
 function setStatus(msg){
  statusEl.textContent=msg;
@@ -359,13 +366,44 @@ function createNewsLayer(item){
 /* HABERLERİ GÖRSELLERİYLE YÜKLE */
 function setULAKNews(news){
  const items=Array.isArray(news)?news:[];
- newsSlides=items.map(item=>({...item,image:null,layer:null,imageError:null}));
+ newsSlides=items.map(item=>({...item,image:null,layer:null,imageError:null,broadcastImage:null,broadcastImageError:null}));
  currentStoryIndex=-1;
+ visualFromStoryIndex=-1;
+ visualToStoryIndex=-1;
+ visualTransitionStarted=performance.now();
  newsImagesLoading=true;
  window.ULAK_IMAGES_READY=false;
+ window.ULAK_BROADCAST_IMAGES_READY=false;
+ window.ULAK_BROADCAST_IMAGE_COUNT=0;
 
  const tasks=newsSlides.map(async(item,index)=>{
+  // Full-screen yayın görseli yalnızca lisansı doğrulanmış Commons varlığıdır.
+  if(item.broadcastImageUrl){
+   try{
+    if(item.broadcastImageUrl===item.imageUrl&&item.image){
+     item.broadcastImage=item.image;
+    }else{
+     const broadcast=new Image();
+     broadcast.crossOrigin='anonymous';
+     await new Promise((resolve,reject)=>{
+      broadcast.onload=resolve;
+      broadcast.onerror=()=>reject(new Error('yayın görseli yüklenemedi'));
+      broadcast.src='/api/news-image?url='+encodeURIComponent(item.broadcastImageUrl);
+     });
+     item.broadcastImage=broadcast;
+    }
+   }catch(error){
+    item.broadcastImageError=error.message;
+    console.warn('[ULAK yayın görseli] Yüklenemedi:',item.title,error.message);
+   }
+  }
+
   if(!item.imageUrl)return;
+  if(item.imageUrl===item.broadcastImageUrl&&item.broadcastImage){
+   item.image=item.broadcastImage;
+   if(maskReady)createNewsLayer(item);
+   return;
+  }
 
   try{
    const proxyUrl='/api/news-image?url='+encodeURIComponent(item.imageUrl);
@@ -421,16 +459,23 @@ function setULAKNews(news){
   });
 
   const readyCount=newsSlides.filter(item=>item.image).length;
+  const broadcastReadyCount=newsSlides.filter(item=>
+   item.broadcastImage&&item.broadcastImage.naturalWidth>0
+  ).length;
   window.ULAK_IMAGE_COUNT=readyCount;
+  window.ULAK_BROADCAST_IMAGE_COUNT=broadcastReadyCount;
+  window.ULAK_BROADCAST_IMAGES_READY=true;
   const failed=newsSlides.filter(item=>!item.image).length;
   setStatus(
    'Haber görselleri hazır: '+readyCount+' / '+newsSlides.length+
-   (failed?' ('+failed+' haberde görsel bulunamadı veya yüklenemedi)':'')
+   ' · Tam ekran yayın görseli: '+broadcastReadyCount+' / '+newsSlides.length+
+   (failed?' ('+failed+' haberde stüdyo görseli bulunamadı veya yüklenemedi)':'')
   );
  }).catch(error=>{
   console.warn('[ULAK görsel] Haber görselleri hazırlanamadı:',error);
   newsImagesLoading=false;
   window.ULAK_IMAGES_READY=true;
+  window.ULAK_BROADCAST_IMAGES_READY=true;
  });
 }
 
@@ -1251,7 +1296,82 @@ function drawNewsBackground(){
  ctx.restore();
 }
 
-/* GÖRÜNTÜ: ULAK stüdyo görseli -> cam içindeki haber fotoğrafı -> ağız */
+/*
+ * HABER ANLATILIRKEN LİSANSLI GÖRSELİ TAM EKRAN GÖSTER.
+ * Bu katman yalnızca doğrulanmış Commons görseli varsa kullanılır.
+ * Ses oynatıcısına dokunulmaz; görüntü haber segmentinin süresi boyunca değişir.
+ */
+function drawBroadcastImage(item,alpha=1){
+ const photo=item&&item.broadcastImage;
+ if(!photo||!photo.naturalWidth||!photo.naturalHeight)return false;
+
+ const scale=Math.max(imgW/photo.naturalWidth,imgH/photo.naturalHeight);
+ const dw=photo.naturalWidth*scale;
+ const dh=photo.naturalHeight*scale;
+ const dx=(imgW-dw)/2;
+ const dy=(imgH-dh)/2;
+
+ ctx.save();
+ ctx.globalAlpha=alpha;
+ ctx.globalCompositeOperation='source-over';
+ ctx.fillStyle='#101722';
+ ctx.fillRect(0,0,imgW,imgH);
+ ctx.drawImage(photo,dx,dy,dw,dh);
+
+ const gradient=ctx.createLinearGradient(0,imgH*.62,0,imgH);
+ gradient.addColorStop(0,'rgba(5,10,18,0)');
+ gradient.addColorStop(.32,'rgba(5,10,18,.72)');
+ gradient.addColorStop(1,'rgba(5,10,18,.94)');
+ ctx.fillStyle=gradient;
+ ctx.fillRect(0,0,imgW,imgH);
+
+ const pad=Math.max(24,Math.round(imgW*.045));
+ const title=String(item.title||'Günün haberi').trim().slice(0,150);
+ const labelSize=Math.max(13,Math.round(imgW*.022));
+ const titleSize=Math.max(22,Math.round(imgW*.043));
+ const maxWidth=imgW-pad*2;
+
+ ctx.textAlign='left';
+ ctx.textBaseline='alphabetic';
+ ctx.fillStyle='#fff';
+ ctx.font='700 '+titleSize+'px system-ui, sans-serif';
+ const words=title.split(/\s+/);
+ const lines=[];
+ let line='';
+ for(const word of words){
+  const candidate=line?line+' '+word:word;
+  if(line&&ctx.measureText(candidate).width>maxWidth){
+   lines.push(line);
+   line=word;
+  }else{
+   line=candidate;
+  }
+ }
+ if(line)lines.push(line);
+ const visibleLines=lines.slice(0,2);
+ const titleY=imgH-pad*1.65-(visibleLines.length-1)*titleSize*1.08;
+
+ ctx.fillStyle='#ffb347';
+ ctx.font='700 '+labelSize+'px system-ui, sans-serif';
+ ctx.fillText('ULAK’TAN HABERLER  ·  HABER GÖRÜNTÜSÜ',pad,titleY-titleSize*.82,maxWidth);
+
+ ctx.fillStyle='#fff';
+ ctx.font='700 '+titleSize+'px system-ui, sans-serif';
+ visibleLines.forEach((text,index)=>{
+  ctx.fillText(text,pad,titleY+index*(titleSize*1.08),maxWidth);
+ });
+
+ const artist=String(item.broadcastImageArtist||item.broadcastImageCredit||'Wikimedia Commons').trim().slice(0,90);
+ const license=String(item.broadcastImageLicense||'').trim().slice(0,45);
+ const credit='Görsel: '+artist+(license?' · '+license:'');
+ ctx.fillStyle='rgba(255,255,255,.86)';
+ ctx.font='500 '+Math.max(10,Math.round(imgW*.014))+'px system-ui, sans-serif';
+ ctx.fillText(credit,pad,imgH-pad*.55,maxWidth);
+ ctx.restore();
+ return true;
+}
+
+/* HABER GÖRÜNTÜSÜ -> STÜDYO GEÇİŞİ SES AKIŞINDAN BAĞIMSIZDIR. */
 function render(){
  if(!base)return;
 
@@ -1273,7 +1393,33 @@ function render(){
   if(level>.02)drawMouthOpening();
  }
 
- if(editing&&!isRecording)drawOverlay();
+ // Stüdyo ile haber görseli arasında kısa çapraz geçiş; ses akışı etkilenmez.
+ const desiredStoryIndex=
+  currentStoryIndex>=0&&
+  newsSlides[currentStoryIndex]&&
+  newsSlides[currentStoryIndex].broadcastImage&&
+  newsSlides[currentStoryIndex].broadcastImage.naturalWidth
+   ?currentStoryIndex
+   :-1;
+
+ if(desiredStoryIndex!==visualToStoryIndex){
+  visualFromStoryIndex=visualToStoryIndex;
+  visualToStoryIndex=desiredStoryIndex;
+  visualTransitionStarted=performance.now();
+ }
+
+ const transition=Math.min(1,(performance.now()-visualTransitionStarted)/420);
+ if(visualFromStoryIndex>=0&&visualFromStoryIndex!==visualToStoryIndex){
+  drawBroadcastImage(newsSlides[visualFromStoryIndex],1-transition);
+ }
+ if(visualToStoryIndex>=0){
+  drawBroadcastImage(newsSlides[visualToStoryIndex],transition);
+ }
+ if(transition>=1){
+  visualFromStoryIndex=visualToStoryIndex;
+ }
+
+ if(editing&&!isRecording&&visualToStoryIndex<0&&visualFromStoryIndex<0)drawOverlay();
 }
 
 /* MAVİ DÜZENLEME KUTUSU */

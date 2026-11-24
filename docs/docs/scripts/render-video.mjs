@@ -3,6 +3,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
 import { chromium } from "playwright";
+import { verifySegments } from "./verify-segments.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -37,9 +38,26 @@ async function main() {
     Array.isArray(daily.speechSegments) && daily.speechSegments.length > 0;
 
   if (hasSegments) {
+    await verifySegments({ daily, dataDir: DATA_DIR });
+    console.log("10/10 WAV doğrulaması başarılı.");
+  }
+
+  if (hasSegments) {
+    if (daily.news.length !== 8 || daily.speechSegments.length !== 10) {
+      throw new Error(
+        `Bülten yapısı geçersiz: ${daily.news.length} haber / ${daily.speechSegments.length} ses bölümü. 8 haber ve 10 bölüm gerekli.`
+      );
+    }
+
+    const expectedSegments = Array.from(
+      { length: 10 },
+      (_, index) => `seg-${String(index).padStart(2, "0")}.wav`
+    );
+
     if (
       !Array.isArray(daily.audioSegments) ||
-      daily.audioSegments.length !== daily.speechSegments.length
+      daily.audioSegments.length !== 10 ||
+      expectedSegments.some((filename, index) => daily.audioSegments[index] !== filename)
     ) {
       throw new Error(
         `Segment sayısı uyuşmuyor: ${daily.speechSegments.length} metin / ${daily.audioSegments?.length ?? 0} ses dosyası.`
@@ -74,7 +92,14 @@ async function main() {
     imageLicense: item.imageLicense || "",
     imageLicenseUrl: item.imageLicenseUrl || "",
     imageArtist: item.imageArtist || "",
-    imageCredit: item.imageCredit || ""
+    imageCredit: item.imageCredit || "",
+    broadcastImageUrl: item.broadcastImageUrl || "",
+    broadcastImagePageUrl: item.broadcastImagePageUrl || "",
+    broadcastImageTitle: item.broadcastImageTitle || "",
+    broadcastImageLicense: item.broadcastImageLicense || "",
+    broadcastImageLicenseUrl: item.broadcastImageLicenseUrl || "",
+    broadcastImageArtist: item.broadcastImageArtist || "",
+    broadcastImageCredit: item.broadcastImageCredit || ""
   }));
 
   console.log(`Haber sayısı: ${newsForAnimation.length}`);
@@ -194,12 +219,20 @@ async function main() {
       null,
       { timeout: 60000 }
     );
+    await page.waitForFunction(
+      () => window.ULAK_BROADCAST_IMAGES_READY === true,
+      null,
+      { timeout: 60000 }
+    );
 
     const imageStats = await page.evaluate(() => ({
-      loaded: window.ULAK_IMAGE_COUNT || 0
+      loaded: window.ULAK_IMAGE_COUNT || 0,
+      broadcast: window.ULAK_BROADCAST_IMAGE_COUNT || 0
     }));
-    console.log(`Yüklenen haber görseli: ${imageStats.loaded}`);
-    if (imageStats.loaded === 0) {
+    console.log(
+      `Yüklenen haber görseli: ${imageStats.loaded}; tam ekran yayın görseli: ${imageStats.broadcast}`
+    );
+    if (imageStats.loaded === 0 && imageStats.broadcast === 0) {
       throw new Error("Hiçbir haber görseli yüklenmedi; görselsiz video yayınlanmayacak.");
     }
 
@@ -248,13 +281,23 @@ async function main() {
         const audioPath = path.join(DATA_DIR, filename);
         const { stdout } = await execFileAsync("ffprobe", [
           "-v", "error",
+          "-show_entries", "stream=codec_type,codec_name",
           "-show_entries", "format=duration",
-          "-of", "default=noprint_wrappers=1:nokey=1",
+          "-of", "json",
           audioPath
         ]);
-        const duration = Number(stdout.trim());
-        if (!Number.isFinite(duration) || duration <= 0) {
-          throw new Error(`WAV süresi okunamadı: ${filename}`);
+        let probe;
+        try {
+          probe = JSON.parse(stdout);
+        } catch {
+          throw new Error(`WAV ffprobe çıktısı okunamadı: ${filename}`);
+        }
+        const audioStream = probe.streams?.find(
+          (stream) => stream.codec_type === "audio" && stream.codec_name
+        );
+        const duration = Number(probe.format?.duration);
+        if (!audioStream || !Number.isFinite(duration) || duration <= 0) {
+          throw new Error(`WAV codec/süre doğrulaması başarısız: ${filename}`);
         }
         audioDuration += duration;
       }

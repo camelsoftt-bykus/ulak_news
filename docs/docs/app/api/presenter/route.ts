@@ -102,9 +102,26 @@ export async function GET() {
       );
     }
 
+    const now = new Date();
+    const istanbulDate = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Istanbul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(now);
+    const istanbulHour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Istanbul",
+        hour: "2-digit",
+        hourCycle: "h23"
+      }).format(now)
+    );
+    const edition = istanbulHour >= 5 && istanbulHour < 14 ? "morning" : "evening";
+
     const collectedNews = await collectRssNews();
 
-    // Önceki günlük bültendeki aynı bağlantıları yeniden yayımlama.
+    // Yalnızca aynı takvim günündeki önceki bültenin haberlerini tekrar etme.
+    // Böylece akşam sabahı dışlar; ertesi sabah önceki akşamın haberlerine takılmaz.
     let previousLinks = new Set<string>();
     let previousTitles = new Set<string>();
     try {
@@ -114,10 +131,17 @@ export async function GET() {
       );
       if (previousResponse.ok) {
         const previousDaily = await previousResponse.json();
-        const previousGeneratedAt = new Date(previousDaily.generatedAt || "").getTime();
+        const previousGeneratedAt = new Date(previousDaily.generatedAt || "");
+        const previousIstanbulDate = Number.isNaN(previousGeneratedAt.getTime())
+          ? ""
+          : new Intl.DateTimeFormat("en-CA", {
+              timeZone: "Europe/Istanbul",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit"
+            }).format(previousGeneratedAt);
         if (
-          Number.isFinite(previousGeneratedAt) &&
-          Date.now() - previousGeneratedAt < 36 * 60 * 60 * 1000 &&
+          previousIstanbulDate === istanbulDate &&
           Array.isArray(previousDaily.news)
         ) {
           previousLinks = new Set(
@@ -146,10 +170,15 @@ export async function GET() {
       !filteredNews.slice(0, index).some((prior) => storySimilarity(item.title, prior.title))
     );
 
-    if (news.length === 0) {
+    if (news.length !== 8) {
       return Response.json(
-        { error: "Sunum için haber bulunamadı." },
-        { status: 404 }
+        {
+          error: "Tam 8 farklı haber bulunamadığı için bülten üretimi durduruldu.",
+          code: "INSUFFICIENT_NEWS",
+          requiredNews: 8,
+          availableNews: news.length
+        },
+        { status: 503 }
       );
     }
 
@@ -170,6 +199,8 @@ DOĞRULUK:
 - Yalnızca verilen haber bilgilerini kullan.
 - Olay, kişi, kurum, tarih veya sayı uydurma.
 - Haberleri tarafsız, anlaşılır ve insanın konuştuğu doğal Türkçeyle anlat.
+- ULAK bir muhabir gibi izleyiciye doğrudan seslensin; robotik, madde okur gibi veya aşırı resmî konuşmasın.
+- Haberler arasında gerektiğinde “Şimdi ...”, “Bir başka önemli gelişme ...” gibi kısa ve doğal geçişler kullansın; geçişlerde olmayan bir olay yeri bağlantısı veya canlı yayın izlenimi uydurmasın.
 - Başlığı aynen tekrar etme; dinleyiciye olayı kısa bir bağlamla anlat.
 - Haber sırasını değiştirme.
 - Kaynak adlarını, internet adreslerini, URL'leri, dosya uzantılarını veya teknik bağlantı metinlerini ASLA seslendirme.
@@ -185,7 +216,7 @@ HER HABER İÇİN:
 - Uygun ifade oluşturulamıyorsa imageQuery boş olsun.
 
 SUNUM:
-- intro: “Merhaba, ULAK’TAN HABERLER’e hoş geldiniz” ifadesiyle başlayan kısa selamlama.
+- intro: Bülten saatine uygun selamlama kullan. Sabah yayınında mutlaka “Günaydın!”, akşam yayınında mutlaka “İyi akşamlar!” diye başla. İzleyiciye doğrudan seslenen, muhabir sıcaklığında kısa bir stüdyo açılışı yaz.
 - closing: Kısa kapanış.
 - Toplam süre yaklaşık 90 saniye olsun.
 - Doğal, samimi ve tarafsız bir sunucu üslubu kullan.
@@ -250,8 +281,10 @@ ${newsText}
         lastGeminiError
       );
 
+      // Kota/rate-limit yanıtında tekrar deneme yapma; her istek kotayı tüketebilir.
       if (
-        ![429, 500, 502, 503, 504].includes(response.status) ||
+        response.status === 429 ||
+        ![500, 502, 503, 504].includes(response.status) ||
         attempt === 2
       ) {
         break;
@@ -265,13 +298,15 @@ ${newsText}
     }
 
     if (!response.ok) {
+      const quotaExceeded = response.status === 429;
       return Response.json(
         {
-          error: "Gemini hatası",
+          error: quotaExceeded ? "Gemini kullanım kotası aşıldı." : "Gemini hatası",
+          code: quotaExceeded ? "QUOTA_EXCEEDED" : "GEMINI_UPSTREAM_ERROR",
           geminiStatus: response.status,
           detail: lastGeminiError.slice(0, 1500)
         },
-        { status: 502 }
+        { status: quotaExceeded ? 429 : 502 }
       );
     }
 
@@ -309,9 +344,21 @@ ${newsText}
       );
     }
 
-    if (!Array.isArray(result.stories)) {
+    if (
+      !Array.isArray(result.stories) ||
+      result.stories.length !== 8 ||
+      new Set(result.stories.map((story) => story.index)).size !== 8 ||
+      !Array.from({ length: 8 }, (_, index) =>
+        result.stories?.some((story) => story.index === index + 1)
+      ).every(Boolean)
+    ) {
       return Response.json(
-        { error: "Gemini yanıtında haber listesi eksik." },
+        {
+          error: "Gemini yanıtı tam 8 farklı haber içermiyor; eksik bülten yayınlanmadı.",
+          code: "INVALID_STORY_COUNT",
+          requiredNews: 8,
+          receivedStories: Array.isArray(result.stories) ? result.stories.length : 0
+        },
         { status: 502 }
       );
     }
@@ -373,6 +420,14 @@ ${newsText}
           fallbackImageLicenseUrl: primaryIsArticle ? commonsImage?.imageLicenseUrl || "" : "",
           fallbackImageArtist: primaryIsArticle ? commonsImage?.imageArtist || "" : "",
           fallbackImageCredit: primaryIsArticle ? commonsImage?.imageCredit || "" : "",
+          // Full-screen broadcast imagery uses only Commons assets whose license was verified.
+          broadcastImageUrl: commonsImage?.imageUrl || "",
+          broadcastImagePageUrl: commonsImage?.imagePageUrl || "",
+          broadcastImageTitle: commonsImage?.imageTitle || "",
+          broadcastImageLicense: commonsImage?.imageLicense || "",
+          broadcastImageLicenseUrl: commonsImage?.imageLicenseUrl || "",
+          broadcastImageArtist: commonsImage?.imageArtist || "",
+          broadcastImageCredit: commonsImage?.imageCredit || "",
           editorialSummary:
             typeof story?.summary === "string" && story.summary.trim()
               ? story.summary.trim()
@@ -385,9 +440,10 @@ ${newsText}
       })
     );
 
-    const intro =
-      cleanNarration(result.intro) ||
-      "Merhaba, ULAK’TAN HABERLER’e hoş geldiniz. Günün önemli gelişmeleriyle karşınızdayız.";
+    // Açılış, bültenin başında hesaplanan Türkiye saati sürümünü kullanır.
+    const intro = edition === "morning"
+      ? "Günaydın! ULAK’TAN HABERLER başlıyor. Türkiye’den ve dünyadan, güne başlarken bilmeniz gereken gelişmeleri aktarıyoruz."
+      : "İyi akşamlar! ULAK’TAN HABERLER başlıyor. Günün öne çıkan gelişmelerini, önemli ayrıntılarıyla birlikte aktarıyoruz.";
 
     const closing =
       cleanNarration(result.closing) ||
@@ -439,6 +495,8 @@ ${newsText}
     return Response.json(
       {
         count: enrichedNews.length,
+        edition,
+        editionDate: istanbulDate,
         imageCount,
         articleImageCount,
         commonsImageCount,

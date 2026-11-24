@@ -302,51 +302,55 @@ async function collectPageNews(
   );
 }
 
-function getRssImage(item: any, articleUrl: string): string {
+type RssRecord = Record<string, unknown>;
+
+function asRssRecord(value: unknown): RssRecord | null {
+  return value !== null && typeof value === "object"
+    ? value as RssRecord
+    : null;
+}
+
+function getRssString(record: RssRecord | null, key: string): string {
+  const value = record?.[key];
+  return typeof value === "string" ? value : "";
+}
+
+function getRssImage(item: RssRecord, articleUrl: string): string {
   const candidates: string[] = [];
+  const enclosure = asRssRecord(item.enclosure);
+  const image = asRssRecord(item.image);
+  const itunes = asRssRecord(item.itunes);
 
-  if (typeof item.enclosure?.url === "string") {
-    candidates.push(item.enclosure.url);
+  const enclosureUrl = getRssString(enclosure, "url");
+  const imageUrl = getRssString(image, "url");
+  const itunesImage = getRssString(itunes, "image");
+  if (enclosureUrl) candidates.push(enclosureUrl);
+  if (imageUrl) candidates.push(imageUrl);
+  if (itunesImage) candidates.push(itunesImage);
+
+  const mediaFields = [item.mediaContent, item.mediaThumbnail]
+    .flatMap((value) => Array.isArray(value) ? value : value ? [value] : []);
+
+  for (const value of mediaFields) {
+    const media = asRssRecord(value);
+    const attributes = asRssRecord(media?.$);
+    const attributeUrl = getRssString(attributes, "url");
+    const directUrl = getRssString(media, "url");
+    if (attributeUrl) candidates.push(attributeUrl);
+    if (directUrl) candidates.push(directUrl);
   }
 
-  if (typeof item.image?.url === "string") {
-    candidates.push(item.image.url);
-  }
-
-  if (typeof item.itunes?.image === "string") {
-    candidates.push(item.itunes.image);
-  }
-
-  const mediaFields = [
-    item.mediaContent,
-    item.mediaThumbnail
-  ].flatMap((value: any) =>
-    Array.isArray(value) ? value : value ? [value] : []
-  );
-
-  for (const media of mediaFields) {
-    if (typeof media?.$?.url === "string") {
-      candidates.push(media.$.url);
-    }
-
-    if (typeof media?.url === "string") {
-      candidates.push(media.url);
-    }
-  }
-
-  const content = String(item.content || item["content:encoded"] || "");
-
+  const content = getRssString(item, "content") ||
+    getRssString(item, "content:encoded");
   const contentImage = content.match(
     /<img\b[^>]*src=["']([^"']+)["']/i
   );
 
-  if (contentImage?.[1]) {
-    candidates.push(contentImage[1]);
-  }
+  if (contentImage?.[1]) candidates.push(contentImage[1]);
 
   for (const candidate of candidates) {
-    const imageUrl = normalizeImageUrl(candidate, articleUrl);
-    if (imageUrl) return imageUrl;
+    const normalizedUrl = normalizeImageUrl(candidate, articleUrl);
+    if (normalizedUrl) return normalizedUrl;
   }
 
   return "";
@@ -373,19 +377,27 @@ async function collectRssSource(
   const xml = await response.text();
   const feed = await parser.parseString(xml);
 
-  return feed.items.slice(0, 20).map((item: any) => {
-    const link = item.link || source.url;
+  return feed.items.slice(0, 20).map((rawItem) => {
+    const item = rawItem as unknown as RssRecord;
+    const link = getRssString(item, "link") || source.url;
     const imageUrl = getRssImage(item, link);
+    const title = getRssString(item, "title");
+    const summary =
+      getRssString(item, "contentSnippet") ||
+      getRssString(item, "content") ||
+      getRssString(item, "summary");
+    const publishedAt =
+      getRssString(item, "isoDate") ||
+      getRssString(item, "pubDate") ||
+      null;
 
     return {
       sourceId: source.id,
       sourceName: source.name,
-      title: cleanText(item.title || ""),
+      title: cleanText(title),
       link,
-      summary: cleanText(
-        item.contentSnippet || item.content || item.summary || ""
-      ),
-      publishedAt: item.isoDate || item.pubDate || null,
+      summary: cleanText(summary),
+      publishedAt,
       sourcePriority: source.priority,
       ...(imageUrl ? { imageUrl } : {})
     };
@@ -483,7 +495,6 @@ function buildSearchQueries(
 
   if (cleanQuery) queries.push(cleanQuery);
 
-  // Modelin oluşturduğu görsel araması sonuç vermediğinde haber başlığını da ara.
   const cleanTitle = articleTitle
     .replace(/[^\p{L}\p{N}\s-]/gu, " ")
     .replace(/\s+/g, " ")
@@ -509,7 +520,6 @@ function buildSearchQueries(
     }
   }
 
-  // Özel isim içermeyen haberlerde, kısa ve anlamlı özet kelimeleri ek arama sağlar.
   if (queries.length < 3) {
     const summaryQuery = [...new Set(getWords(articleSummary))].slice(0, 5).join(" ");
     if (
@@ -549,7 +559,6 @@ function scoreImage(
     };
   }
 
-  // İki güçlü konu kelimesi en iyi eşleşmedir.
   if (matchedQueryWords.length >= 2) {
     return {
       score: 30 + matchedQueryWords.length,
@@ -557,8 +566,6 @@ function scoreImage(
     };
   }
 
-  // Wikimedia başlıkları kısa olabildiği için tek, ayırt edici bir konu
-  // kelimesi de yedek eşleşme kabul edilir; genel kelimeler kullanılmaz.
   const strongMatches = matchedQueryWords.filter((word) => word.length >= 4);
   if (strongMatches.length >= 1) {
     return {
@@ -582,10 +589,7 @@ export async function findCommonsImage(
     input.imageEntities || []
   );
 
-  // Gemini görsel araması üretmese bile haber başlığından konu tabanlı arama yap.
   const fallbackQuery = input.imageQuery || news.title;
-  // İngilizce model sorgusunun yanında haberin Türkçe başlık ve özetini de puanlamaya kat.
-  // Böylece Commons dosya adları Türkçe olduğunda da doğru görsel seçilebilir.
   const imageQueryWords = [
     ...new Set([
       ...getWords(fallbackQuery),
@@ -715,30 +719,45 @@ export async function findCommonsImage(
 
 /*
  * Haber seçimi:
- * Önce her bölgeden bir haber seçilir.
- * Ardından kalan haberler öncelik ve tarihe göre eklenir.
+ * Önce Sincan ve Etimesgut haberlerini ayrı ayrı öne al.
+ * Ardından Ankara, Türkiye, dünya ve bilim haberleriyle dengele.
  */
 function balanceSources(items: CollectedNews[]): CollectedNews[] {
-  const regions = [
-    "local",
-    "ankara",
-    "turkey",
-    "world",
-    "science"
-  ] as const;
-
+  const regions = ["ankara", "turkey", "world", "science"] as const;
   const selected: CollectedNews[] = [];
   const usedLinks = new Set<string>();
 
   const getDate = (item: CollectedNews): number => {
     if (!item.publishedAt) return 0;
-
     const date = new Date(item.publishedAt).getTime();
     return Number.isFinite(date) ? date : 0;
   };
 
   const newestFirst = (a: CollectedNews, b: CollectedNews) =>
     getDate(b) - getDate(a);
+
+  const addCandidate = (candidate: CollectedNews | undefined) => {
+    if (!candidate || selected.length >= MAX_DAILY_NEWS) return;
+    if (usedLinks.has(candidate.link)) return;
+    selected.push(candidate);
+    usedLinks.add(candidate.link);
+  };
+
+  // Resmî Sincan ve Etimesgut kaynaklarına birer öncelikli yer ayır.
+  for (const sourceId of ["sincan", "etimesgut"]) {
+    const candidate = items
+      .filter((item) => item.sourceId === sourceId)
+      .sort(newestFirst)[0];
+    addCandidate(candidate);
+  }
+
+  // Resmî kaynaklardan biri haber vermezse yerel RSS aramasından tamamla.
+  const localFallback = items
+    .filter((item) => item.sourceId === "google-sincan" && !usedLinks.has(item.link))
+    .sort(newestFirst);
+  while (selected.length < 2 && localFallback.length > 0) {
+    addCandidate(localFallback.shift());
+  }
 
   for (const region of regions) {
     if (selected.length >= MAX_DAILY_NEWS) break;
@@ -748,17 +767,10 @@ function balanceSources(items: CollectedNews[]): CollectedNews[] {
       .map((source) => source.id);
 
     const candidate = items
-      .filter(
-        (item) =>
-          sourceIds.includes(item.sourceId) &&
-          !usedLinks.has(item.link)
-      )
+      .filter((item) => sourceIds.includes(item.sourceId) && !usedLinks.has(item.link))
       .sort(newestFirst)[0];
 
-    if (candidate) {
-      selected.push(candidate);
-      usedLinks.add(candidate.link);
-    }
+    addCandidate(candidate);
   }
 
   const remaining = items
@@ -767,15 +779,12 @@ function balanceSources(items: CollectedNews[]): CollectedNews[] {
       if (a.sourcePriority !== b.sourcePriority) {
         return a.sourcePriority - b.sourcePriority;
       }
-
       return newestFirst(a, b);
     });
 
   for (const item of remaining) {
     if (selected.length >= MAX_DAILY_NEWS) break;
-
-    selected.push(item);
-    usedLinks.add(item.link);
+    addCandidate(item);
   }
 
   return selected;
@@ -819,8 +828,6 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
   const now = Date.now();
   const maxAgeMs = 72 * 60 * 60 * 1000;
   const freshNews = collected.filter((item) => {
-    // Bazı RSS kaynakları yayın tarihini vermiyor. Tarihsiz kayıtları
-    // otomatik elemek yerine dahil et; ekranda tarih alanı boş gösterilir.
     if (!item.publishedAt) {
       console.info("[ULAK haber] Yayın tarihi yok; haber tarih etiketi olmadan dahil edildi:", item.title);
       return true;
@@ -841,12 +848,8 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
 
   for (const item of freshNews) {
     if (!isValidNews(item)) continue;
-
     const key = item.link.replace(/\/$/, "").toLowerCase();
-
-    if (!uniqueNews.has(key)) {
-      uniqueNews.set(key, item);
-    }
+    if (!uniqueNews.has(key)) uniqueNews.set(key, item);
   }
 
   return balanceSources(Array.from(uniqueNews.values()));
