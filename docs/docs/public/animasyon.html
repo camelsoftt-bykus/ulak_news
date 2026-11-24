@@ -1314,13 +1314,9 @@ function drawBroadcastImage(item){
 
  ctx.textAlign='left';
  ctx.textBaseline='alphabetic';
- ctx.fillStyle='#ffb347';
- ctx.font='700 '+labelSize+'px system-ui, sans-serif';
- ctx.fillText('ULAK’TAN HABERLER  ·  HABER GÖRÜNTÜSÜ',pad,imgH-pad*2.55);
-
  ctx.fillStyle='#fff';
  ctx.font='700 '+titleSize+'px system-ui, sans-serif';
- const words=title.split(/\\s+/);
+ const words=title.split(/\s+/);
  const lines=[];
  let line='';
  for(const word of words){
@@ -1334,8 +1330,16 @@ function drawBroadcastImage(item){
  }
  if(line)lines.push(line);
  const visibleLines=lines.slice(0,2);
+ const titleY=imgH-pad*1.65-(visibleLines.length-1)*titleSize*1.08;
+
+ ctx.fillStyle='#ffb347';
+ ctx.font='700 '+labelSize+'px system-ui, sans-serif';
+ ctx.fillText('ULAK’TAN HABERLER  ·  HABER GÖRÜNTÜSÜ',pad,titleY-titleSize*.82,maxWidth);
+
+ ctx.fillStyle='#fff';
+ ctx.font='700 '+titleSize+'px system-ui, sans-serif';
  visibleLines.forEach((text,index)=>{
-  ctx.fillText(text,pad,imgH-pad*1.35+index*(titleSize*1.15),maxWidth);
+  ctx.fillText(text,pad,titleY+index*(titleSize*1.08),maxWidth);
  });
 
  const artist=String(item.broadcastImageArtist||item.broadcastImageCredit||'Wikimedia Commons').trim().slice(0,90);
