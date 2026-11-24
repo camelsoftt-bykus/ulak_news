@@ -75,10 +75,6 @@ async function main() {
 
     const page = await context.newPage();
 
-    await page.addInitScript(() => {
-      window.ULAK_DISABLE_AUTO_NEWS = true;
-    });
-
     page.setDefaultTimeout(60000);
 
     page.on("console", (message) => {
@@ -98,6 +94,12 @@ async function main() {
 
     await page.waitForSelector("#newsScript");
     await page.waitForSelector("#recBtn");
+
+    console.log("Sayfanın otomatik haber yüklemesi bekleniyor...");
+    await page.waitForFunction(() => {
+      const status = document.querySelector("#status")?.textContent || "";
+      return window.ULAK_IMAGES_READY === true || status.startsWith("Haber servisine ulaşılamadı:");
+    }, null, { timeout: 120000 });
 
     console.log("Haber metni animasyona aktarılıyor...");
 
@@ -142,6 +144,19 @@ async function main() {
     });
 
     console.log("Robot sunumu kaydediliyor...");
+
+    await recordButton.click();
+
+    await page.waitForFunction(() => {
+      const status = document.querySelector("#status")?.textContent || "";
+      return status.includes("Kaydediliyor") || status.includes("Kayıt tamamlandı");
+    }, null, { timeout: 30000 });
+
+    await page.waitForFunction(
+      () => window.ULAK_AUDIO && window.ULAK_AUDIO.currentTime > 1,
+      null,
+      { timeout: 20000 }
+    );
 
     try {
       await page.waitForFunction(
