@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 170" role="img" aria-labelledby="title desc">
+<title id="title">ULAK’tan Haberler</title><desc id="desc">ULAK’tan Haberler gazetesinin logosu</desc>
+<rect x="8" y="8" width="154" height="154" rx="28" fill="#ed8b43"/>
+<path d="M85 30v23" stroke="#fff8ee" stroke-width="9" stroke-linecap="round"/><circle cx="85" cy="22" r="10" fill="#fff8ee"/>
+<rect x="37" y="54" width="96" height="73" rx="27" fill="#fffdf8"/>
+<circle cx="66" cy="85" r="6" fill="#29231d"/><circle cx="104" cy="85" r="6" fill="#29231d"/>
+<path d="M68 105q17 15 34 0" fill="none" stroke="#29231d" stroke-width="5" stroke-linecap="round"/>
+<text x="190" y="91" fill="#29231d" font-family="Georgia,serif" font-size="76" font-weight="700" letter-spacing="-2">ULAK’TAN</text>
+<text x="194" y="145" fill="#9a5c2c" font-family="Arial,sans-serif" font-size="35" font-weight="800" letter-spacing="12">HABERLER</text>
+<path d="M190 157H885" stroke="#3b352e" stroke-width="3"/>
+</svg>
