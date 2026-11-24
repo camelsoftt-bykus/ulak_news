@@ -440,16 +440,8 @@ ${newsText}
       })
     );
 
-    // Yayın selamlamasını modelin tahminine bırakma; Türkiye saatine göre sabitle.
-    const istanbulHour = Number(
-      new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Europe/Istanbul",
-        hour: "2-digit",
-        hourCycle: "h23"
-      }).format(new Date())
-    );
-    const isMorningEdition = istanbulHour >= 5 && istanbulHour < 14;
-    const intro = isMorningEdition
+    // Açılış, bültenin başında hesaplanan Türkiye saati sürümünü kullanır.
+    const intro = edition === "morning"
       ? "Günaydın! ULAK’TAN HABERLER başlıyor. Türkiye’den ve dünyadan, güne başlarken bilmeniz gereken gelişmeleri aktarıyoruz."
       : "İyi akşamlar! ULAK’TAN HABERLER başlıyor. Günün öne çıkan gelişmelerini, önemli ayrıntılarıyla birlikte aktarıyoruz.";
 
