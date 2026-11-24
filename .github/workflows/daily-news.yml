@@ -7,6 +7,7 @@ on:
       - "docs/docs/app/api/tts/route.ts"
       - "docs/docs/app/api/news-image/route.ts"
       - "docs/docs/lib/rss-reader.ts"
+      - "docs/docs/lib/news-sources.ts"
       - "docs/docs/public/animasyon.html"
       - "docs/docs/scripts/render-video.mjs"
       - ".github/workflows/daily-news.yml"
