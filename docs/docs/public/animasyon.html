@@ -137,6 +137,8 @@ let newsRequestRunning=false;
 window.ULAK_IMAGES_READY=false;
 window.ULAK_STUDIO_READY=false;
 window.ULAK_IMAGE_COUNT=0;
+window.ULAK_BROADCAST_IMAGE_COUNT=0;
+window.ULAK_BROADCAST_IMAGES_READY=false;
 
 function setStatus(msg){
  statusEl.textContent=msg;
@@ -450,11 +452,17 @@ function setULAKNews(news){
   });
 
   const readyCount=newsSlides.filter(item=>item.image).length;
+  const broadcastReadyCount=newsSlides.filter(item=>
+   item.broadcastImage&&item.broadcastImage.naturalWidth>0
+  ).length;
   window.ULAK_IMAGE_COUNT=readyCount;
+  window.ULAK_BROADCAST_IMAGE_COUNT=broadcastReadyCount;
+  window.ULAK_BROADCAST_IMAGES_READY=true;
   const failed=newsSlides.filter(item=>!item.image).length;
   setStatus(
    'Haber görselleri hazır: '+readyCount+' / '+newsSlides.length+
-   (failed?' ('+failed+' haberde görsel bulunamadı veya yüklenemedi)':'')
+   ' · Tam ekran yayın görseli: '+broadcastReadyCount+' / '+newsSlides.length+
+   (failed?' ('+failed+' haberde stüdyo görseli bulunamadı veya yüklenemedi)':'')
   );
  }).catch(error=>{
   console.warn('[ULAK görsel] Haber görselleri hazırlanamadı:',error);
