@@ -383,10 +383,10 @@ function setULAKNews(news){
 
   const readyCount=newsSlides.filter(item=>item.image).length;
   window.ULAK_IMAGE_COUNT=readyCount;
-  const failed=newsSlides.filter(item=>item.imageUrl&&!item.image).length;
+  const failed=newsSlides.filter(item=>!item.image).length;
   setStatus(
    'Haber görselleri hazır: '+readyCount+' / '+newsSlides.length+
-   (failed?' ('+failed+' görsel yüklenemedi)':'')
+   (failed?' ('+failed+' haberde görsel bulunamadı veya yüklenemedi)':'')
   );
  }).catch(error=>{
   console.warn('[ULAK görsel] Haber görselleri hazırlanamadı:',error);
@@ -1212,7 +1212,7 @@ function drawNewsBackground(){
  ctx.restore();
 }
 
-/* GÖRÜNTÜ: haber fotoğrafı arka plan -> ULAK -> cam fotoğrafı -> ağız */
+/* GÖRÜNTÜ: ULAK stüdyo görseli -> cam içindeki haber fotoğrafı -> ağız */
 function render(){
  if(!base)return;
 
@@ -1222,7 +1222,6 @@ function render(){
 
  ctx.fillStyle='#101722';
  ctx.fillRect(0,0,imgW,imgH);
- drawNewsBackdrop();
  ctx.drawImage(base,0,0);
  drawNewsBackground();
 
