@@ -1234,3 +1234,79 @@ a {
   object-fit: contain;
   background: #171717;
 }
+
+/* ULAK matbaa esintili gazete kimligi */
+.newspaper-page{--ink:#142844;--paper:#f6f0e5;--press-orange:#e47c32;min-height:100vh;color:var(--ink);background-color:var(--paper);background-image:radial-gradient(rgba(87,65,39,.055) .55px,transparent .55px);background-size:5px 5px;font-family:Georgia,"Times New Roman",serif}
+.newspaper-page .container{width:min(1160px,calc(100% - 40px))}
+.edition-strip{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:10px max(20px,calc((100% - 1160px)/2));border-bottom:1px solid #cfc3b1;color:#5f5a52;font:700 10px/1.3 Arial,sans-serif;letter-spacing:1.15px}
+.masthead{display:grid;grid-template-columns:1fr auto;align-items:center;padding-top:18px;padding-bottom:12px}
+.masthead-brand{display:grid;grid-template-columns:74px auto;grid-template-rows:auto auto;align-items:center;justify-self:center;column-gap:13px;color:var(--ink)}
+.brand-globe{grid-row:1/3;width:72px;height:72px}
+.masthead-word{font-size:clamp(58px,9vw,104px);line-height:.82;font-weight:900;letter-spacing:5px}
+.masthead-subtitle{margin-top:10px;text-align:center;font:700 12px/1 Arial,sans-serif;letter-spacing:4px}
+.masthead-motto{align-self:start;margin:8px 0 0;color:#4c4b49;font-size:17px;font-style:italic}
+.masthead-rule{height:7px;border-top:3px double var(--ink);border-bottom:1px solid var(--ink);margin-bottom:12px}
+.masthead-rule span{display:block;width:32%;margin:auto;border-top:3px solid var(--press-orange)}
+.newspaper-nav{background:var(--ink);color:#fffaf0;border-top:3px solid var(--press-orange);border-bottom:3px solid var(--press-orange)}
+.newspaper-nav-inner{display:flex;align-items:center;justify-content:center;min-height:46px;gap:0}
+.newspaper-nav a{padding:14px 15px;border-right:1px solid rgba(255,255,255,.22);color:#fffaf0;font:700 12px/1 Arial,sans-serif;text-transform:uppercase;letter-spacing:.45px;white-space:nowrap}
+.newspaper-nav a:hover{background:#263d5c}
+.newspaper-nav .nav-home{background:var(--press-orange);font-size:19px;padding-inline:18px}
+.newspaper-nav .nav-video-link{color:#ffd3a7}
+.front-page{display:grid;grid-template-columns:1.25fr .75fr;gap:24px;align-items:center;padding-top:30px;padding-bottom:26px;border-bottom:3px double #9e927f}
+.front-page-intro{padding:8px 12px 8px 0}
+.print-kicker{display:inline-block;padding:7px 11px;background:var(--press-orange);color:white;font:700 11px Arial,sans-serif;letter-spacing:1px}
+.front-page-intro h1{max-width:720px;margin:15px 0 12px;font-size:clamp(34px,5vw,58px);line-height:1.02;letter-spacing:-1.7px}
+.front-page-intro p{max-width:620px;margin:0;color:#625c52;font-size:17px;line-height:1.6}
+.front-page-mascot{position:relative;display:flex;justify-content:center;align-items:center;min-height:230px;overflow:hidden;border:1px solid #d4c8b6;background:linear-gradient(145deg,#e9ddca,#f9f4eb)}
+.front-page-mascot:before{content:"";position:absolute;width:220px;height:220px;border:1px solid rgba(20,40,68,.18);border-radius:50%}
+.front-page-mascot img{position:relative;z-index:1;width:min(74%,260px);max-height:245px;object-fit:contain}
+.mascot-stamp{position:absolute;right:13px;bottom:13px;padding:8px 10px;border:2px solid var(--press-orange);color:var(--press-orange);transform:rotate(-8deg);text-align:center;font:800 10px/1.25 Arial,sans-serif;letter-spacing:1px}
+.print-video-section,.print-news-section{padding-top:28px;padding-bottom:30px}
+.print-section-heading{padding-bottom:12px;border-bottom:2px solid var(--ink)}
+.newspaper-page .section-title{color:var(--ink);font-family:Georgia,"Times New Roman",serif;font-size:29px;letter-spacing:-.5px}
+.newspaper-page .eyebrow{color:#a95a24;font-family:Arial,sans-serif}
+.newspaper-page .duration-pill,.newspaper-page .content-tag{border-radius:0;background:#e9ddca;color:#7c461f;font-family:Arial,sans-serif}
+.print-video-panel{grid-template-columns:.72fr 1.28fr;border:1px solid #cfc3b1;border-radius:0;background:#fffaf1}
+.print-video-panel .video-info{padding:24px}
+.print-video-panel .video-info h3{color:var(--ink);font-family:Georgia,"Times New Roman",serif;font-size:27px}
+.print-video-panel .video-info p{color:#625c52}
+.newspaper-page .primary-button{border-radius:2px;background:var(--ink);font-family:Arial,sans-serif}
+.newspaper-page .primary-button:hover{background:#263d5c}
+.print-video-frame{min-width:0;background:#111;border-left:1px solid #cfc3b1}
+.print-video-frame video{display:block;width:100%;height:100%;min-height:260px;max-height:440px;aspect-ratio:16/9;object-fit:contain;background:#111}
+.print-video-note{font:12px Arial,sans-serif}
+.print-news-section .news-card{border:1px solid #d4c8b6;border-radius:0;background:#fffaf1;box-shadow:2px 2px 0 rgba(20,40,68,.06)}
+.print-news-section .news-card h3{color:var(--ink);font-family:Georgia,"Times New Roman",serif;font-size:20px}
+.print-news-section .news-card p,.print-news-section .muted{color:#625c52}
+.print-news-section .category-chip{border-radius:0;background:#fffaf1;color:var(--ink)}
+.print-news-section .category-chip:first-child{border-color:var(--press-orange);background:#f6e4d2;color:#8a481d}
+.newspaper-footer{margin-top:12px;border-top:4px double var(--ink);background:#eee5d6}
+.newspaper-footer .footer-inner{min-height:82px;color:#5f5a52;font:12px Arial,sans-serif}
+.footer-brand{display:flex;align-items:center;gap:8px;color:var(--ink);font:900 22px Georgia,serif;letter-spacing:2px}
+.footer-brand .brand-globe{width:36px;height:36px}
+@media(max-width:760px){
+.newspaper-page .container{width:calc(100% - 26px)}
+.edition-strip{justify-content:center;text-align:center;padding:8px 12px;font-size:9px}
+.edition-strip span:first-child{display:none}
+.masthead{grid-template-columns:1fr;padding-top:15px}
+.masthead-brand{grid-template-columns:54px auto;column-gap:8px}
+.brand-globe{width:52px;height:52px}
+.masthead-word{font-size:68px;letter-spacing:2px}
+.masthead-subtitle{margin-top:7px;font-size:9px;letter-spacing:2.2px}
+.masthead-motto{display:none}
+.newspaper-nav-inner{justify-content:flex-start;overflow-x:auto;min-height:43px;scrollbar-width:thin}
+.newspaper-nav a{flex:0 0 auto;padding:14px 11px;font-size:10px}
+.front-page{grid-template-columns:1fr;gap:15px;padding-top:20px}
+.front-page-intro h1{font-size:37px}
+.front-page-intro p{font-size:15px}
+.front-page-mascot{min-height:190px}
+.front-page-mascot img{max-height:190px}
+.print-video-panel{grid-template-columns:1fr}
+.print-video-frame{border-left:0;border-top:1px solid #cfc3b1}
+.print-video-frame video{min-height:0}
+.newspaper-page .section-title{font-size:24px}
+.print-section-heading{align-items:flex-start}
+.print-news-section .news-grid{grid-template-columns:1fr}
+.newspaper-footer .footer-inner{align-items:flex-start;flex-direction:column;justify-content:center;gap:10px;padding-top:18px;padding-bottom:18px}
+}
