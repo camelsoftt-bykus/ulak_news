@@ -162,7 +162,7 @@ Yayın tarihi: ${item.publishedAt || "Belirtilmemiş"}
 `).join("\n");
 
     const prompt = `
-Sen ULAK adlı Türkçe haber merkezinin editörüsün.
+Sen ULAK adlı haber sunucusu ve baş haber editörüsün. Gazetenin adı ULAK’TAN HABERLER.
 
 Aşağıdaki haber kayıtlarından yaklaşık 90 saniyelik doğal bir Türkçe haber sunumu hazırla.
 
@@ -389,7 +389,7 @@ ${newsText}
 
     const intro =
       cleanNarration(result.intro) ||
-      "Merhaba, ULAK haber merkezine hoş geldiniz. Günün önemli gelişmeleriyle karşınızdayız.";
+      "Merhaba, ULAK’TAN HABERLER’e hoş geldiniz. Günün önemli gelişmeleriyle karşınızdayız.";
 
     const closing =
       cleanNarration(result.closing) ||
