@@ -1343,6 +1343,7 @@ defaultImage.src='/ulak-studio.png';
 
 /* SAYFA AÇILINCA HABERLERİ OTOMATİK GETİR */
 window.addEventListener('load',()=>{
+ if(window.ULAK_DISABLE_AUTO_NEWS)return;
  setTimeout(()=>{
   loadDailyNews();
  },700);
