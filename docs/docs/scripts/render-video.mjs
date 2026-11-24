@@ -124,7 +124,7 @@ async function main() {
     await page.locator("#audInput").setInputFiles(DAILY_MP3);
 
     await page.waitForFunction(() => {
-      const audio = document.querySelector("audio");
+      const audio = window.ULAK_AUDIO;
       return document.body.innerText.includes("Ses yüklendi:") && audio && audio.readyState >= 2 && Number.isFinite(audio.duration) && audio.duration > 0;
     }, null, { timeout: 90000 });
 
@@ -156,9 +156,9 @@ async function main() {
     } catch (error) {
       const recording = await page.evaluate(() => ({
         status: document.querySelector("#status")?.textContent || "",
-        ended: document.querySelector("audio")?.ended,
-        currentTime: document.querySelector("audio")?.currentTime,
-        duration: document.querySelector("audio")?.duration
+        ended: window.ULAK_AUDIO?.ended,
+        currentTime: window.ULAK_AUDIO?.currentTime,
+        duration: window.ULAK_AUDIO?.duration
       }));
       console.log("Kayıt indirme bekleme bilgisi:", recording);
       const stopButton = page.locator("#stopRecBtn");
