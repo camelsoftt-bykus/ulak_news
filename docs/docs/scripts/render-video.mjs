@@ -10,7 +10,7 @@ const ROOT = process.cwd();
 const DATA_DIR = path.join(ROOT, "public", "data");
 
 const DAILY_JSON = path.join(DATA_DIR, "daily.json");
-const DAILY_MP3 = path.join(DATA_DIR, "daily.mp3");
+const DAILY_WAV = path.join(DATA_DIR, "daily.wav");
 const DAILY_MP4 = path.join(DATA_DIR, "daily.mp4");
 const RAW_VIDEO = path.join(DATA_DIR, "daily-raw.webm");
 const DAILY_POSTER = path.join(DATA_DIR, "daily-poster.jpg");
@@ -139,9 +139,9 @@ async function main() {
       throw new Error("Hiçbir haber görseli yüklenmedi; görselsiz video yayınlanmayacak.");
     }
 
-    console.log("Ahmet'in ses dosyası yükleniyor...");
+    console.log("Günün haber sunumu ses dosyası yükleniyor...");
 
-    await page.locator("#audInput").setInputFiles(DAILY_MP3);
+    await page.locator("#audInput").setInputFiles(DAILY_WAV);
 
     await page.waitForFunction(() => {
       const audio = window.ULAK_AUDIO;
