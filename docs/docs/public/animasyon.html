@@ -33,7 +33,7 @@ small{color:#b9ab9a;font-size:12px;line-height:1.5;display:block;margin-top:6px}
 <button class="btn" id="newsBtn" style="width:100%">Günün Haberlerini Getir</button>
 <button class="btn alt" id="speakNewsBtn" style="width:100%">▶ ULAK’ın Haberlerini Seslendir</button>
 <div id="newsScript">Günün sunum metni henüz alınmadı.</div>
-<small>Haber metni ULAK sunum servisinden alınır. Ses Ahmet sesiyle üretilir.</small>
+<small>Haber metni ULAK sunum servisinden alınır. Ses ULAK'ın sesiyle üretilir.</small>
 </div>
 
 <div class="card">
@@ -495,7 +495,7 @@ async function prepareSpeechSegments(){
     btn.textContent='Ses hazırlanıyor '+(i+1)+'/'+speechSegments.length+'...';
 
     setStatus(
-     'Ahmet sesi hazırlanıyor: '+(i+1)+' / '+speechSegments.length
+     'ULAK'ın sesi hazırlanıyor: '+(i+1)+' / '+speechSegments.length
     );
 
     const response=await fetch('/api/tts',{
@@ -553,7 +553,7 @@ async function generateNewsAudio(text){
  const btn=$('speakNewsBtn');
  btn.disabled=true;
  btn.textContent='Ahmet sesi hazırlanıyor...';
- setStatus('Günlük haber metni Ahmet sesine dönüştürülüyor. Lütfen bekleyin...');
+ setStatus('Günlük haber metni ULAK'ın sesiyle hazırlanıyor. Lütfen bekleyin...');
 
  try{
   audio.pause();
@@ -565,7 +565,7 @@ async function generateNewsAudio(text){
   });
 
   if(!response.ok){
-   let message='Ahmet sesi üretilemedi.';
+   let message='ULAK sesi üretilemedi.';
    try{
     const data=await response.json();
     if(data.error)message=data.error;
@@ -585,7 +585,7 @@ async function generateNewsAudio(text){
   audioSourceType='generated';
   generatedSpeechText=text;
 
-  setStatus('Ahmet sesi hazır.');
+  setStatus('ULAK sesi hazır.');
   return true;
 
  }catch(err){
@@ -1063,7 +1063,7 @@ async function play(){
  try{
   await audio.play();
   $('speakNewsBtn').textContent='■ Sunumu duraklat';
-  setStatus('ULAK Ahmet sesiyle konuşuyor...');
+  setStatus('ULAK konuşuyor...');
  }catch(err){
   setStatus('Ses oynatılamadı: '+err.message);
  }
