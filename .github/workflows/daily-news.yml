@@ -125,6 +125,7 @@ jobs:
 
           data_dir="docs/docs/public/data"
           mkdir -p "$data_dir"
+          rm -f "$data_dir"/seg-*.wav
           jq -e '.speechSegments | type == "array" and length > 0' response.json > /dev/null
 
           segment_count=$(jq '.speechSegments | length' response.json)
