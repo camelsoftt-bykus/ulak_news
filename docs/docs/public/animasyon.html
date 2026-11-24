@@ -366,8 +366,11 @@ function createNewsLayer(item){
 /* HABERLERİ GÖRSELLERİYLE YÜKLE */
 function setULAKNews(news){
  const items=Array.isArray(news)?news:[];
- newsSlides=items.map(item=>({...item,image:null,layer:null,imageError:null}));
+ newsSlides=items.map(item=>({...item,image:null,layer:null,imageError:null,broadcastImage:null,broadcastImageError:null}));
  currentStoryIndex=-1;
+ visualFromStoryIndex=-1;
+ visualToStoryIndex=-1;
+ visualTransitionStarted=performance.now();
  newsImagesLoading=true;
  window.ULAK_IMAGES_READY=false;
  window.ULAK_BROADCAST_IMAGES_READY=false;
