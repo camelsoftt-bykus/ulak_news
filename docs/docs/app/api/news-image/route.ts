@@ -5,7 +5,15 @@ export const dynamic = "force-dynamic";
 const ALLOWED_HOSTS: Record<string, string[]> = {
   "upload.wikimedia.org": ["/wikipedia/commons/"],
   "trthaberstatic.cdn.wp.trt.com.tr": ["/resimler/"],
-  "tubitak.gov.tr": ["/sites/default/files/"]
+  "tubitak.gov.tr": ["/sites/default/files/"],
+  "www.sincan.bel.tr": ["/"],
+  "sincan.bel.tr": ["/"],
+  "www.etimesgut.bel.tr": ["/"],
+  "etimesgut.bel.tr": ["/"],
+  "www.ankara.bel.tr": ["/"],
+  "ankara.bel.tr": ["/"],
+  "ichef.bbci.co.uk": ["/news/"],
+  "images-assets.nasa.gov": ["/image/"]
 };
 
 const ALLOWED_TYPES = [
