@@ -1,4 +1,4 @@
-name: ULAK Günlük Haber Otomasyonu
+name: ULAK Günlük Yazılı Haber Bülteni
 
 on:
   schedule:
@@ -8,249 +8,50 @@ on:
 permissions:
   contents: write
 
-# Aynı anda iki bültenin üretilip birbirinin Git push işlemini bozmasını önle.
 concurrency:
   group: ulak-daily-news-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   daily-news:
-    # Üretim yayını varsayılan olarak kapalıdır. Kullanıcı onayı ve hazırlık
-    # tamamlandıktan sonra GitHub Actions değişkeni ULAK_AUTOMATION_ENABLED=true
-    # olarak ayarlanmalıdır. Bu koruma schedule ve manuel çalıştırmayı birlikte kapsar.
+    # Otomasyon ayrıca etkinleştirilmedikçe kapalı kalır.
     if: vars.ULAK_AUTOMATION_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
+    timeout-minutes: 15
     steps:
       - name: Depoyu indir
         uses: actions/checkout@v4
-
-      - name: Node.js kur
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: FFmpeg kur
+      - name: Yazılı bülteni hazırla
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-
-      - name: Playwright ve Chromium kur
-        working-directory: docs/docs
-        run: |
-          npm install --no-save --package-lock=false playwright
-          npx playwright install --with-deps chromium
-
-      - name: Günlük sunumu hazırla
-        run: |
-          set -e
-
-          presenter_url="https://ulaknews-docs.vercel.app/api/presenter"
-          presenter_ok=false
-
-          for attempt in 1 2 3; do
-            set +e
-            http_code=$(curl --silent --show-error --connect-timeout 20 --max-time 180 \
-              --output response.json --write-out "%{http_code}" "$presenter_url")
-            curl_exit=$?
-            set -e
-
-            if [ "$curl_exit" -eq 0 ] && [ "$http_code" = "200" ]; then
-              presenter_ok=true
-              break
-            fi
-
-            echo "Presenter API denemesi $attempt başarısız. HTTP: ${http_code:-bilinmiyor}, curl çıkış kodu: $curl_exit"
-            echo "Sunucunun hata yanıtı:"
-            cat response.json 2>/dev/null || true
-
-            if [ "$attempt" -lt 3 ] && { [ "$curl_exit" -ne 0 ] || [[ "${http_code:-}" =~ ^5 ]]; }; then
-              sleep 15
-              continue
-            fi
-
-            break
-          done
-
-          if [ "$presenter_ok" != "true" ]; then
-            echo "::error::Haber sunucusu üç denemeden sonra da başarılı yanıt vermedi."
+          set -euo pipefail
+          http_code=$(curl --silent --show-error --connect-timeout 20 --max-time 180 \
+            --output response.json --write-out "%{http_code}" \
+            "https://ulaknews-docs.vercel.app/api/presenter")
+          if [ "$http_code" != "200" ]; then
+            echo "::error::Haber sunucusu HTTP $http_code yanıtı verdi."
+            cat response.json
             exit 1
           fi
-
-          if ! jq -e '
+          jq -e '
             (.script | type == "string" and length > 0) and
             (.news | type == "array" and length == 8) and
             (.speechSegments | type == "array" and length == 10) and
             .speechSegments[0].type == "intro" and
             ([.speechSegments[1:9][] | select(.type == "story")] | length == 8) and
             .speechSegments[9].type == "closing"
-          ' response.json > /dev/null; then
-            echo "::error::Bülten 8 haber + açılış + kapanış koşulunu sağlamıyor; yayın durduruldu."
-            jq '{code, error, newsCount: (.news | length), segmentCount: (.speechSegments | length)}' response.json || true
-            exit 1
-          fi
-
+          ' response.json > /dev/null
           mkdir -p docs/docs/public/data
-
           jq --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            '. + {generatedAt: $generatedAt}' \
+            'del(.audioSegments) + {generatedAt: $generatedAt}' \
             response.json > docs/docs/public/data/daily.json
-
-      - name: Her sunum segmenti için ayrı WAV üret
-        run: |
-          set -euo pipefail
-
-          data_dir="docs/docs/public/data"
-          mkdir -p "$data_dir"
-          rm -f "$data_dir"/seg-*.wav
-          jq -e '.speechSegments | type == "array" and length > 0' response.json > /dev/null
-
-          segment_count=$(jq '.speechSegments | length' response.json)
-          if [ "$segment_count" -ne 10 ]; then
-            echo "::error::Tam 10 ses bölümü gerekli; bulunan: $segment_count"
-            exit 1
-          fi
-          echo "Üretilecek ses segmenti: $segment_count"
-
-          files_json='[]'
-
-          for i in $(seq 0 $((segment_count - 1))); do
-            segment_text=$(jq -r --argjson i "$i" '.speechSegments[$i].text' response.json)
-            if [ -z "$segment_text" ] || [ "$segment_text" = "null" ]; then
-              echo "::error::Segment $i metni boş."
-              exit 1
-            fi
-
-            filename="seg-$(printf '%02d' "$i").wav"
-            output="$data_dir/$filename"
-            request_file="tts-segment-request-$i.json"
-
-            jq -n --arg text "$segment_text" '{text: $text}' > "$request_file"
-            text_length=$(printf '%s' "$segment_text" | wc -m | tr -d ' ')
-
-            success=false
-            for attempt in 1 2 3; do
-              rm -f "$output"
-              response_file=$(mktemp)
-              http_code=""
-              curl_exit=0
-
-              if http_code=$(curl --silent --show-error \
-                --connect-timeout 20 --max-time 180 \
-                -X POST \
-                -H "Content-Type: application/json" \
-                --data-binary @"$request_file" \
-                "https://ulaknews-docs.vercel.app/api/tts" \
-                --output "$response_file" \
-                --write-out "%{http_code}"); then
-                curl_exit=0
-              else
-                curl_exit=$?
-              fi
-
-              if [ "$curl_exit" -eq 0 ] && \
-                [ "$http_code" = "200" ] && \
-                test -s "$response_file" && \
-                ffprobe -v error -select_streams a:0 -show_entries stream=codec_name \
-                  -of default=noprint_wrappers=1 "$response_file" > /dev/null; then
-                mv "$response_file" "$output"
-                success=true
-                echo "Hazır: $filename ($(stat -c%s "$output") bayt), metin ${text_length} karakter, deneme ${attempt}."
-                break
-              fi
-
-              echo "Segment $i denemesi $attempt başarısız. HTTP=${http_code:-yok}, curl çıkışı=${curl_exit}, metin=${text_length} karakter."
-
-              if [ "$curl_exit" -eq 0 ] && [ -s "$response_file" ] && \
-                jq -e . "$response_file" > /dev/null 2>&1; then
-                jq -r '
-                  (.error // .) as $e
-                  | "Hata türü: " + ((.error // null) | type)
-                    + " | status: " +
-                      (if ($e | type) == "object"
-                       then ($e.status // .status // "yok")
-                       else (.status // "yok") end | tostring)
-                    + " | code: " +
-                      (if ($e | type) == "object"
-                       then ($e.code // .code // "yok")
-                       else (.code // "yok") end | tostring)
-                ' "$response_file" || echo "Hata kodu okunamadı."
-
-                jq -r '
-                  if type == "object"
-                  then "JSON anahtarları: " + (keys | join(","))
-                  else "JSON kök türü: " + type
-                  end
-                ' "$response_file" || true
-              else
-                echo "Yanıt JSON değil veya boş; yanıt gövdesi loglanmadı."
-              fi
-
-              # Yalnızca geçici ağ/upstream hatalarında yeniden dene.
-              # Kota hatası 429 olduğunda tekrar deneme yapma.
-              retryable=false
-              if [ "$curl_exit" -ne 0 ] || \
-                [ "$http_code" = "502" ] || \
-                [ "$http_code" = "503" ]; then
-                retryable=true
-              fi
-
-              rm -f "$response_file"
-              if [ "$attempt" -lt 3 ] && [ "$retryable" = "true" ]; then
-                if [ "$attempt" -eq 1 ]; then
-                  echo "Geçici hata; ikinci denemeden önce 30 saniye beklenecek."
-                  sleep 30
-                else
-                  echo "Geçici hata; üçüncü denemeden önce 60 saniye beklenecek."
-                  sleep 60
-                fi
-                continue
-              fi
-
-              break
-            done
-
-            rm -f "$request_file"
-
-            if [ "$success" != "true" ]; then
-              echo "::error::Ses segmenti üretilemedi: $filename. Yayın durduruldu."
-              exit 1
-            fi
-
-            files_json=$(jq -c --arg file "$filename" '. + [$file]' <<< "$files_json")
-          done
-
-          if [ "$(jq 'length' <<< "$files_json")" -ne "$segment_count" ]; then
-            echo "::error::Üretilen WAV sayısı segment sayısıyla eşleşmiyor."
-            exit 1
-          fi
-
-          jq --argjson files "$files_json" \
-            '. + {audioSegments: $files}' \
-            "$data_dir/daily.json" > "$data_dir/daily.json.tmp"
-          mv "$data_dir/daily.json.tmp" "$data_dir/daily.json"
-
-          echo "Segment doğrulaması tamamlandı: $segment_count metin / $(jq 'length' <<< "$files_json") WAV"
-
-      - name: Robot sunum videosunu üret
-        working-directory: docs/docs
-        run: |
-          node scripts/render-video.mjs
-
-      - name: Günlük haber, ses ve videoyu kaydet
+      - name: Yalnızca yazılı bülteni kaydet
         run: |
           git config user.name "ULAK News Bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
           git add docs/docs/public/data/daily.json
-          git add -A docs/docs/public/data/daily.wav
-          git add docs/docs/public/data/seg-*.wav
-          git add docs/docs/public/data/daily.mp4
-          git add docs/docs/public/data/daily-poster.jpg
-
           if ! git diff --cached --quiet; then
-            git commit -m "Günlük ULAK haber, ses ve video bülteni"
+            git commit -m "Günlük ULAK yazılı haber bülteni"
             git pull --rebase origin "${GITHUB_REF_NAME}"
             git push
           fi
