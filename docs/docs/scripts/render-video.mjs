@@ -139,21 +139,13 @@ async function main() {
 
     console.log("Robot sunumu kaydediliyor...");
 
-    const downloadWaitMs = Math.min(TIMEOUT, Math.max(60000, audioDuration * 1000 + 30000));
-    const downloadPromise = page.waitForEvent("download", {
-      timeout: downloadWaitMs
-    });
-
-    await recordButton.click();
-
-    await page.waitForFunction(() => {
-      const status = document.querySelector("#status")?.textContent || "";
-      return status.includes("Kaydediliyor") || status.includes("Kayıt tamamlandı");
-    }, null, { timeout: 30000 });
-
-    let download;
+    const recordingTimeout = Math.min(TIMEOUT, Math.max(60000, audioDuration * 1000 + 30000));
     try {
-      download = await downloadPromise;
+      await page.waitForFunction(
+        () => window.ULAK_VIDEO_BLOB && window.ULAK_VIDEO_BLOB.size > 0,
+        null,
+        { timeout: recordingTimeout }
+      );
     } catch (error) {
       const recording = await page.evaluate(() => ({
         status: document.querySelector("#status")?.textContent || "",
@@ -161,23 +153,32 @@ async function main() {
         currentTime: window.ULAK_AUDIO?.currentTime,
         duration: window.ULAK_AUDIO?.duration
       }));
-      console.log("Kayıt indirme bekleme bilgisi:", recording);
+      console.log("Kayıt otomatik bitmedi; durdurma bilgisi:", recording);
       const stopButton = page.locator("#stopRecBtn");
-      const forcedDownloadPromise = page.waitForEvent("download", { timeout: 30000 });
       if (await stopButton.isEnabled()) {
         await stopButton.click();
-        download = await forcedDownloadPromise;
+        await page.waitForFunction(
+          () => window.ULAK_VIDEO_BLOB && window.ULAK_VIDEO_BLOB.size > 0,
+          null,
+          { timeout: 30000 }
+        );
       } else {
-        throw new Error(`Video indirme olayı oluşmadı: ${error.message}`);
+        throw new Error(`Video kaydı tamamlanamadı: ${error.message}`);
       }
     }
-    const downloadError = await download.failure();
 
-    if (downloadError) {
-      throw new Error(`Video indirme hatası: ${downloadError}`);
-    }
-
-    await download.saveAs(RAW_VIDEO);
+    const videoData = await page.evaluate(async () => {
+      const blob = window.ULAK_VIDEO_BLOB;
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let binary = "";
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+      }
+      return { type: blob.type, base64: btoa(binary) };
+    });
+    fs.writeFileSync(RAW_VIDEO, Buffer.from(videoData.base64, "base64"));
+    console.log(`Ham video doğrudan alındı: ${videoData.type}`);
 
     if (!fs.existsSync(RAW_VIDEO) || fs.statSync(RAW_VIDEO).size === 0) {
       throw new Error("Ham video dosyası oluşturulamadı.");
