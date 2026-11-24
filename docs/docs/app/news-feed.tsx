@@ -13,6 +13,8 @@ type NewsItem = {
   publishedAt: string | null;
   imageUrl?: string;
   imageTitle?: string;
+  fallbackImageUrl?: string;
+  fallbackImageTitle?: string;
 };
 
 type DailyBulletin = {
@@ -163,7 +165,19 @@ export default function NewsFeed() {
               <div className="news-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
                 {items.map((item, index) => (
                   <article key={item.sourceId + "-" + item.link} className="news-card" style={{ padding: 0, overflow: "hidden", borderRadius: 8, borderColor: "#d9d0c4", background: "#fffdf8" }}>
-                    {item.imageUrl ? <img src={item.imageUrl} alt={item.imageTitle || item.title} loading="lazy" style={{ width: "100%", height: 190, objectFit: "cover", display: "block", background: "#eee7dc" }} /> : <div style={{ height: 8, background: "#e7ded1" }} />}
+                    {item.imageUrl ? <img src={"/api/news-image?url=" + encodeURIComponent(item.imageUrl)} alt={item.imageTitle || item.title} loading="lazy" referrerPolicy="no-referrer" onError={(event) => {
+                      const image = event.currentTarget;
+                      if (item.fallbackImageUrl && image.dataset.fallback !== "used") {
+                        image.dataset.fallback = "used";
+                        image.src = "/api/news-image?url=" + encodeURIComponent(item.fallbackImageUrl);
+                        image.alt = item.fallbackImageTitle || item.title;
+                      } else {
+                        image.style.display = "none";
+                        const fallback = image.nextElementSibling as HTMLElement | null;
+                        if (fallback) fallback.style.display = "flex";
+                      }
+                    }} style={{ width: "100%", height: 190, objectFit: "cover", display: "block", background: "#eee7dc" }} /> : null}
+                    <div style={{ height: 190, display: item.imageUrl ? "none" : "flex", alignItems: "center", justifyContent: "center", padding: 20, textAlign: "center", color: "#756d63", background: "linear-gradient(135deg,#eee7dc,#d9cbb8)", fontFamily: "Georgia,serif", fontSize: 18 }}>{item.title}</div>
                     <div style={{ padding: 18, display: "flex", flexDirection: "column", flex: 1 }}>
                       <div className="news-card-top">
                         <span className="news-number">{String(index + 1).padStart(2, "0")}</span>
