@@ -175,6 +175,20 @@ async function main() {
     fs.unlinkSync(RAW_VIDEO);
 
     console.log("ULAK videosu başarıyla oluşturuldu.");
+
+    const DAILY_POSTER = path.join(__dirname, "../public/data/daily-poster.jpg");
+    await execFileAsync("ffmpeg", [
+      "-y",
+      "-ss", "1",
+      "-i", DAILY_MP4,
+      "-frames:v", "1",
+      "-q:v", "2",
+      DAILY_POSTER
+    ]);
+    if (!fs.existsSync(DAILY_POSTER) || fs.statSync(DAILY_POSTER).size === 0) {
+      throw new Error("Günlük video kapak görseli oluşturulamadı.");
+    }
+    console.log("Günlük video kapak görseli oluşturuldu.");
     console.log(
       `Video boyutu: ${(
         fs.statSync(DAILY_MP4).size / 1024 / 1024
