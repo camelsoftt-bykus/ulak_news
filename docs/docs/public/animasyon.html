@@ -365,7 +365,33 @@ function setULAKNews(news){
  window.ULAK_IMAGES_READY=false;
 
  const tasks=newsSlides.map(async(item,index)=>{
+  // Full-screen yayın görseli yalnızca lisansı doğrulanmış Commons varlığıdır.
+  if(item.broadcastImageUrl){
+   try{
+    if(item.broadcastImageUrl===item.imageUrl&&item.image){
+     item.broadcastImage=item.image;
+    }else{
+     const broadcast=new Image();
+     broadcast.crossOrigin='anonymous';
+     await new Promise((resolve,reject)=>{
+      broadcast.onload=resolve;
+      broadcast.onerror=()=>reject(new Error('yayın görseli yüklenemedi'));
+      broadcast.src='/api/news-image?url='+encodeURIComponent(item.broadcastImageUrl);
+     });
+     item.broadcastImage=broadcast;
+    }
+   }catch(error){
+    item.broadcastImageError=error.message;
+    console.warn('[ULAK yayın görseli] Yüklenemedi:',item.title,error.message);
+   }
+  }
+
   if(!item.imageUrl)return;
+  if(item.imageUrl===item.broadcastImageUrl&&item.broadcastImage){
+   item.image=item.broadcastImage;
+   if(maskReady)createNewsLayer(item);
+   return;
+  }
 
   try{
    const proxyUrl='/api/news-image?url='+encodeURIComponent(item.imageUrl);
@@ -1251,13 +1277,89 @@ function drawNewsBackground(){
  ctx.restore();
 }
 
-/* GÖRÜNTÜ: ULAK stüdyo görseli -> cam içindeki haber fotoğrafı -> ağız */
+/*
+ * HABER ANLATILIRKEN LİSANSLI GÖRSELİ TAM EKRAN GÖSTER.
+ * Bu katman yalnızca doğrulanmış Commons görseli varsa kullanılır.
+ * Ses oynatıcısına dokunulmaz; görüntü haber segmentinin süresi boyunca değişir.
+ */
+function drawBroadcastImage(item){
+ const photo=item&&item.broadcastImage;
+ if(!photo||!photo.naturalWidth||!photo.naturalHeight)return false;
+
+ const scale=Math.max(imgW/photo.naturalWidth,imgH/photo.naturalHeight);
+ const dw=photo.naturalWidth*scale;
+ const dh=photo.naturalHeight*scale;
+ const dx=(imgW-dw)/2;
+ const dy=(imgH-dh)/2;
+
+ ctx.save();
+ ctx.globalAlpha=1;
+ ctx.globalCompositeOperation='source-over';
+ ctx.fillStyle='#101722';
+ ctx.fillRect(0,0,imgW,imgH);
+ ctx.drawImage(photo,dx,dy,dw,dh);
+
+ const gradient=ctx.createLinearGradient(0,imgH*.62,0,imgH);
+ gradient.addColorStop(0,'rgba(5,10,18,0)');
+ gradient.addColorStop(.32,'rgba(5,10,18,.72)');
+ gradient.addColorStop(1,'rgba(5,10,18,.94)');
+ ctx.fillStyle=gradient;
+ ctx.fillRect(0,0,imgW,imgH);
+
+ const pad=Math.max(24,Math.round(imgW*.045));
+ const title=String(item.title||'Günün haberi').trim().slice(0,150);
+ const labelSize=Math.max(13,Math.round(imgW*.022));
+ const titleSize=Math.max(22,Math.round(imgW*.043));
+ const maxWidth=imgW-pad*2;
+
+ ctx.textAlign='left';
+ ctx.textBaseline='alphabetic';
+ ctx.fillStyle='#ffb347';
+ ctx.font='700 '+labelSize+'px system-ui, sans-serif';
+ ctx.fillText('ULAK’TAN HABERLER  ·  HABER GÖRÜNTÜSÜ',pad,imgH-pad*2.55);
+
+ ctx.fillStyle='#fff';
+ ctx.font='700 '+titleSize+'px system-ui, sans-serif';
+ const words=title.split(/\\s+/);
+ const lines=[];
+ let line='';
+ for(const word of words){
+  const candidate=line?line+' '+word:word;
+  if(line&&ctx.measureText(candidate).width>maxWidth){
+   lines.push(line);
+   line=word;
+  }else{
+   line=candidate;
+  }
+ }
+ if(line)lines.push(line);
+ const visibleLines=lines.slice(0,2);
+ visibleLines.forEach((text,index)=>{
+  ctx.fillText(text,pad,imgH-pad*1.35+index*(titleSize*1.15),maxWidth);
+ });
+
+ const artist=String(item.broadcastImageArtist||item.broadcastImageCredit||'Wikimedia Commons').trim().slice(0,90);
+ const license=String(item.broadcastImageLicense||'').trim().slice(0,45);
+ const credit='Görsel: '+artist+(license?' · '+license:'');
+ ctx.fillStyle='rgba(255,255,255,.86)';
+ ctx.font='500 '+Math.max(10,Math.round(imgW*.014))+'px system-ui, sans-serif';
+ ctx.fillText(credit,pad,imgH-pad*.55,maxWidth);
+ ctx.restore();
+ return true;
+}
+
+/* HABER GÖRÜNTÜSÜ -> STÜDYO GEÇİŞİ SES AKIŞINDAN BAĞIMSIZDIR. */
 function render(){
  if(!base)return;
 
  ctx.globalAlpha=1;
  ctx.filter='none';
  ctx.globalCompositeOperation='source-over';
+
+ if(currentStoryIndex>=0){
+  const item=newsSlides[currentStoryIndex];
+  if(drawBroadcastImage(item))return;
+ }
 
  ctx.fillStyle='#101722';
  ctx.fillRect(0,0,imgW,imgH);
