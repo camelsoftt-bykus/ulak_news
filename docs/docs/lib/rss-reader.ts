@@ -770,11 +770,13 @@ export async function collectRssNews(): Promise<CollectedNews[]> {
 
   const collected = results.flatMap((result) => result.items);
   const now = Date.now();
-  const maxAgeMs = 48 * 60 * 60 * 1000;
+  const maxAgeMs = 72 * 60 * 60 * 1000;
   const freshNews = collected.filter((item) => {
+    // Bazı RSS kaynakları yayın tarihini vermiyor. Tarihsiz kayıtları
+    // otomatik elemek yerine dahil et; ekranda tarih alanı boş gösterilir.
     if (!item.publishedAt) {
-      console.warn("[ULAK haber] Yayın tarihi bulunamadığı için atlandı:", item.title);
-      return false;
+      console.info("[ULAK haber] Yayın tarihi yok; haber tarih etiketi olmadan dahil edildi:", item.title);
+      return true;
     }
     const published = new Date(item.publishedAt).getTime();
     if (!Number.isFinite(published)) {
