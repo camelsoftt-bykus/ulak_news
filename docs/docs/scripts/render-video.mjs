@@ -27,8 +27,8 @@ async function main() {
     throw new Error("daily.json dosyası bulunamadı.");
   }
 
-  if (!fs.existsSync(DAILY_MP3)) {
-    throw new Error("daily.mp3 dosyası bulunamadı.");
+  if (!fs.existsSync(DAILY_WAV)) {
+    throw new Error("daily.wav dosyası bulunamadı.");
   }
 
   const daily = JSON.parse(fs.readFileSync(DAILY_JSON, "utf8"));
