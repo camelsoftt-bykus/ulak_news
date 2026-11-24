@@ -176,7 +176,7 @@ DOĞRULUK:
 - Haber sayısı kadar stories kaydı oluştur.
 
 HER HABER İÇİN:
-- narration: Ahmet'in seslendireceği 2-3 kısa, akıcı cümle. Bir televizyon haber sunucusu gibi doğal konuş.
+- narration: ULAK'ın seslendireceği 2-3 kısa, akıcı cümle. Bir televizyon haber sunucusu gibi doğal konuş.
 - summary: 2-3 kısa cümlelik haber özeti.
 - whyImportant: Neden önemli olduğunu açıkla.
 - imageQuery: Haber konusunu somut biçimde anlatan İngilizce 2-5 kelime.
