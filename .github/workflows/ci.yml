@@ -1,0 +1,48 @@
+name: ULAK Gemini'siz CI
+
+on:
+  push:
+    paths:
+      - "docs/docs/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "docs/docs/**"
+      - ".github/workflows/ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Depoyu indir
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: FFmpeg kur
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Bağımlılıkları kur
+        working-directory: docs/docs
+        run: npm install --no-save --package-lock=false
+
+      - name: ESLint
+        working-directory: docs/docs
+        run: npm run lint
+
+      - name: TypeScript kontrolü
+        working-directory: docs/docs
+        run: npx tsc --noEmit
+
+      - name: Sahte WAV doğrulama testleri
+        working-directory: docs/docs
+        run: node --test scripts/verify-segments.test.mjs
