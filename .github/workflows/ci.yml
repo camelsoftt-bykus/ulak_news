@@ -5,10 +5,12 @@ on:
     paths:
       - "docs/docs/**"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/daily-news.yml"
   pull_request:
     paths:
       - "docs/docs/**"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/daily-news.yml"
 
 permissions:
   contents: read
@@ -25,6 +27,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      - name: Günlük otomasyon YAML denetimi
+        run: ruby -e 'require "yaml"; YAML.load_file(".github/workflows/daily-news.yml"); puts "daily-news.yml sözdizimi geçerli"'
 
       - name: FFmpeg kur
         run: |
