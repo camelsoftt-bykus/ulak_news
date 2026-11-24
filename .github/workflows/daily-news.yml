@@ -1,6 +1,9 @@
 name: ULAK Günlük Haber Otomasyonu
 
 on:
+  push:
+    paths:
+      - "docs/docs/app/api/presenter/route.ts"
   schedule:
     - cron: "0 5 * * *"
   workflow_dispatch:
