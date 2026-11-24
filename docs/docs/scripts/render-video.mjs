@@ -128,7 +128,7 @@ async function main() {
       return document.body.innerText.includes("Ses yüklendi:") && audio && audio.readyState >= 2 && Number.isFinite(audio.duration) && audio.duration > 0;
     }, null, { timeout: 90000 });
 
-    const audioDuration = await page.locator("audio").evaluate((audio) => audio.duration);
+    const audioDuration = await page.evaluate(() => window.ULAK_AUDIO.duration);
     console.log(`Ahmet ses süresi: ${Math.round(audioDuration)} saniye`);
 
     const recordButton = page.locator("#recBtn");
