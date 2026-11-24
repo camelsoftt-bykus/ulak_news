@@ -1,7 +1,8 @@
-ULAK – Proje Planı
-Slogan: Şehrinden dünyaya, güne hazır ol.
+ULAK’TAN HABERLER – Proje Planı
+Baş Haber Editörü ve sunucu: ULAK
+Slogan: Türkiye’den ve dünyadan, doğru haberin adresi.
 1. Projenin amacı
-ULAK, kişisel ve aile kullanımı için tasarlanmış, her sabah önemli haberleri Türkçe ve anlaşılır şekilde sunan bir haber platformudur.
+ULAK’TAN HABERLER, her sabah Türkiye’den ve dünyadan önemli haberleri Türkçe ve anlaşılır şekilde sunan bir haber platformudur. ULAK, gazetenin baş haber editörü ve dijital sunucusudur.
 2. Günlük haber öncelikleri
 Sincan ve Etimesgut
 Ankara
