@@ -390,3 +390,5 @@ ${newsText}
 // Trigger daily render after fixing the audio duration lookup.
 
 // Trigger publishing with the bounded video-recording fallback.
+
+// Trigger publishing with direct browser video-blob capture.
