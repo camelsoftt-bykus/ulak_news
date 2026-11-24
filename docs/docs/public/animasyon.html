@@ -128,6 +128,9 @@ let recChunks=[];
 
 let newsSlides=[];
 let currentStoryIndex=-1;
+let visualFromStoryIndex=-1;
+let visualToStoryIndex=-1;
+let visualTransitionStarted=0;
 let newsImagesLoading=false;
 let newsRequestRunning=false;
 
@@ -1282,7 +1285,7 @@ function drawNewsBackground(){
  * Bu katman yalnızca doğrulanmış Commons görseli varsa kullanılır.
  * Ses oynatıcısına dokunulmaz; görüntü haber segmentinin süresi boyunca değişir.
  */
-function drawBroadcastImage(item){
+function drawBroadcastImage(item,alpha=1){
  const photo=item&&item.broadcastImage;
  if(!photo||!photo.naturalWidth||!photo.naturalHeight)return false;
 
@@ -1293,7 +1296,7 @@ function drawBroadcastImage(item){
  const dy=(imgH-dh)/2;
 
  ctx.save();
- ctx.globalAlpha=1;
+ ctx.globalAlpha=alpha;
  ctx.globalCompositeOperation='source-over';
  ctx.fillStyle='#101722';
  ctx.fillRect(0,0,imgW,imgH);
@@ -1360,11 +1363,6 @@ function render(){
  ctx.filter='none';
  ctx.globalCompositeOperation='source-over';
 
- if(currentStoryIndex>=0){
-  const item=newsSlides[currentStoryIndex];
-  if(drawBroadcastImage(item))return;
- }
-
  ctx.fillStyle='#101722';
  ctx.fillRect(0,0,imgW,imgH);
  ctx.drawImage(base,0,0);
@@ -1379,7 +1377,33 @@ function render(){
   if(level>.02)drawMouthOpening();
  }
 
- if(editing&&!isRecording)drawOverlay();
+ // Stüdyo ile haber görseli arasında kısa çapraz geçiş; ses akışı etkilenmez.
+ const desiredStoryIndex=
+  currentStoryIndex>=0&&
+  newsSlides[currentStoryIndex]&&
+  newsSlides[currentStoryIndex].broadcastImage&&
+  newsSlides[currentStoryIndex].broadcastImage.naturalWidth
+   ?currentStoryIndex
+   :-1;
+
+ if(desiredStoryIndex!==visualToStoryIndex){
+  visualFromStoryIndex=visualToStoryIndex;
+  visualToStoryIndex=desiredStoryIndex;
+  visualTransitionStarted=performance.now();
+ }
+
+ const transition=Math.min(1,(performance.now()-visualTransitionStarted)/420);
+ if(visualFromStoryIndex>=0&&visualFromStoryIndex!==visualToStoryIndex){
+  drawBroadcastImage(newsSlides[visualFromStoryIndex],1-transition);
+ }
+ if(visualToStoryIndex>=0){
+  drawBroadcastImage(newsSlides[visualToStoryIndex],transition);
+ }
+ if(transition>=1){
+  visualFromStoryIndex=visualToStoryIndex;
+ }
+
+ if(editing&&!isRecording&&visualToStoryIndex<0&&visualFromStoryIndex<0)drawOverlay();
 }
 
 /* MAVİ DÜZENLEME KUTUSU */
