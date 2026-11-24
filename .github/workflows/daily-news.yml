@@ -18,6 +18,11 @@ on:
 permissions:
   contents: write
 
+# Aynı anda iki bültenin üretilip birbirinin Git push işlemini bozmasını önle.
+concurrency:
+  group: ulak-daily-news-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   daily-news:
     runs-on: ubuntu-latest
@@ -125,5 +130,7 @@ jobs:
 
           if ! git diff --cached --quiet; then
             git commit -m "Günlük ULAK haber, ses ve video bülteni"
+            # Bülten üretimi sırasında başka bir commit geldiyse önce birleştir.
+            git pull --rebase origin "${GITHUB_REF_NAME}"
             git push
           fi
