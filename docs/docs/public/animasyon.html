@@ -139,6 +139,8 @@ window.ULAK_STUDIO_READY=false;
 window.ULAK_IMAGE_COUNT=0;
 window.ULAK_BROADCAST_IMAGE_COUNT=0;
 window.ULAK_BROADCAST_IMAGES_READY=false;
+window.ULAK_BROADCAST_IMAGE_COUNT=0;
+window.ULAK_BROADCAST_IMAGES_READY=false;
 
 function setStatus(msg){
  statusEl.textContent=msg;
@@ -368,6 +370,8 @@ function setULAKNews(news){
  currentStoryIndex=-1;
  newsImagesLoading=true;
  window.ULAK_IMAGES_READY=false;
+ window.ULAK_BROADCAST_IMAGES_READY=false;
+ window.ULAK_BROADCAST_IMAGE_COUNT=0;
 
  const tasks=newsSlides.map(async(item,index)=>{
   // Full-screen yayın görseli yalnızca lisansı doğrulanmış Commons varlığıdır.
@@ -468,6 +472,7 @@ function setULAKNews(news){
   console.warn('[ULAK görsel] Haber görselleri hazırlanamadı:',error);
   newsImagesLoading=false;
   window.ULAK_IMAGES_READY=true;
+  window.ULAK_BROADCAST_IMAGES_READY=true;
  });
 }
 
