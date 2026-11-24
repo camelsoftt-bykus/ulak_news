@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import NewsFeed from "./news-feed";
 
 const sections = [
@@ -48,7 +49,7 @@ export default function Home() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#766e64", fontSize: 12 }}>
             <span>{today}</span><span>TÜRKİYE’DEN DÜNYAYA</span>
           </div>
-          <a href="/" aria-label="ULAK’TAN HABERLER ana sayfa" style={{ display: "flex", justifyContent: "center", padding: "13px 0 12px" }}><img src="/ulaktan-haberler-logo.svg" alt="ULAK’TAN HABERLER" style={{ display: "block", width: "min(100%, 480px)", height: "auto" }} /></a>
+          <Link href="/" aria-label="ULAK’TAN HABERLER ana sayfa" style={{ display: "flex", justifyContent: "center", padding: "13px 0 12px" }}><img src="/ulaktan-haberler-logo.svg" alt="ULAK’TAN HABERLER" style={{ display: "block", width: "min(100%, 480px)", height: "auto" }} /></Link>
           <nav style={{ borderTop: "3px double #3b352e", borderBottom: "1px solid #3b352e", padding: "10px 0", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "10px 28px", fontSize: 13, fontWeight: 700 }}>
             {sections.map((section) => <a key={section.id} href={"#" + section.id}>{section.name}</a>)}
           </nav>
