@@ -45,4 +45,4 @@ jobs:
 
       - name: Sahte WAV doğrulama testleri
         working-directory: docs/docs
-        run: node --test scripts/verify-segments.test.mjs
+        run: node --test scripts/*.test.mjs
