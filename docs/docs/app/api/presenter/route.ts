@@ -394,6 +394,14 @@ ${newsText}
           fallbackImageLicenseUrl: primaryIsArticle ? commonsImage?.imageLicenseUrl || "" : "",
           fallbackImageArtist: primaryIsArticle ? commonsImage?.imageArtist || "" : "",
           fallbackImageCredit: primaryIsArticle ? commonsImage?.imageCredit || "" : "",
+          // Full-screen broadcast imagery uses only Commons assets whose license was verified.
+          broadcastImageUrl: commonsImage?.imageUrl || "",
+          broadcastImagePageUrl: commonsImage?.imagePageUrl || "",
+          broadcastImageTitle: commonsImage?.imageTitle || "",
+          broadcastImageLicense: commonsImage?.imageLicense || "",
+          broadcastImageLicenseUrl: commonsImage?.imageLicenseUrl || "",
+          broadcastImageArtist: commonsImage?.imageArtist || "",
+          broadcastImageCredit: commonsImage?.imageCredit || "",
           editorialSummary:
             typeof story?.summary === "string" && story.summary.trim()
               ? story.summary.trim()
