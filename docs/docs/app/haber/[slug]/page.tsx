@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 type NewsItem = { sourceId:string; sourceName:string; title:string; link:string; summary:string; editorialSummary?:string; whyImportant?:string; publishedAt:string|null; imageUrl?:string; imageTitle?:string; fallbackImageUrl?:string; fallbackImageTitle?:string };
 type DailyBulletin = { news:NewsItem[]; generatedAt?:string };
 const categories:Record<string,string> = { sincan:"Sincan", etimesgut:"Etimesgut", "google-sincan":"Sincan & Etimesgut", ankara:"Ankara", "google-ankara":"Ankara", "trt-turkiye":"Türkiye", "aa-guncel":"Türkiye", "bbc-turkce":"Türkiye", "trt-dunya":"Dünya", "aa-dunya":"Dünya", "bbc-dunya":"Dünya", tubitak:"Bilim & Teknoloji", "tubitak-uzay":"Bilim & Uzay", "trt-uzay":"Bilim & Uzay", nasa:"Bilim & Uzay" };
-function storySlug(item:NewsItem) { const title=item.title.toLocaleLowerCase("tr-TR").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,80); return `${title}-${item.sourceId}`; }
+function storySlug(item:NewsItem) { const title=item.title.toLocaleLowerCase("tr-TR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,80); return `${title}-${item.sourceId}`; }
 function dateLabel(value:string|null) { if(!value)return ""; const date=new Date(value); return Number.isNaN(date.getTime())?"":date.toLocaleString("tr-TR",{timeZone:"Europe/Istanbul",dateStyle:"long",timeStyle:"short"}); }
 
 export default function ArticlePage() {
