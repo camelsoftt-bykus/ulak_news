@@ -49,7 +49,6 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
     const image = new Image();
     image.src = "/1795638599702.jpg";
-    let frame = 0;
     let raf = 0;
     let startedAt = 0;
     let visible = variant === "welcome";
