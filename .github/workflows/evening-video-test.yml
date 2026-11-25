@@ -1,0 +1,123 @@
+name: ULAK Tek Seferlik Akşam Video Testi
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ulak-evening-video-test
+  cancel-in-progress: false
+
+jobs:
+  evening-video-test:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Depoyu indir
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: FFmpeg ve Chromium kur
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+        working-directory: .
+
+      - name: JavaScript bağımlılıklarını kur
+        working-directory: docs/docs
+        run: |
+          npm install --no-save --package-lock=false
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+
+      - name: Akşam bültenini oluştur
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs/docs/public/data
+          http_code=$(curl --silent --show-error --connect-timeout 20 --max-time 180 \
+            --output /tmp/presenter.json --write-out "%{http_code}" \
+            "https://ulaknews-docs.vercel.app/api/presenter")
+          if [ "$http_code" != "200" ]; then
+            echo "::error::Haber servisi HTTP $http_code döndürdü."
+            cat /tmp/presenter.json
+            exit 1
+          fi
+          jq -e '
+            .edition == "evening" and
+            (.news | type == "array" and length == 8) and
+            (.speechSegments | type == "array" and length == 10) and
+            .speechSegments[0].type == "intro" and
+            ([.speechSegments[1:9][] | select(.type == "story")] | length == 8) and
+            .speechSegments[9].type == "closing"
+          ' /tmp/presenter.json >/dev/null || {
+            echo "::error::Akşam sürümü veya 8 haber / 10 ses bölümü doğrulanamadı."
+            jq '{edition, count, code, error, availableNews}' /tmp/presenter.json
+            exit 1
+          }
+          jq --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '. + {generatedAt: $generatedAt, audioSegments: [range(0;10) | "seg-" + (tostring | if length == 1 then "0" + . else . end) + ".wav"]}' \
+            /tmp/presenter.json > docs/docs/public/data/daily.json
+
+      - name: 10 ses bölümünü üret
+        working-directory: docs/docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 0 9); do
+            index=$(printf "%02d" "$i")
+            text=$(jq -r ".speechSegments[$i].text" public/data/daily.json)
+            jq -n --arg text "$text" '{text: $text}' > "/tmp/tts-$index.json"
+            http_code=$(curl --silent --show-error --connect-timeout 20 --max-time 130 \
+              --output "public/data/seg-$index.wav" --write-out "%{http_code}" \
+              -H "Content-Type: application/json" \
+              --data-binary "@/tmp/tts-$index.json" \
+              "https://ulaknews-docs.vercel.app/api/tts")
+            if [ "$http_code" != "200" ]; then
+              echo "::error::Ses bölümü $index üretilemedi; HTTP $http_code."
+              cat "public/data/seg-$index.wav" || true
+              exit 1
+            fi
+            test -s "public/data/seg-$index.wav"
+            echo "Ses bölümü $((i+1))/10 hazır."
+          done
+
+      - name: Akşam videosunu oluştur
+        working-directory: docs/docs
+        run: node scripts/render-video.mjs
+
+      - name: Video ve bülten dosyalarını doğrula
+        working-directory: docs/docs
+        run: |
+          test -s public/data/daily.mp4
+          test -s public/data/daily-poster.jpg
+          ffprobe -v error -show_entries format=duration -of csv=p=0 public/data/daily.mp4
+          echo "Akşam videosu ve kapak görseli hazır."
+
+      - name: Videoyu ve yeni bülteni yayınla
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "ULAK News Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/docs/public/data/daily.json docs/docs/public/data/daily.mp4 docs/docs/public/data/daily-poster.jpg docs/docs/public/data/seg-*.wav
+          git commit -m "Akşam ULAK video bültenini yayınla"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push
+
+      - name: Video çıktısını ayrıca sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: ulak-aksam-video-test
+          path: |
+            docs/docs/public/data/daily.mp4
+            docs/docs/public/data/daily-poster.jpg
+            docs/docs/public/data/daily.json
+          retention-days: 7
