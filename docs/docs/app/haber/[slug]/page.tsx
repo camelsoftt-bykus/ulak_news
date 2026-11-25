@@ -27,13 +27,15 @@ export default function ArticlePage() {
     <div style={{color:"#82796e",fontSize:13,marginBottom:24}}>{article.sourceName}{dateLabel(article.publishedAt)?" · "+dateLabel(article.publishedAt):""}</div>
     {article.imageUrl?<img src={"/api/news-image?url="+encodeURIComponent(article.imageUrl)} alt={article.imageTitle||article.title} referrerPolicy="no-referrer" onError={event=>{const image=event.currentTarget;if(article.fallbackImageUrl&&image.dataset.fallback!=="used"){image.dataset.fallback="used";image.src="/api/news-image?url="+encodeURIComponent(article.fallbackImageUrl);image.alt=article.fallbackImageTitle||article.title;}else image.style.display="none";}} style={{display:"block",width:"100%",maxHeight:480,objectFit:"cover",borderRadius:10,background:"#eee7dc",marginBottom:28}}/>:null}
     <section style={{padding:"24px clamp(18px,4vw,34px)",border:"1px solid #ded5c9",borderRadius:10,background:"#fffdf8"}}>
-     <div style={{color:"#986033",fontSize:11,letterSpacing:1.5,fontWeight:800,textTransform:"uppercase"}}>Haberin özeti</div>
-     <p style={{fontFamily:"Georgia,serif",fontSize:19,lineHeight:1.8,margin:"10px 0 0",whiteSpace:"pre-line"}}>{article.editorialSummary||article.summary||"Bu haber için özet bulunmuyor."}</p>
+     <div style={{color:"#986033",fontSize:11,letterSpacing:1.5,fontWeight:800,textTransform:"uppercase"}}>Haberin ayrıntıları</div>
+     <p style={{fontFamily:"Georgia,serif",fontSize:20,lineHeight:1.8,margin:"10px 0 0",whiteSpace:"pre-line"}}>{article.editorialSummary||usefulSourceSummary||narration||"Bu haber için henüz ayrıntılı içerik bulunmuyor."}</p>
+     {usefulSourceSummary&&article.editorialSummary&&usefulSourceSummary!==article.editorialSummary?<p style={{fontSize:16,lineHeight:1.8,margin:"16px 0 0",whiteSpace:"pre-line"}}>{usefulSourceSummary}</p>:null}
+     {narration&&narration!==article.editorialSummary&&narration!==usefulSourceSummary?<p style={{fontSize:16,lineHeight:1.8,margin:"16px 0 0",whiteSpace:"pre-line"}}>{narration}</p>:null}
      {article.whyImportant?<div style={{marginTop:24,padding:18,background:"#f5efe5",borderLeft:"3px solid #bd8958",borderRadius:"0 8px 8px 0"}}><strong style={{fontSize:13}}>Neden önemli?</strong><p style={{margin:"7px 0 0",lineHeight:1.7}}>{article.whyImportant}</p></div>:null}
     </section>
     <section style={{marginTop:26,padding:20,borderTop:"1px solid #d8d0c4",borderBottom:"1px solid #d8d0c4"}}>
      <div style={{fontSize:11,color:"#986033",fontWeight:800,letterSpacing:1.5,marginBottom:8}}>HABER KAYNAĞI</div>
-     <p style={{margin:"0 0 14px",color:"#756d63",lineHeight:1.6}}>Bu sayfadaki içerik, kaynak yayının haberinden derlenen editoryal özettir. Ayrıntılar ve özgün haber metni için kaynağı ziyaret edebilirsiniz.</p>
+     <p style={{margin:"0 0 14px",color:"#756d63",lineHeight:1.6}}>Bu sayfada haberin ULAK tarafından hazırlanmış özeti ve bültendeki ayrıntılı anlatımı yer alır. Haberin özgün metni ve tüm ayrıntıları için kaynak yayını ziyaret edebilirsiniz.</p>
      <a href={article.link} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",padding:"12px 18px",borderRadius:7,background:"#29231d",color:"#fff9ef",fontWeight:700,fontSize:14}}>{article.sourceName} kaynağında haberin tamamı ↗</a>
     </section>
     <div style={{marginTop:24,textAlign:"center",color:"#8a8176",fontSize:12}}>ULAK’TAN HABERLER · Türkiye’den ve dünyadan</div>
