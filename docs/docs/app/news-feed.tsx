@@ -102,20 +102,23 @@ export default function NewsFeed({ initialBulletin }: { initialBulletin: DailyBu
           setError(false);
         }
       } catch {
-        if (active && !bulletin) setError(true);
+        if (active && !initialBulletin) setError(true);
       } finally {
         if (active) setLoading(false);
       }
     }
+    void loadBulletin();
     const refresh = window.setInterval(loadBulletin, 60_000);
     return () => {
       active = false;
       window.clearInterval(refresh);
     };
-  }, [bulletin]);
+  }, []);
 
   if (loading && !bulletin) return <p className="muted">ULAK’TAN HABERLER hazırlanıyor...</p>;
   if (error && !bulletin) return <p className="muted">Haberler şu anda yüklenemiyor. Lütfen biraz sonra yeniden dene.</p>;
+
+  if (!bulletin) return <p className="muted">Haberler şu anda görüntülenemiyor.</p>;
 
   const stories = uniqueStories(bulletin.news);
   return (
