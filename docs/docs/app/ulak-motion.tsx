@@ -212,7 +212,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         ctx.restore();
       }
 
-      if (!reducedMotion && (isWelcome ? elapsed < 3.2 : elapsed < 5.1)) {
+      if (fixedTime === undefined && !reducedMotion && (isWelcome ? elapsed < 3.2 : elapsed < 5.1)) {
         animationFrame = requestAnimationFrame(render);
       } else {
         hasPlayed = true;
