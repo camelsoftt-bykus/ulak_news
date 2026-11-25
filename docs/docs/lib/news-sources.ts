@@ -48,6 +48,69 @@ export const newsSources: NewsSource[] = [
     enabled: true
   },
   {
+    id: "google-sincan-only",
+    name: "Google Haberler - Sincan",
+    region: "local",
+    url: "https://news.google.com/rss/search?q=Sincan+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    rssUrl: "https://news.google.com/rss/search?q=Sincan+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    priority: 1,
+    enabled: true
+  },
+  {
+    id: "google-etimesgut",
+    name: "Google Haberler - Etimesgut",
+    region: "local",
+    url: "https://news.google.com/rss/search?q=Etimesgut+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    rssUrl: "https://news.google.com/rss/search?q=Etimesgut+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    priority: 1,
+    enabled: true
+  },
+  {
+    id: "google-ankara-local",
+    name: "Google Haberler - Ankara yerel",
+    region: "ankara",
+    url: "https://news.google.com/rss/search?q=Ankara+yerel+haber+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    rssUrl: "https://news.google.com/rss/search?q=Ankara+yerel+haber+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    priority: 2,
+    enabled: true
+  },
+  {
+    id: "google-turkey",
+    name: "Google Haberler - Türkiye gündemi",
+    region: "turkey",
+    url: "https://news.google.com/rss/search?q=Türkiye+gündem+OR+son+dakika+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    rssUrl: "https://news.google.com/rss/search?q=Türkiye+gündem+OR+son+dakika+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    priority: 3,
+    enabled: true
+  },
+  {
+    id: "google-turkey-economy",
+    name: "Google Haberler - Türkiye ekonomi",
+    region: "turkey",
+    url: "https://news.google.com/rss/search?q=Türkiye+ekonomi+OR+finans+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    rssUrl: "https://news.google.com/rss/search?q=Türkiye+ekonomi+OR+finans+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    priority: 3,
+    enabled: true
+  },
+  {
+    id: "google-world",
+    name: "Google Haberler - Dünya gündemi",
+    region: "world",
+    url: "https://news.google.com/rss/search?q=dünya+gündem+OR+uluslararası+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    rssUrl: "https://news.google.com/rss/search?q=dünya+gündem+OR+uluslararası+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    priority: 4,
+    enabled: true
+  },
+  {
+    id: "google-science",
+    name: "Google Haberler - Bilim ve teknoloji",
+    region: "science",
+    url: "https://news.google.com/rss/search?q=bilim+OR+teknoloji+OR+uzay+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    rssUrl: "https://news.google.com/rss/search?q=bilim+OR+teknoloji+OR+uzay+when:3d&hl=tr&gl=TR&ceid=TR:tr",
+    priority: 5,
+    enabled: true
+  },
+  {
     id: "google-ankara",
     name: "Google Haberler - Ankara",
     region: "ankara",
