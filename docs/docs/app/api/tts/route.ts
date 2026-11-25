@@ -63,7 +63,7 @@ async function synthesize(text: string): Promise<Buffer> {
           text,
           annotations: [{
             type: "speech_metadata",
-            style: "Professional Turkish television news presenter. Speak fluent, natural standard Turkish with a warm, confident and composed broadcast voice. Clear diction, measured pace, subtle pauses between stories. Sound human and engaging, never robotic or exaggerated. Read the text exactly as written.",
+            style: "Professional Turkish television news presenter. Speak fluent, natural standard Turkish with a warm, confident and composed broadcast voice. Clear diction, measured pace, subtle pauses between stories. Sound human and engaging, never robotic or exaggerated. Read the supplied text exactly as written without adding an introduction or identifying yourself by a personal name. When the text contains the brand name ULAK, pronounce it clearly as 'U-lak' (oo-lahk); do not replace the brand name with a person's name.",
           }],
         }],
       }],
