@@ -1302,71 +1302,124 @@ function drawNewsBackground(){
  * Ses oynatıcısına dokunulmaz; görüntü haber segmentinin süresi boyunca değişir.
  */
 function drawBroadcastImage(item,alpha=1){
- const photo=item&&item.broadcastImage;
- if(!photo||!photo.naturalWidth||!photo.naturalHeight)return false;
+ if(!item)return false;
 
- const scale=Math.max(imgW/photo.naturalWidth,imgH/photo.naturalHeight);
- const dw=photo.naturalWidth*scale;
- const dh=photo.naturalHeight*scale;
- const dx=(imgW-dw)/2;
- const dy=(imgH-dh)/2;
-
+ const photo=item.broadcastImage;
+ const hasPhoto=Boolean(photo&&photo.naturalWidth>0&&photo.naturalHeight>0);
  ctx.save();
  ctx.globalAlpha=alpha;
  ctx.globalCompositeOperation='source-over';
  ctx.fillStyle='#101722';
  ctx.fillRect(0,0,imgW,imgH);
- ctx.drawImage(photo,dx,dy,dw,dh);
 
- const gradient=ctx.createLinearGradient(0,imgH*.62,0,imgH);
+ if(hasPhoto){
+  const scale=Math.max(imgW/photo.naturalWidth,imgH/photo.naturalHeight);
+  const dw=photo.naturalWidth*scale;
+  const dh=photo.naturalHeight*scale;
+  const dx=(imgW-dw)/2;
+  const dy=(imgH-dh)/2;
+  ctx.drawImage(photo,dx,dy,dw,dh);
+ }else{
+  // Lisanslı fotoğraf bulunmadığında boş ekran bırakma: haber metninden
+  // üretilen, gerçek fotoğraf iddiası taşımayan ULAK haber kartını göster.
+  const gradient=ctx.createLinearGradient(0,0,imgW,imgH);
+  gradient.addColorStop(0,'#17283d');
+  gradient.addColorStop(.55,'#26374b');
+  gradient.addColorStop(1,'#111b2a');
+  ctx.fillStyle=gradient;
+  ctx.fillRect(0,0,imgW,imgH);
+
+  ctx.save();
+  ctx.globalAlpha=0.18;
+  ctx.strokeStyle='#ffb347';
+  ctx.lineWidth=Math.max(3,imgW*.006);
+  ctx.beginPath();
+  ctx.arc(imgW*.82,imgH*.28,imgW*.19,0,Math.PI*2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(imgW*.82,imgH*.28,imgW*.13,0,Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+ }
+
+ const gradient=ctx.createLinearGradient(0,imgH*.48,0,imgH);
  gradient.addColorStop(0,'rgba(5,10,18,0)');
- gradient.addColorStop(.32,'rgba(5,10,18,.72)');
- gradient.addColorStop(1,'rgba(5,10,18,.94)');
+ gradient.addColorStop(.28,'rgba(5,10,18,.70)');
+ gradient.addColorStop(1,'rgba(5,10,18,.96)');
  ctx.fillStyle=gradient;
  ctx.fillRect(0,0,imgW,imgH);
 
- const pad=Math.max(24,Math.round(imgW*.045));
- const title=String(item.title||'Günün haberi').trim().slice(0,150);
- const labelSize=Math.max(13,Math.round(imgW*.022));
- const titleSize=Math.max(22,Math.round(imgW*.043));
+ const pad=Math.max(28,Math.round(imgW*.055));
+ const labelSize=Math.max(14,Math.round(imgW*.023));
+ const titleSize=Math.max(26,Math.round(imgW*.048));
  const maxWidth=imgW-pad*2;
+ const title=String(item.title||'Günün haberi').trim().slice(0,180);
+ const summary=String(item.editorialSummary||item.summary||item.whyImportant||'').trim().slice(0,260);
+
+ function wrapLines(value,font,maxLines){
+  ctx.font=font;
+  const words=value.split(/\s+/).filter(Boolean);
+  const lines=[];
+  let line='';
+  for(const word of words){
+   const candidate=line?line+' '+word:word;
+   if(line&&ctx.measureText(candidate).width>maxWidth){
+    lines.push(line);
+    line=word;
+   }else{
+    line=candidate;
+   }
+  }
+  if(line)lines.push(line);
+  return lines.slice(0,maxLines);
+ }
+
+ const titleFont='700 '+titleSize+'px system-ui, sans-serif';
+ const titleLines=wrapLines(title,titleFont,3);
+ const bodySize=Math.max(15,Math.round(imgW*.024));
+ const bodyFont='500 '+bodySize+'px system-ui, sans-serif';
+ const bodyLines=summary?wrapLines(summary,bodyFont,3):[];
+ const bodyLineHeight=bodySize*1.45;
+ const titleLineHeight=titleSize*1.12;
+ const bottomPad=pad*1.35;
+ const bodyHeight=bodyLines.length?bodyLines.length*bodyLineHeight+bodySize*.8:0;
+ const titleHeight=titleLines.length*titleLineHeight;
+ const titleY=imgH-bottomPad-bodyHeight-titleHeight;
 
  ctx.textAlign='left';
  ctx.textBaseline='alphabetic';
- ctx.fillStyle='#fff';
- ctx.font='700 '+titleSize+'px system-ui, sans-serif';
- const words=title.split(/\s+/);
- const lines=[];
- let line='';
- for(const word of words){
-  const candidate=line?line+' '+word:word;
-  if(line&&ctx.measureText(candidate).width>maxWidth){
-   lines.push(line);
-   line=word;
-  }else{
-   line=candidate;
-  }
- }
- if(line)lines.push(line);
- const visibleLines=lines.slice(0,2);
- const titleY=imgH-pad*1.65-(visibleLines.length-1)*titleSize*1.08;
-
  ctx.fillStyle='#ffb347';
  ctx.font='700 '+labelSize+'px system-ui, sans-serif';
- ctx.fillText('ULAK’TAN HABERLER  ·  HABER GÖRÜNTÜSÜ',pad,titleY-titleSize*.82,maxWidth);
+ ctx.fillText('ULAK’TAN HABERLER  ·  GÜNDEM',pad,titleY-titleSize*.8,maxWidth);
 
  ctx.fillStyle='#fff';
- ctx.font='700 '+titleSize+'px system-ui, sans-serif';
- visibleLines.forEach((text,index)=>{
-  ctx.fillText(text,pad,titleY+index*(titleSize*1.08),maxWidth);
+ ctx.font=titleFont;
+ titleLines.forEach((line,index)=>{
+  ctx.fillText(line,pad,titleY+index*titleLineHeight,maxWidth);
  });
 
- const artist=String(item.broadcastImageArtist||item.broadcastImageCredit||'Wikimedia Commons').trim().slice(0,90);
- const license=String(item.broadcastImageLicense||'').trim().slice(0,45);
- const credit='Görsel: '+artist+(license?' · '+license:'');
- ctx.fillStyle='rgba(255,255,255,.86)';
- ctx.font='500 '+Math.max(10,Math.round(imgW*.014))+'px system-ui, sans-serif';
- ctx.fillText(credit,pad,imgH-pad*.55,maxWidth);
+ if(bodyLines.length){
+  ctx.fillStyle='rgba(255,255,255,.88)';
+  ctx.font=bodyFont;
+  const bodyY=titleY+titleHeight+bodySize*.55;
+  bodyLines.forEach((line,index)=>{
+   ctx.fillText(line,pad,bodyY+index*bodyLineHeight,maxWidth);
+  });
+ }
+
+ if(hasPhoto){
+  const artist=String(item.broadcastImageArtist||item.broadcastImageCredit||'Wikimedia Commons').trim().slice(0,90);
+  const license=String(item.broadcastImageLicense||'').trim().slice(0,45);
+  const credit='Görsel: '+artist+(license?' · '+license:'');
+  ctx.fillStyle='rgba(255,255,255,.78)';
+  ctx.font='500 '+Math.max(10,Math.round(imgW*.014))+'px system-ui, sans-serif';
+  ctx.fillText(credit,pad,imgH-pad*.55,maxWidth);
+ }else{
+  ctx.fillStyle='rgba(255,255,255,.72)';
+  ctx.font='500 '+Math.max(11,Math.round(imgW*.015))+'px system-ui, sans-serif';
+  ctx.fillText('Haber kartı · Fotoğraf bulunamadı',pad,imgH-pad*.55,maxWidth);
+ }
+
  ctx.restore();
  return true;
 }
@@ -1395,10 +1448,7 @@ function render(){
 
  // Stüdyo ile haber görseli arasında kısa çapraz geçiş; ses akışı etkilenmez.
  const desiredStoryIndex=
-  currentStoryIndex>=0&&
-  newsSlides[currentStoryIndex]&&
-  newsSlides[currentStoryIndex].broadcastImage&&
-  newsSlides[currentStoryIndex].broadcastImage.naturalWidth
+  currentStoryIndex>=0&&newsSlides[currentStoryIndex]
    ?currentStoryIndex
    :-1;
 
