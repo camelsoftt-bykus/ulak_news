@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type UlakMotionProps = { variant: "welcome" | "farewell" };
-
 type Sprite = { x: number; y: number; w: number; h: number };
 
 const SPRITES = {
-  head: { x: 34, y: 54, w: 350, h: 320 },
-  body: { x: 410, y: 128, w: 210, h: 286 },
-  leftArm: { x: 650, y: 130, w: 170, h: 310 },
-  rightArm: { x: 820, y: 130, w: 170, h: 310 },
-  leftLeg: { x: 112, y: 540, w: 220, h: 410 },
-  rightLeg: { x: 700, y: 540, w: 220, h: 410 },
+  head: { x: 28, y: 48, w: 365, h: 325 },
+  body: { x: 410, y: 118, w: 215, h: 300 },
+  // The sheet supplies complete articulated arm assemblies, not clean elbow-separated layers.
+  leftArm: { x: 650, y: 135, w: 175, h: 315 },
+  rightArm: { x: 835, y: 135, w: 175, h: 315 },
+  leftLeg: { x: 95, y: 545, w: 255, h: 415 },
+  rightLeg: { x: 695, y: 545, w: 240, h: 415 },
 } satisfies Record<string, Sprite>;
 
 function makeKeyedCrop(image: HTMLImageElement, sprite: Sprite) {
@@ -25,12 +25,11 @@ function makeKeyedCrop(image: HTMLImageElement, sprite: Sprite) {
   const frame = context.getImageData(0, 0, sprite.w, sprite.h);
   const pixels = frame.data;
   for (let i = 0; i < pixels.length; i += 4) {
-    const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
-    // Remove the uniform turquoise key while retaining warm orange highlights.
-    if (g > 145 && b > 145 && r < 95 && Math.min(g, b) - r > 75) {
-      pixels[i + 3] = 0;
-    } else if (g > 125 && b > 125 && r < 125 && Math.min(g, b) - r > 42) {
-      pixels[i + 3] = Math.max(0, pixels[i + 3] - 150);
+    const red = pixels[i], green = pixels[i + 1], blue = pixels[i + 2];
+    const chroma = Math.min(green, blue) - red;
+    if (green > 145 && blue > 145 && red < 105 && chroma > 65) pixels[i + 3] = 0;
+    else if (green > 125 && blue > 125 && red < 130 && chroma > 38) {
+      pixels[i + 3] = Math.round(pixels[i + 3] * 0.18);
     }
   }
   context.putImageData(frame, 0, 0);
@@ -40,6 +39,8 @@ function makeKeyedCrop(image: HTMLImageElement, sprite: Sprite) {
 export default function UlakMotion({ variant }: UlakMotionProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
+  const [replayKey, setReplayKey] = useState(0);
+  const replay = useCallback(() => setReplayKey((value) => value + 1), []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -55,94 +56,116 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
     let finished = false;
     let disposed = false;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    const observer = variant === "farewell" && sectionRef.current
-      ? new IntersectionObserver((entries) => {
-          if (entries.some((entry) => entry.isIntersecting) && !visible) {
-            visible = true;
-            startedAt = performance.now();
-            finished = false;
-            raf = requestAnimationFrame(draw);
-          }
-        }, { threshold: 0.45 })
-      : null;
-    if (observer && sectionRef.current) observer.observe(sectionRef.current);
-
     const keyed: Partial<Record<keyof typeof SPRITES, HTMLCanvasElement>> = {};
+
+    const drawPart = (
+      key: keyof typeof SPRITES, x: number, y: number, w: number, h: number,
+      angle = 0, pivotX = w / 2, pivotY = 0,
+    ) => {
+      const part = keyed[key];
+      if (!part) return;
+      context.save();
+      context.translate(x + pivotX, y + pivotY);
+      context.rotate(angle);
+      context.drawImage(part, -pivotX, -pivotY, w, h);
+      context.restore();
+    };
+
     const draw = (now: number) => {
-      if (disposed || !context) return;
+      if (disposed) return;
       if (!startedAt) startedAt = now;
-      const elapsed = visible ? (now - startedAt) / 1000 : 0;
-      const t = reducedMotion ? 5 : elapsed;
-      const fadeIn = variant === "welcome" ? Math.min(1, t / 0.9) : 1;
-      const fadeOut = variant === "farewell" && visible ? Math.max(0, 1 - Math.max(0, t - 3.1) / 0.9) : 1;
-      const opacity = variant === "welcome" ? fadeIn : (visible ? fadeOut : 1);
+      const t = reducedMotion ? 5 : (now - startedAt) / 1000;
+      const fadeIn = variant === "welcome" ? Math.min(1, t / 0.75) : 1;
+      const fadeOut = variant === "farewell" && visible ? Math.max(0, 1 - Math.max(0, t - 3.8) / 0.8) : 1;
       const nod = variant === "welcome"
-        ? (t < 1.2 ? 0 : t < 2.25 ? Math.sin(((t - 1.2) / 1.05) * Math.PI) * 0.13 : 0)
-        : (t > 2.25 && t < 3.0 ? Math.sin(((t - 2.25) / 0.75) * Math.PI) * 0.1 : 0);
-      const armRaise = variant === "welcome"
-        ? (t > 1.1 && t < 2.7 ? -Math.sin(((t - 1.1) / 1.6) * Math.PI) * 0.25 : 0)
-        : (t < 2.6 ? 0 : Math.min(1, (t - 2.6) / 0.55) * -1.12);
+        ? (t > 1.0 && t < 2.25 ? Math.sin(((t - 1.0) / 1.25) * Math.PI) * 0.095 : 0)
+        : (t > 3.0 && t < 3.8 ? Math.sin(((t - 3.0) / 0.8) * Math.PI) * 0.075 : 0);
+      // Slow shoulder lift, then elbow-like angle from the supplied bent arm artwork.
+      const saluteProgress = variant === "farewell" ? Math.max(0, Math.min(1, (t - 1.0) / 1.45)) : 0;
+      const saluteEase = saluteProgress * saluteProgress * (3 - 2 * saluteProgress);
+      const saluteAngle = -saluteEase * 1.12;
+      const bob = reducedMotion ? 0 : Math.sin(now / 850) * 1.2;
 
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.save();
-      context.globalAlpha = opacity;
-      const bob = reducedMotion ? 0 : Math.sin(now / 650) * 2;
-      // Legs and torso form a compact, centered presenter silhouette.
-      const drawPart = (key: keyof typeof SPRITES, x: number, y: number, w: number, h: number, angle = 0, pivotX = w / 2, pivotY = 0) => {
-        const part = keyed[key];
-        if (!part) return;
-        context.save();
-        context.translate(x + pivotX, y + pivotY);
-        context.rotate(angle);
-        context.drawImage(part, -pivotX, -pivotY, w, h);
-        context.restore();
-      };
+      context.globalAlpha = variant === "welcome" ? fadeIn : (visible ? fadeOut : 1);
 
-      drawPart("leftLeg", 158, 305 + bob, 54, 104);
-      drawPart("rightLeg", 211, 305 + bob, 54, 104);
-      drawPart("body", 137, 172 + bob, 150, 190);
-      drawPart("leftArm", 78, 184 + bob, 78, 142, variant === "welcome" ? 0.08 : 0.04, 64, 18);
-      drawPart("rightArm", 264, 184 + bob, 78, 142, armRaise, 14, 18);
-      drawPart("head", 106, 15 + bob, 212, 194, nod, 106, 166);
+      // Back arm first, then legs and torso, so the shoulder sockets tuck behind the body.
+      drawPart("leftArm", 74, 202 + bob, 105, 184, 0.12, 88, 18);
+      drawPart("leftLeg", 163, 365 + bob, 73, 112);
+      drawPart("rightLeg", 226, 365 + bob, 73, 112);
+      drawPart("body", 145, 190 + bob, 190, 218);
+
+      // Saluting arm rotates from its shoulder toward the temple; the head remains unobstructed until the hand arrives.
+      drawPart("rightArm", 286, 202 + bob, 105, 184, saluteAngle, 18, 18);
+      drawPart("head", 105, 18 + bob, 270, 225, nod, 135, 190);
       context.restore();
 
-      if (variant === "welcome" && t > 4.2) finished = true;
-      if (variant === "farewell" && visible && t > 4.1) finished = true;
+      if (variant === "welcome" && t > 3.7) finished = true;
+      if (variant === "farewell" && visible && t > 4.7) finished = true;
       if (variant === "welcome" ? !finished : visible && !finished) raf = requestAnimationFrame(draw);
     };
+
+    const start = () => {
+      visible = true;
+      finished = false;
+      startedAt = performance.now();
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(draw);
+    };
+
+    const observer = variant === "farewell" && sectionRef.current
+      ? new IntersectionObserver((entries) => {
+          if (entries.some((entry) => entry.isIntersecting) && !visible) start();
+        }, { threshold: 0.35 })
+      : null;
+    if (observer && sectionRef.current) observer.observe(sectionRef.current);
 
     image.onload = () => {
       (Object.keys(SPRITES) as Array<keyof typeof SPRITES>).forEach((key) => {
         keyed[key] = makeKeyedCrop(image, SPRITES[key]);
       });
-      startedAt = performance.now();
-      raf = requestAnimationFrame(draw);
+      if (variant === "welcome") start();
+      else {
+        // Keep the farewell character visible in a neutral pose until it enters view.
+        startedAt = performance.now();
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        draw(startedAt);
+        cancelAnimationFrame(raf);
+      }
     };
-    image.onerror = () => {
-      context.clearRect(0, 0, canvas.width, canvas.height);
-    };
+    image.onerror = () => context.clearRect(0, 0, canvas.width, canvas.height);
 
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
       observer?.disconnect();
     };
-  }, [variant]);
+  }, [variant, replayKey]);
 
   return (
     <section
       ref={sectionRef}
-      aria-label={variant === "welcome" ? "ULAK karşılama animasyonu" : "ULAK selamlama animasyonu"}
+      aria-label={variant === "welcome" ? "ULAK karşılama animasyonu" : "ULAK asker selamıyla veda animasyonu"}
       className={`ulak-motion ulak-motion--${variant}`}
     >
-      <div className="ulak-motion__character">
-        <canvas ref={canvasRef} width={420} height={430} role="img" aria-label="Turuncu ve krem renkli ULAK robot karakteri" />
-      </div>
+      <button
+        type="button"
+        className="ulak-motion__replay"
+        onClick={replay}
+        aria-label="ULAK animasyonunu yeniden oynat"
+        title="Tekrar oynat"
+      >
+        <span className="ulak-motion__character">
+          <canvas ref={canvasRef} width={480} height={470} role="img" aria-label="ULAK robot karakteri; dokunarak selamını tekrar izleyin" />
+          <span className="ulak-motion__tap-hint">↻ Tekrar izle</span>
+        </span>
+      </button>
       <div className="ulak-motion__copy">
         <span>{variant === "welcome" ? "ULAK’TAN HABERLER" : "BİZİ TAKİPTE KALIN"}</span>
         <strong>{variant === "welcome" ? "Merhaba, ben ULAK." : "Bir sonraki haberde görüşmek üzere."}</strong>
         <p>{variant === "welcome" ? "Günün gelişmelerini sizin için takip ediyorum." : "Güvenilir haber için ULAK’tan ayrılmayın."}</p>
+        <small>Karaktere dokunarak animasyonu tekrar oynatabilirsiniz.</small>
       </div>
     </section>
   );
