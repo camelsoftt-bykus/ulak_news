@@ -3,9 +3,9 @@ import NewsFeed from "./news-feed";
 
 type Bulletin = {
   generatedAt?: string;
-  count?: number;
-  script?: string;
-  news?: Array<{
+  count: number;
+  script: string;
+  news: Array<{
     sourceId: string;
     sourceName: string;
     title: string;
