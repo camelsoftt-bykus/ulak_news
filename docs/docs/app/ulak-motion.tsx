@@ -155,7 +155,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       let beamOpacity = 0;
       let characterOpacity = 1;
       let characterY = 0;
-      let characterScale = 1;
+      // Global 0.7 multiplier: shrink the complete character by 30%.
+      let characterScale = 0.7;
       let headNod = 0;
       let saluteProgress = 0;
 
@@ -167,7 +168,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         const arrival = smoothstep(0.62, 1.85, elapsed);
         characterOpacity = smoothstep(0.62, 1.2, elapsed);
         characterY = (1 - arrival) * -118;
-        characterScale = 0.82 + arrival * 0.18;
+        characterScale = 0.7 * (0.82 + arrival * 0.18);
         if (elapsed >= 1.9 && elapsed <= 2.8) {
           headNod = Math.sin(((elapsed - 1.9) / 0.9) * Math.PI) * 0.075;
         }
@@ -182,7 +183,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
           (1 - smoothstep(4.45, 5.05, elapsed));
         const departure = smoothstep(2.85, 4.25, elapsed);
         characterY = -departure * 178;
-        characterScale = 1 - departure * 0.2;
+        characterScale = 0.7 * (1 - departure * 0.2);
         characterOpacity = 1 - smoothstep(3.45, 4.35, elapsed);
       }
 
