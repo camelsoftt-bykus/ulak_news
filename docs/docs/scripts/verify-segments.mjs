@@ -6,30 +6,30 @@ import { execFile } from "node:child_process";
 const execFileAsync = promisify(execFile);
 
 export async function verifySegments({ daily, dataDir, ffprobePath = "ffprobe" }) {
-  if (!Array.isArray(daily?.news) || daily.news.length !== 8) {
-    throw new Error("Tam 8 haber gerekli.");
+  if (!Array.isArray(daily?.news) || daily.news.length > 10) {
+    throw new Error("0-10 haber gerekli.");
   }
-  if (!Array.isArray(daily?.speechSegments) || daily.speechSegments.length !== 10) {
-    throw new Error("Tam 10 speechSegments gerekli.");
+  if (!Array.isArray(daily?.speechSegments) || daily.speechSegments.length !== daily.news.length + 2) {
+    throw new Error("Haber sayısı + açılış/kapanış kadar speechSegments gerekli.");
   }
 
   const types = daily.speechSegments.map((segment) => segment?.type);
   if (
     types[0] !== "intro" ||
-    types.slice(1, 9).some((type) => type !== "story") ||
-    types[9] !== "closing"
+    types.slice(1, -1).some((type) => type !== "story") ||
+    types[types.length - 1] !== "closing"
   ) {
     throw new Error("Ses bölümleri intro + 8 story + closing sıralamasında değil.");
   }
 
   const expected = Array.from(
-    { length: 10 },
+    { length: daily.speechSegments.length },
     (_, index) => `seg-${String(index).padStart(2, "0")}.wav`
   );
 
   if (
     !Array.isArray(daily.audioSegments) ||
-    daily.audioSegments.length !== 10 ||
+    daily.audioSegments.length !== expected.length ||
     expected.some((filename, index) => daily.audioSegments[index] !== filename)
   ) {
     throw new Error("audioSegments tam olarak seg-00.wav ile seg-09.wav olmalı.");
@@ -38,8 +38,8 @@ export async function verifySegments({ daily, dataDir, ffprobePath = "ffprobe" }
   const actual = fs.readdirSync(dataDir)
     .filter((filename) => /^seg-\d+\.wav$/.test(filename))
     .sort();
-  if (actual.length !== 10 || expected.some((filename, index) => actual[index] !== filename)) {
-    throw new Error(`Diskte tam 10 WAV gerekli; bulunan: ${actual.length}.`);
+  if (actual.length !== expected.length || expected.some((filename, index) => actual[index] !== filename)) {
+    throw new Error(`Diskte ${expected.length} WAV gerekli; bulunan: ${actual.length}.`);
   }
 
   for (const filename of expected) {
@@ -65,5 +65,5 @@ export async function verifySegments({ daily, dataDir, ffprobePath = "ffprobe" }
     }
   }
 
-  return { newsCount: 8, segmentCount: 10, wavCount: 10 };
+  return { newsCount: daily.news.length, segmentCount: expected.length, wavCount: expected.length };
 }
