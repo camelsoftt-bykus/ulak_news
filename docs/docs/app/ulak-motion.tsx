@@ -87,26 +87,50 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       // UFO light cone: the craft stays off-screen; only its soft beam is visible.
       if (beam > 0.01) {
         ctx.save();
-        ctx.globalAlpha = Math.min(0.88, beam * 0.9);
-        const top = ctx.createRadialGradient(240, 0, 5, 240, 0, 250);
-        top.addColorStop(0, "rgba(226,255,218,0.98)");
-        top.addColorStop(0.22, "rgba(139,255,120,0.72)");
-        top.addColorStop(0.58, "rgba(58,220,94,0.38)");
-        top.addColorStop(1, "rgba(25,190,90,0)");
+        ctx.globalAlpha = Math.min(1, beam * 1.12);
+        const top = ctx.createLinearGradient(0, 0, 0, 470);
+        top.addColorStop(0, "rgba(235,255,210,0.98)");
+        top.addColorStop(0.16, "rgba(145,255,0,0.88)");
+        top.addColorStop(0.52, "rgba(70,255,0,0.62)");
+        top.addColorStop(0.86, "rgba(45,220,20,0.42)");
+        top.addColorStop(1, "rgba(80,255,30,0.08)");
         ctx.fillStyle = top;
         ctx.beginPath();
-        ctx.moveTo(205, 0);
-        ctx.lineTo(35, 435);
-        ctx.quadraticCurveTo(240, 470, 445, 435);
-        ctx.lineTo(275, 0);
+        ctx.moveTo(207, 0);
+        ctx.lineTo(28, 438);
+        ctx.quadraticCurveTo(240, 478, 452, 438);
+        ctx.lineTo(273, 0);
         ctx.closePath();
         ctx.fill();
-        const glow = ctx.createRadialGradient(240, 390, 8, 240, 390, 205);
-        glow.addColorStop(0, "rgba(190,255,150,0.62)");
-        glow.addColorStop(0.48, "rgba(66,235,112,0.22)");
-        glow.addColorStop(1, "rgba(35,210,105,0)");
+        const core = ctx.createLinearGradient(0, 0, 0, 455);
+        core.addColorStop(0, "rgba(248,255,225,0.95)");
+        core.addColorStop(0.35, "rgba(170,255,40,0.68)");
+        core.addColorStop(1, "rgba(110,255,20,0.04)");
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.moveTo(232, 0);
+        ctx.lineTo(178, 430);
+        ctx.quadraticCurveTo(240, 445, 302, 430);
+        ctx.lineTo(248, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowColor = "rgba(105,255,0,0.9)";
+        ctx.shadowBlur = 30;
+        ctx.strokeStyle = "rgba(190,255,70,0.9)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(207, 0);
+        ctx.lineTo(28, 438);
+        ctx.moveTo(273, 0);
+        ctx.lineTo(452, 438);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        const glow = ctx.createRadialGradient(240, 390, 8, 240, 390, 220);
+        glow.addColorStop(0, "rgba(190,255,80,0.82)");
+        glow.addColorStop(0.42, "rgba(100,255,0,0.42)");
+        glow.addColorStop(1, "rgba(35,255,0,0)");
         ctx.fillStyle = glow;
-        ctx.fillRect(0, 210, 480, 260);
+        ctx.fillRect(0, 190, 480, 280);
         ctx.restore();
       }
 
@@ -123,10 +147,11 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       part("legRight", 242, 322, 78, 132);
       part("torso", 153, 174, 174, 220);
 
-      // Shoulder caps overlap the torso edge intentionally, hiding cut seams.
-      // Character's right arm is on the viewer's left and performs the salute.
-      part("armRight", 73, 177, 112, 202, saluteAngle, 99, 28);
-      part("armLeft", 295, 177, 112, 202, 0, 13, 28, true);
+      // Keep each complete shoulder-to-hand sprite intact: rotating the whole arm
+      // at the shoulder avoids the disconnected elbow/wrist artifacts of false joint cuts.
+      // The viewer-left arm is the character's right arm and performs the salute.
+      part("armRight", 76, 166, 112, 202, saluteAngle, 94, 22);
+      part("armLeft", 292, 166, 112, 202, 0, 18, 22);
       part("head", 112, 8, 256, 207, nod, 128, 188);
       ctx.restore();
 
