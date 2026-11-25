@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import NewsFeed from "./news-feed";
 
+type Bulletin = {
+  generatedAt?: string;
+  news?: Array<{ title?: string }>;
+};
+
 const sections = [
   { name: "Sincan & Etimesgut", id: "yerel-gundem" },
   { name: "Ankara", id: "ankara" },
@@ -13,7 +18,7 @@ const sections = [
 ];
 
 export default function Home() {
-  const [presenterReady, setPresenterReady] = useState(false);
+  const [bulletin, setBulletin] = useState<Bulletin | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -22,18 +27,10 @@ export default function Home() {
         if (!response.ok) throw new Error("Bülten alınamadı");
         return response.json();
       })
-      .then((data) => {
-        const script = typeof data.script === "string" ? data.script : "";
-        // Eski, kaynak URL'lerini seslendiren bültenleri yeni sunum gibi göstermeyiz.
-        if (active) setPresenterReady(
-          Array.isArray(data.news) &&
-          Boolean(data.generatedAt) &&
-          !/kaynaklar\s*:/i.test(script) &&
-          !/https?:\/\//i.test(script) &&
-          data.news.length > 0
-        );
+      .then((data: Bulletin) => {
+        if (active && data && Array.isArray(data.news) && data.generatedAt) setBulletin(data);
       })
-      .catch(() => { if (active) setPresenterReady(false); });
+      .catch(() => { if (active) setBulletin(null); });
     return () => { active = false; };
   }, []);
 
@@ -41,6 +38,12 @@ export default function Home() {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
     timeZone: "Europe/Istanbul",
   }).format(new Date());
+  const version = bulletin?.generatedAt ? encodeURIComponent(bulletin.generatedAt) : "";
+  const publishedAt = bulletin?.generatedAt
+    ? new Intl.DateTimeFormat("tr-TR", {
+        dateStyle: "long", timeStyle: "short", timeZone: "Europe/Istanbul",
+      }).format(new Date(bulletin.generatedAt))
+    : "";
 
   return (
     <main style={{ color: "#24211e" }}>
@@ -67,11 +70,37 @@ export default function Home() {
               <img src="/1795512817665.jpg" alt="ULAK, Baş Haber Editörü" style={{ width: 116, height: 116, objectFit: "cover", objectPosition: "center", borderRadius: 12, border: "1px solid #8b684b", boxShadow: "0 8px 24px #0008" }} />
               <div><div style={{ fontFamily: "Georgia, serif", fontSize: 25, fontWeight: 800, color: "#fff9ef" }}>ULAK</div><div style={{ marginTop: 4, color: "#e6ad70", fontSize: 12, letterSpacing: 1.5, fontWeight: 800, textTransform: "uppercase" }}>Baş Haber Editörü</div></div>
             </div>
-            <div style={{ fontSize: 11, letterSpacing: 2.5, fontWeight: 800, color: "#e6ad70" }}>GÜNÜN MANŞETLERİ</div>
-            <h2 id="ulak-sunuyor" style={{ fontFamily: "Georgia, serif", fontSize: "clamp(23px, 3vw, 31px)", margin: "6px 0 4px", color: "#fff9ef" }}>ULAK’ın yazılı haber bülteni</h2>
-            <p style={{ margin: 0, color: "#c8bdae", fontSize: 14 }}>Video ve ses üretimi şimdilik kapalı. Güncel haberleri ve kaynaklarını aşağıda okuyabilirsiniz.</p>
+            <div style={{ fontSize: 11, letterSpacing: 2.5, fontWeight: 800, color: "#e6ad70" }}>GÜNÜN VİDEOLU BÜLTENİ</div>
+            <h2 id="ulak-sunuyor" style={{ fontFamily: "Georgia, serif", fontSize: "clamp(23px, 3vw, 31px)", margin: "6px 0 4px", color: "#fff9ef" }}>ULAK’tan Haberler</h2>
+            <p style={{ margin: 0, color: "#c8bdae", fontSize: 14 }}>
+              {publishedAt ? `Son bülten: ${publishedAt} · ${bulletin?.news?.length ?? 0} haber` : "Yeni video bülteni hazırlandığında burada yayımlanacak."}
+            </p>
           </div>
-          <div style={{ padding: 18, color: "#e7d9c8", fontSize: 14, lineHeight: 1.7 }}><p style={{ margin: 0 }}>ULAK, Sincan ve Etimesgut başta olmak üzere Ankara’dan, Türkiye’den ve dünyadan önemli gelişmeleri derliyor. Her haberin özeti ve kaynağı aşağıdaki haber akışında yer alıyor.</p></div>
+          {bulletin?.generatedAt ? (
+            <div style={{ padding: 16 }}>
+              <video
+                key={version}
+                controls
+                playsInline
+                preload="metadata"
+                poster={`/data/daily-poster.jpg?v=${version}`}
+                style={{ display: "block", width: "100%", maxHeight: 620, background: "#090807", borderRadius: 8 }}
+                aria-label="ULAK günlük video haber bülteni"
+              >
+                <source src={`/data/daily.mp4?v=${version}`} type="video/mp4" />
+                Tarayıcınız video oynatmayı desteklemiyor.
+              </video>
+              <p style={{ margin: "12px 2px 0", color: "#c8bdae", fontSize: 13 }}>
+                {bulletin?.news?.length === 0
+                  ? "Bu yayında doğrulanabilir önemli haber bulunamadı; ULAK kısa bir bilgilendirme ve kapanış sunuyor."
+                  : "ULAK, seçilen haberleri stüdyo sunumu ve haber görselleriyle aktarıyor."}
+              </p>
+            </div>
+          ) : (
+            <div style={{ padding: 20, color: "#c8bdae", fontSize: 14, lineHeight: 1.7 }}>
+              Yeni video henüz yayımlanmadı. Son başarılı yayın hazır olduğunda video oynatıcı burada görünecek.
+            </div>
+          )}
         </section>
         <NewsFeed />
       </section>
