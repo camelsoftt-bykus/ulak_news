@@ -428,8 +428,8 @@ ${newsText}
 
     // Açılış, bültenin başında hesaplanan Türkiye saati sürümünü kullanır.
     const intro = edition === "morning"
-      ? "Günaydın! ULAK’TAN HABERLER başlıyor. Türkiye’den ve dünyadan, güne başlarken bilmeniz gereken gelişmeleri aktarıyoruz."
-      : "İyi akşamlar! ULAK’TAN HABERLER başlıyor. Günün öne çıkan gelişmelerini, önemli ayrıntılarıyla birlikte aktarıyoruz.";
+      ? "Günaydın! Ben ULAK. ULAK Haber Merkezi’nden Türkiye’den ve dünyadan, güne başlarken bilmeniz gereken gelişmeleri aktarıyorum."
+      : "İyi akşamlar! Ben ULAK. ULAK Haber Merkezi’nden günün öne çıkan gelişmelerini, önemli ayrıntılarıyla birlikte aktarıyorum.";
 
     const closing =
       cleanNarration(result.closing) ||
