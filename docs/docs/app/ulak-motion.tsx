@@ -89,9 +89,10 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         ctx.save();
         ctx.globalAlpha = Math.min(0.88, beam * 0.9);
         const top = ctx.createRadialGradient(240, 0, 5, 240, 0, 250);
-        top.addColorStop(0, "rgba(255,255,225,0.95)");
-        top.addColorStop(0.45, "rgba(255,226,153,0.42)");
-        top.addColorStop(1, "rgba(255,205,120,0)");
+        top.addColorStop(0, "rgba(226,255,218,0.98)");
+        top.addColorStop(0.22, "rgba(139,255,120,0.72)");
+        top.addColorStop(0.58, "rgba(58,220,94,0.38)");
+        top.addColorStop(1, "rgba(25,190,90,0)");
         ctx.fillStyle = top;
         ctx.beginPath();
         ctx.moveTo(205, 0);
@@ -100,9 +101,10 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         ctx.lineTo(275, 0);
         ctx.closePath();
         ctx.fill();
-        const glow = ctx.createRadialGradient(240, 390, 12, 240, 390, 180);
-        glow.addColorStop(0, "rgba(255,245,190,0.5)");
-        glow.addColorStop(1, "rgba(255,220,150,0)");
+        const glow = ctx.createRadialGradient(240, 390, 8, 240, 390, 205);
+        glow.addColorStop(0, "rgba(190,255,150,0.62)");
+        glow.addColorStop(0.48, "rgba(66,235,112,0.22)");
+        glow.addColorStop(1, "rgba(35,210,105,0)");
         ctx.fillStyle = glow;
         ctx.fillRect(0, 210, 480, 260);
         ctx.restore();
