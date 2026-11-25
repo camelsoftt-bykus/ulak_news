@@ -63,6 +63,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
             visible = true;
             startedAt = performance.now();
             finished = false;
+            raf = requestAnimationFrame(draw);
           }
         }, { threshold: 0.45 })
       : null;
@@ -76,7 +77,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       const t = reducedMotion ? 5 : elapsed;
       const fadeIn = variant === "welcome" ? Math.min(1, t / 0.9) : 1;
       const fadeOut = variant === "farewell" && visible ? Math.max(0, 1 - Math.max(0, t - 3.1) / 0.9) : 1;
-      const opacity = variant === "welcome" ? fadeIn : (visible ? fadeOut : 0.25);
+      const opacity = variant === "welcome" ? fadeIn : (visible ? fadeOut : 1);
       const nod = variant === "welcome"
         ? (t < 1.2 ? 0 : t < 2.25 ? Math.sin(((t - 1.2) / 1.05) * Math.PI) * 0.13 : 0)
         : (t > 2.25 && t < 3.0 ? Math.sin(((t - 2.25) / 0.75) * Math.PI) * 0.1 : 0);
@@ -109,8 +110,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
       if (variant === "welcome" && t > 4.2) finished = true;
       if (variant === "farewell" && visible && t > 4.1) finished = true;
-      if (!finished || variant === "welcome") raf = requestAnimationFrame(draw);
-      else if (variant === "farewell") raf = requestAnimationFrame(draw);
+      if (variant === "welcome" ? !finished : visible && !finished) raf = requestAnimationFrame(draw);
     };
 
     image.onload = () => {
