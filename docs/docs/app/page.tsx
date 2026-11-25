@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import NewsFeed from "./news-feed";
+import UlakMotion from "./ulak-motion";
 
 type Bulletin = {
   generatedAt?: string;
@@ -67,6 +68,7 @@ export default function Home() {
           </nav>
         </div>
       </header>
+      <UlakMotion variant="welcome" />
       <section className="container" style={{ paddingTop: 28, paddingBottom: 12 }}>
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontSize: 11, letterSpacing: 3, fontWeight: 800, color: "#9a5c2c" }}>ULAK’TAN HABERLER · GÜNÜN GAZETESİ</div>
@@ -113,6 +115,7 @@ export default function Home() {
         </section>
         <NewsFeed />
       </section>
+      <UlakMotion variant="farewell" />
       <footer style={{ marginTop: 36, borderTop: "3px double #3b352e", background: "#f2ece1" }}>
         <div className="container" style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", paddingTop: 22, paddingBottom: 22, color: "#71695f", fontSize: 12 }}>
           <strong style={{ fontFamily: "Georgia, serif", fontSize: 20, color: "#29231d" }}>ULAK’TAN HABERLER</strong>
