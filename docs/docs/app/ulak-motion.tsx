@@ -178,9 +178,11 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         if (elapsed >= 1.75 && elapsed <= 2.5) {
           headNod = Math.sin(((elapsed - 1.75) / 0.75) * Math.PI) * 0.065;
         }
-        beamDescent = smoothstep(2.0, 2.72, elapsed);
+        const beamArrival = smoothstep(2.0, 2.72, elapsed);
+        const beamRetraction = smoothstep(4.35, 5.35, elapsed);
+        beamDescent = beamArrival * (1 - beamRetraction);
         beamOpacity = smoothstep(2.0, 2.35, elapsed) *
-          (1 - smoothstep(4.45, 5.05, elapsed));
+          (1 - smoothstep(4.85, 5.65, elapsed));
         const departure = smoothstep(2.85, 4.25, elapsed);
         characterY = -departure * 178;
         characterScale = 0.7 * (1 - departure * 0.2);
@@ -206,14 +208,14 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
         // Viewer-left arm is the character's right arm and performs the salute.
         // This is a shoulder rotation only; a separate elbow bend needs a split sprite.
-        drawPart("armLeft", 76, 204, 112, 204, -saluteProgress * 0.98, 94, 22);
-        drawPart("armRight", 292, 204, 112, 204, 0, 18, 22);
+        drawPart("armLeft", 76, 224, 112, 204, -saluteProgress * 0.98, 94, 22);
+        drawPart("armRight", 292, 224, 112, 204, 0, 18, 22);
         drawPart("head", 112, 8, 256, 207, headNod, 128, 188);
 
         ctx.restore();
       }
 
-      if (fixedTime === undefined && !reducedMotion && (isWelcome ? elapsed < 3.2 : elapsed < 5.1)) {
+      if (fixedTime === undefined && !reducedMotion && (isWelcome ? elapsed < 3.2 : elapsed < 5.7)) {
         animationFrame = requestAnimationFrame(render);
       } else {
         hasPlayed = true;
