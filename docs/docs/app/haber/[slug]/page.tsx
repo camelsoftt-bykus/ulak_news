@@ -27,10 +27,12 @@ export default function ArticlePage() {
     <div style={{color:"#82796e",fontSize:13,marginBottom:24}}>{article.sourceName}{dateLabel(article.publishedAt)?" · "+dateLabel(article.publishedAt):""}</div>
     {article.imageUrl?<img src={"/api/news-image?url="+encodeURIComponent(article.imageUrl)} alt={article.imageTitle||article.title} referrerPolicy="no-referrer" onError={event=>{const image=event.currentTarget;if(article.fallbackImageUrl&&image.dataset.fallback!=="used"){image.dataset.fallback="used";image.src="/api/news-image?url="+encodeURIComponent(article.fallbackImageUrl);image.alt=article.fallbackImageTitle||article.title;}else image.style.display="none";}} style={{display:"block",width:"100%",maxHeight:480,objectFit:"cover",borderRadius:10,background:"#eee7dc",marginBottom:28}}/>:null}
     <section style={{padding:"24px clamp(18px,4vw,34px)",border:"1px solid #ded5c9",borderRadius:10,background:"#fffdf8"}}>
-     <div style={{color:"#986033",fontSize:11,letterSpacing:1.5,fontWeight:800,textTransform:"uppercase"}}>Haberin ayrıntıları</div>
-     <p style={{fontFamily:"Georgia,serif",fontSize:20,lineHeight:1.8,margin:"10px 0 0",whiteSpace:"pre-line"}}>{article.editorialSummary||usefulSourceSummary||narration||"Bu haber için henüz ayrıntılı içerik bulunmuyor."}</p>
-     {usefulSourceSummary&&article.editorialSummary&&usefulSourceSummary!==article.editorialSummary?<p style={{fontSize:16,lineHeight:1.8,margin:"16px 0 0",whiteSpace:"pre-line"}}>{usefulSourceSummary}</p>:null}
-     {narration&&narration!==article.editorialSummary&&narration!==usefulSourceSummary?<p style={{fontSize:16,lineHeight:1.8,margin:"16px 0 0",whiteSpace:"pre-line"}}>{narration}</p>:null}
+     <div style={{color:"#986033",fontSize:11,letterSpacing:1.5,fontWeight:800,textTransform:"uppercase"}}>{detailedSummary?"Kaynak haber okunarak hazırlandı":"Haberin ayrıntıları"}</div>
+     {summaryLoading?<p style={{margin:"10px 0 0",color:"#82796e",fontSize:14}}>Kaynak haber inceleniyor, ULAK’ın ayrıntılı özeti hazırlanıyor…</p>:null}
+     <p style={{fontFamily:"Georgia,serif",fontSize:20,lineHeight:1.8,margin:"10px 0 0",whiteSpace:"pre-line"}}>{detailedSummary||article.editorialSummary||usefulSourceSummary||narration||"Bu haber için henüz ayrıntılı içerik bulunmuyor."}</p>
+     {!detailedSummary&&usefulSourceSummary&&article.editorialSummary&&usefulSourceSummary!==article.editorialSummary?<p style={{fontSize:16,lineHeight:1.8,margin:"16px 0 0",whiteSpace:"pre-line"}}>{usefulSourceSummary}</p>:null}
+     {!detailedSummary&&narration&&narration!==article.editorialSummary&&narration!==usefulSourceSummary?<p style={{fontSize:16,lineHeight:1.8,margin:"16px 0 0",whiteSpace:"pre-line"}}>{narration}</p>:null}
+     {detailedSummary?<p style={{margin:"18px 0 0",fontSize:12,color:"#82796e"}}>ULAK editoryal özeti, kaynak haberin erişilebilen içeriği okunarak özgün biçimde hazırlanmıştır.</p>:null}
      {article.whyImportant?<div style={{marginTop:24,padding:18,background:"#f5efe5",borderLeft:"3px solid #bd8958",borderRadius:"0 8px 8px 0"}}><strong style={{fontSize:13}}>Neden önemli?</strong><p style={{margin:"7px 0 0",lineHeight:1.7}}>{article.whyImportant}</p></div>:null}
     </section>
     <section style={{marginTop:26,padding:20,borderTop:"1px solid #d8d0c4",borderBottom:"1px solid #d8d0c4"}}>
