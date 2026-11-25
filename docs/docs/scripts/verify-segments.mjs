@@ -19,7 +19,7 @@ export async function verifySegments({ daily, dataDir, ffprobePath = "ffprobe" }
     types.slice(1, -1).some((type) => type !== "story") ||
     types[types.length - 1] !== "closing"
   ) {
-    throw new Error("Ses bölümleri intro + 8 story + closing sıralamasında değil.");
+    throw new Error("Ses bölümleri intro + haber sayısı kadar story + closing sıralamasında değil.");
   }
 
   const expected = Array.from(
@@ -32,7 +32,7 @@ export async function verifySegments({ daily, dataDir, ffprobePath = "ffprobe" }
     daily.audioSegments.length !== expected.length ||
     expected.some((filename, index) => daily.audioSegments[index] !== filename)
   ) {
-    throw new Error("audioSegments tam olarak seg-00.wav ile seg-09.wav olmalı.");
+    throw new Error("audioSegments, konuşma bölümü sayısıyla eşleşen seg-XX.wav dosyaları olmalı.");
   }
 
   const actual = fs.readdirSync(dataDir)
