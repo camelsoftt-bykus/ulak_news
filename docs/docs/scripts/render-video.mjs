@@ -232,8 +232,8 @@ async function main() {
     console.log(
       `Yüklenen haber görseli: ${imageStats.loaded}; tam ekran yayın görseli: ${imageStats.broadcast}`
     );
-    if (imageStats.loaded === 0 && imageStats.broadcast === 0) {
-      throw new Error("Hiçbir haber görseli yüklenmedi; görselsiz video yayınlanmayacak.");
+    if (daily.news.length > 0 && imageStats.loaded === 0 && imageStats.broadcast === 0) {
+      throw new Error("Haber var ancak hiçbir haber görseli yüklenmedi; eksik görselli video yayınlanmayacak.");
     }
 
     let audioDuration = 0;
