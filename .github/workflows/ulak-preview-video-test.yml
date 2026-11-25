@@ -1,0 +1,115 @@
+name: ULAK Test Video Üretimi (Preview)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ulak-preview-video-test
+  cancel-in-progress: false
+
+jobs:
+  render-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Depoyu indir
+        uses: actions/checkout@v4
+        with:
+          ref: test/ulak-video-preview-generation
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: FFmpeg ve Chromium kur
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Bağımlılıkları kur
+        working-directory: docs/docs
+        run: |
+          npm install --no-save --package-lock=false
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+
+      - name: Preview servisinden haber metnini al
+        shell: bash
+        env:
+          PREVIEW_URL: https://ulaknews-docs-bw7zxdwr3-camelsoftt-bykus.vercel.app
+        run: |
+          set -euo pipefail
+          mkdir -p docs/docs/public/data
+          code=$(curl --silent --show-error --connect-timeout 20 --max-time 180 \
+            --output /tmp/presenter.json --write-out "%{http_code}" \
+            "$PREVIEW_URL/api/presenter")
+          if [ "$code" != "200" ]; then
+            echo "::error::Preview haber servisi HTTP $code döndürdü."
+            cat /tmp/presenter.json
+            exit 1
+          fi
+          jq -e '
+            (.script | type == "string" and length > 0) and
+            (.news | type == "array" and length <= 10) and
+            (.speechSegments | type == "array" and length == (.news | length) + 2) and
+            .speechSegments[0].type == "intro" and
+            .speechSegments[-1].type == "closing"
+          ' /tmp/presenter.json >/dev/null
+          jq --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '. + {generatedAt: $generatedAt, audioSegments: [range(0;(.speechSegments|length)) | "seg-" + (tostring | if length == 1 then "0" + . else . end) + ".wav"]}' \
+            /tmp/presenter.json > docs/docs/public/data/daily.json
+          jq -r '.speechSegments | length' docs/docs/public/data/daily.json
+
+      - name: Yeni ses bölümlerini Preview TTS ile üret
+        working-directory: docs/docs
+        env:
+          PREVIEW_URL: https://ulaknews-docs-bw7zxdwr3-camelsoftt-bykus.vercel.app
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f public/data/seg-*.wav public/data/daily.wav
+          count=$(jq -r '.speechSegments | length' public/data/daily.json)
+          for i in $(seq 0 $((count - 1))); do
+            index=$(printf "%02d" "$i")
+            jq -n --arg text "$(jq -r ".speechSegments[$i].text" public/data/daily.json)" '{text:$text}' > "/tmp/tts-$index.json"
+            code=$(curl --silent --show-error --connect-timeout 20 --max-time 150 \
+              --output "public/data/seg-$index.wav" --write-out "%{http_code}" \
+              -H "Content-Type: application/json" --data-binary "@/tmp/tts-$index.json" \
+              "$PREVIEW_URL/api/tts")
+            if [ "$code" != "200" ] || [ ! -s "public/data/seg-$index.wav" ]; then
+              echo "::error::Preview TTS bölüm $index başarısız; HTTP $code."
+              cat "public/data/seg-$index.wav" || true
+              exit 1
+            fi
+            echo "Preview TTS: $((i+1))/$count"
+          done
+
+      - name: Videoyu Preview animasyonuyla üret
+        working-directory: docs/docs
+        env:
+          ULAK_ANIMATION_URL: https://ulaknews-docs-bw7zxdwr3-camelsoftt-bykus.vercel.app/animasyon.html
+        run: node scripts/render-video.mjs
+
+      - name: Çıktıları doğrula
+        working-directory: docs/docs
+        run: |
+          set -euo pipefail
+          test -s public/data/daily.mp4
+          test -s public/data/daily-poster.jpg
+          ffprobe -v error -show_entries format=duration -of csv=p=0 public/data/daily.mp4
+          echo "Test videosu hazır; canlı siteye veya Git dalına yayımlanmadı."
+
+      - name: Test çıktısını artifact olarak sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: ulak-preview-test-video
+          path: |
+            docs/docs/public/data/daily.mp4
+            docs/docs/public/data/daily-poster.jpg
+            docs/docs/public/data/daily.json
+            docs/docs/public/data/seg-*.wav
+          retention-days: 7
