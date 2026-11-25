@@ -1,0 +1,43 @@
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+
+type NewsItem = { sourceId:string; sourceName:string; title:string; link:string; summary:string; editorialSummary?:string; whyImportant?:string; publishedAt:string|null; imageUrl?:string; imageTitle?:string; fallbackImageUrl?:string; fallbackImageTitle?:string };
+type DailyBulletin = { news:NewsItem[]; generatedAt?:string };
+const categories:Record<string,string> = { sincan:"Sincan", etimesgut:"Etimesgut", "google-sincan":"Sincan & Etimesgut", ankara:"Ankara", "google-ankara":"Ankara", "trt-turkiye":"Türkiye", "aa-guncel":"Türkiye", "bbc-turkce":"Türkiye", "trt-dunya":"Dünya", "aa-dunya":"Dünya", "bbc-dunya":"Dünya", tubitak:"Bilim & Teknoloji", "tubitak-uzay":"Bilim & Uzay", "trt-uzay":"Bilim & Uzay", nasa:"Bilim & Uzay" };
+function storySlug(item:NewsItem) { const title=item.title.toLocaleLowerCase("tr-TR").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,80); return `${title}-${item.sourceId}`; }
+function dateLabel(value:string|null) { if(!value)return ""; const date=new Date(value); return Number.isNaN(date.getTime())?"":date.toLocaleString("tr-TR",{timeZone:"Europe/Istanbul",dateStyle:"long",timeStyle:"short"}); }
+
+export default function ArticlePage() {
+ const params=useParams<{slug:string}>(); const slug=decodeURIComponent(params.slug);
+ const [stories,setStories]=useState<NewsItem[]|null>(null); const [failed,setFailed]=useState(false);
+ useEffect(()=>{ let active=true; fetch("/data/daily.json?t="+Date.now(),{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("Haberler alınamadı");return r.json();}).then((data:DailyBulletin)=>{if(active&&Array.isArray(data.news))setStories(data.news);else if(active)setFailed(true);}).catch(()=>{if(active)setFailed(true);}); return()=>{active=false;}; },[]);
+ const article=stories?.find(item=>storySlug(item)===slug);
+ return <main style={{minHeight:"100vh",color:"#29231d"}}>
+  <header style={{borderBottom:"1px solid #d8d0c4",background:"#fbf8f1"}}><div className="container" style={{paddingTop:18,paddingBottom:16}}><Link href="/" aria-label="ULAK’TAN HABERLER ana sayfa"><img src="/ulaktan-haberler-logo.svg" alt="ULAK’TAN HABERLER" style={{display:"block",width:"min(100%,360px)",height:"auto",margin:"0 auto"}} /></Link></div></header>
+  <article className="container" style={{maxWidth:860,paddingTop:28,paddingBottom:64}}>
+   <Link href="/" style={{display:"inline-block",marginBottom:26,color:"#985d32",fontWeight:700,fontSize:14}}>← Ana sayfaya dön</Link>
+   {!stories&&!failed?<p className="muted">Haber yükleniyor...</p>:null}
+   {failed?<section style={{padding:24,border:"1px solid #d8d0c4",borderRadius:10,background:"#fffdf8"}}><h1 style={{fontFamily:"Georgia,serif"}}>Haber şu anda yüklenemiyor</h1><p className="muted">Lütfen biraz sonra yeniden deneyin.</p></section>:null}
+   {stories&&!article?<section style={{padding:24,border:"1px solid #d8d0c4",borderRadius:10,background:"#fffdf8"}}><h1 style={{fontFamily:"Georgia,serif"}}>Bu haber güncel bültende bulunamadı</h1><p className="muted">Haber listesi yenilenmiş olabilir. Güncel haberleri ana sayfadan inceleyebilirsiniz.</p><Link href="/" style={{color:"#985d32",fontWeight:700}}>Güncel haberlere git →</Link></section>:null}
+   {article?<>
+    <div style={{color:"#986033",fontSize:12,letterSpacing:1.5,fontWeight:800,textTransform:"uppercase"}}>{categories[article.sourceId]||"Gündem"}</div>
+    <h1 style={{fontFamily:"Georgia,serif",fontSize:"clamp(30px,5vw,46px)",lineHeight:1.16,margin:"12px 0 16px",letterSpacing:-0.7}}>{article.title}</h1>
+    <div style={{color:"#82796e",fontSize:13,marginBottom:24}}>{article.sourceName}{dateLabel(article.publishedAt)?" · "+dateLabel(article.publishedAt):""}</div>
+    {article.imageUrl?<img src={"/api/news-image?url="+encodeURIComponent(article.imageUrl)} alt={article.imageTitle||article.title} referrerPolicy="no-referrer" onError={event=>{const image=event.currentTarget;if(article.fallbackImageUrl&&image.dataset.fallback!=="used"){image.dataset.fallback="used";image.src="/api/news-image?url="+encodeURIComponent(article.fallbackImageUrl);image.alt=article.fallbackImageTitle||article.title;}else image.style.display="none";}} style={{display:"block",width:"100%",maxHeight:480,objectFit:"cover",borderRadius:10,background:"#eee7dc",marginBottom:28}}/>:null}
+    <section style={{padding:"24px clamp(18px,4vw,34px)",border:"1px solid #ded5c9",borderRadius:10,background:"#fffdf8"}}>
+     <div style={{color:"#986033",fontSize:11,letterSpacing:1.5,fontWeight:800,textTransform:"uppercase"}}>Haberin özeti</div>
+     <p style={{fontFamily:"Georgia,serif",fontSize:19,lineHeight:1.8,margin:"10px 0 0",whiteSpace:"pre-line"}}>{article.editorialSummary||article.summary||"Bu haber için özet bulunmuyor."}</p>
+     {article.whyImportant?<div style={{marginTop:24,padding:18,background:"#f5efe5",borderLeft:"3px solid #bd8958",borderRadius:"0 8px 8px 0"}}><strong style={{fontSize:13}}>Neden önemli?</strong><p style={{margin:"7px 0 0",lineHeight:1.7}}>{article.whyImportant}</p></div>:null}
+    </section>
+    <section style={{marginTop:26,padding:20,borderTop:"1px solid #d8d0c4",borderBottom:"1px solid #d8d0c4"}}>
+     <div style={{fontSize:11,color:"#986033",fontWeight:800,letterSpacing:1.5,marginBottom:8}}>HABER KAYNAĞI</div>
+     <p style={{margin:"0 0 14px",color:"#756d63",lineHeight:1.6}}>Bu sayfadaki içerik, kaynak yayının haberinden derlenen editoryal özettir. Ayrıntılar ve özgün haber metni için kaynağı ziyaret edebilirsiniz.</p>
+     <a href={article.link} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",padding:"12px 18px",borderRadius:7,background:"#29231d",color:"#fff9ef",fontWeight:700,fontSize:14}}>{article.sourceName} kaynağında haberin tamamı ↗</a>
+    </section>
+    <div style={{marginTop:24,textAlign:"center",color:"#8a8176",fontSize:12}}>ULAK’TAN HABERLER · Türkiye’den ve dünyadan</div>
+   </>:null}
+  </article>
+ </main>;
+}
