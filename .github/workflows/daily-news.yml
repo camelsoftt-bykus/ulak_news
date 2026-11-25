@@ -34,11 +34,11 @@ jobs:
           fi
           jq -e '
             (.script | type == "string" and length > 0) and
-            (.news | type == "array" and length == 8) and
-            (.speechSegments | type == "array" and length == 10) and
+            (.news | type == "array" and length <= 10) and
+            (.speechSegments | type == "array" and length == (.news | length) + 2) and
             .speechSegments[0].type == "intro" and
-            ([.speechSegments[1:9][] | select(.type == "story")] | length == 8) and
-            .speechSegments[9].type == "closing"
+            ([.speechSegments[1:-1][] | select(.type == "story")] | length == (.news | length)) and
+            .speechSegments[-1].type == "closing"
           ' response.json > /dev/null
           mkdir -p docs/docs/public/data
           jq --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
