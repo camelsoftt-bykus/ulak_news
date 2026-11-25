@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 type NewsItem = {
   sourceId: string;
@@ -49,6 +50,11 @@ const sections = [
   { name: "Dünya", id: "dunya" },
   { name: "Bilim ve Uzay", id: "bilim-ve-uzay" },
 ];
+
+function makeStorySlug(item: NewsItem): string {
+  const title = item.title.toLocaleLowerCase("tr-TR").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/ı/g, "i").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80);
+  return `${title}-${item.sourceId}`;
+}
 
 function formatDate(value: string | null): string {
   if (!value) return "";
@@ -161,7 +167,7 @@ export default function NewsFeed() {
                       <div className="news-coming" style={{ marginTop: "auto", paddingTop: 16 }}>
                         {item.sourceName}{formatDate(item.publishedAt) ? " · " + formatDate(item.publishedAt) : ""}
                       </div>
-                      <a href={item.link} target="_blank" rel="noopener noreferrer" style={{ marginTop: 10, color: "#985d32", fontWeight: 700, fontSize: 13 }}>Haberin devamı →</a>
+                      <Link href={`/haber/${encodeURIComponent(makeStorySlug(item))}`} style={{ marginTop: 10, color: "#985d32", fontWeight: 700, fontSize: 13 }}>ULAK’ta haberi oku →</Link>
                     </div>
                   </article>
                 ))}
