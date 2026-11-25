@@ -232,8 +232,10 @@ async function main() {
     console.log(
       `Yüklenen haber görseli: ${imageStats.loaded}; tam ekran yayın görseli: ${imageStats.broadcast}`
     );
-    if (daily.news.length > 0 && imageStats.loaded === 0 && imageStats.broadcast === 0) {
-      throw new Error("Haber var ancak hiçbir haber görseli yüklenmedi; eksik görselli video yayınlanmayacak.");
+    if (daily.news.length > 0 && imageStats.broadcast < daily.news.length) {
+      throw new Error(
+        `Tam ekran yayın görseli eksik: ${imageStats.broadcast}/${daily.news.length}. Görselleri eksik bülten yayımlanmayacak.`
+      );
     }
 
     let audioDuration = 0;
