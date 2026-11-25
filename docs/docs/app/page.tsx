@@ -22,16 +22,25 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
-    fetch("/data/daily.json?t=" + Date.now(), { cache: "no-store" })
-      .then((response) => {
-        if (!response.ok) throw new Error("Bülten alınamadı");
-        return response.json();
-      })
-      .then((data: Bulletin) => {
-        if (active && data && Array.isArray(data.news) && data.generatedAt) setBulletin(data);
-      })
-      .catch(() => { if (active) setBulletin(null); });
-    return () => { active = false; };
+    const loadBulletin = () => {
+      fetch("/data/daily.json?t=" + Date.now(), { cache: "no-store" })
+        .then((response) => {
+          if (!response.ok) throw new Error("Bülten alınamadı");
+          return response.json();
+        })
+        .then((data: Bulletin) => {
+          if (active && data && Array.isArray(data.news) && data.generatedAt) setBulletin(data);
+        })
+        .catch(() => {
+          // Ağ hatasında son başarılı video ekranda kalır.
+        });
+    };
+    loadBulletin();
+    const refresh = window.setInterval(loadBulletin, 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(refresh);
+    };
   }, []);
 
   const today = new Intl.DateTimeFormat("tr-TR", {
