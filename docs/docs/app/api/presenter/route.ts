@@ -1,7 +1,8 @@
 // Daily presenter API; this comment also refreshes the scheduled publishing pipeline.
 import {
   collectRssNews,
-  findCommonsImage
+  findCommonsImage,
+  getNewsSourceStatus
 } from "@/lib/rss-reader";
 
 export const runtime = "nodejs";
@@ -171,9 +172,11 @@ export async function GET(request: Request) {
         !previousTitles.has(normalizeStoryTitle(item.title))
     );
     // Aynı olay farklı başlıklarla ve farklı kaynaklarda yayımlanmışsa tek haber olarak tut.
-    const news = filteredNews.filter((item, index) =>
+    const distinctNews = filteredNews.filter((item, index) =>
       !filteredNews.slice(0, index).some((prior) => storySimilarity(item.title, prior.title))
     );
+    // Önceki bültenden çıkarılan haberlerin yerine aday havuzundan yenilerini tamamla.
+    const news = distinctNews.slice(0, 8);
 
     if (news.length !== 8) {
       return Response.json(
@@ -181,7 +184,8 @@ export async function GET(request: Request) {
           error: "Tam 8 farklı haber bulunamadığı için bülten üretimi durduruldu.",
           code: "INSUFFICIENT_NEWS",
           requiredNews: 8,
-          availableNews: news.length
+          availableNews: distinctNews.length,
+          sourceStatus: getNewsSourceStatus()
         },
         { status: 503 }
       );

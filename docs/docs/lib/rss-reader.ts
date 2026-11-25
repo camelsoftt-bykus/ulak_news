@@ -11,7 +11,8 @@ const parser = new Parser({
   }
 });
 
-const MAX_DAILY_NEWS = 8;
+// Collect a larger candidate pool so same-day edition deduplication still leaves 8 stories.
+const MAX_DAILY_NEWS = 24;
 
 export type CollectedNews = {
   sourceId: string;
