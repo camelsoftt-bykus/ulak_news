@@ -167,7 +167,6 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       <button type="button" className="ulak-motion__replay" onClick={replay} aria-label="ULAK animasyonunu yeniden oynat" title="Tekrar oynat">
         <span className="ulak-motion__character">
           <canvas ref={canvasRef} width={480} height={470} role="img" aria-label="UFO ışık hüzmesiyle beliren ULAK robotu; dokunarak animasyonu tekrarlayın" />
-          <span className="ulak-motion__tap-hint">↻ Tekrar izle</span>
         </span>
       </button>
       <div className="ulak-motion__copy">
