@@ -3,36 +3,35 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type UlakMotionProps = { variant: "welcome" | "farewell" };
-type Sprite = { x: number; y: number; w: number; h: number };
+type Crop = { x: number; y: number; w: number; h: number };
 
-const SPRITES = {
-  head: { x: 28, y: 48, w: 365, h: 325 },
-  body: { x: 410, y: 118, w: 215, h: 300 },
-  // The sheet supplies complete articulated arm assemblies, not clean elbow-separated layers.
-  leftArm: { x: 650, y: 135, w: 175, h: 315 },
-  rightArm: { x: 835, y: 135, w: 175, h: 315 },
-  leftLeg: { x: 95, y: 545, w: 255, h: 415 },
-  rightLeg: { x: 695, y: 545, w: 240, h: 415 },
-} satisfies Record<string, Sprite>;
+// Coordinates are based on the 1024x1024 uploaded ULAK parts sheet.
+const PARTS = {
+  head: { x: 35, y: 55, w: 350, h: 285 },
+  torso: { x: 418, y: 125, w: 195, h: 275 },
+  armLeft: { x: 650, y: 140, w: 170, h: 305 },
+  armRight: { x: 830, y: 140, w: 175, h: 305 },
+  legLeft: { x: 95, y: 545, w: 245, h: 415 },
+  legRight: { x: 690, y: 545, w: 245, h: 415 },
+} satisfies Record<string, Crop>;
 
-function makeKeyedCrop(image: HTMLImageElement, sprite: Sprite) {
+function preparePart(source: HTMLImageElement, crop: Crop) {
   const canvas = document.createElement("canvas");
-  canvas.width = sprite.w;
-  canvas.height = sprite.h;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) return canvas;
-  context.drawImage(image, sprite.x, sprite.y, sprite.w, sprite.h, 0, 0, sprite.w, sprite.h);
-  const frame = context.getImageData(0, 0, sprite.w, sprite.h);
-  const pixels = frame.data;
-  for (let i = 0; i < pixels.length; i += 4) {
-    const red = pixels[i], green = pixels[i + 1], blue = pixels[i + 2];
+  canvas.width = crop.w;
+  canvas.height = crop.h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return canvas;
+  ctx.drawImage(source, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
+  const pixels = ctx.getImageData(0, 0, crop.w, crop.h);
+  for (let i = 0; i < pixels.data.length; i += 4) {
+    const red = pixels.data[i], green = pixels.data[i + 1], blue = pixels.data[i + 2];
     const chroma = Math.min(green, blue) - red;
-    if (green > 145 && blue > 145 && red < 105 && chroma > 65) pixels[i + 3] = 0;
+    if (green > 145 && blue > 145 && red < 105 && chroma > 65) pixels.data[i + 3] = 0;
     else if (green > 125 && blue > 125 && red < 130 && chroma > 38) {
-      pixels[i + 3] = Math.round(pixels[i + 3] * 0.18);
+      pixels.data[i + 3] = Math.round(pixels.data[i + 3] * 0.12);
     }
   }
-  context.putImageData(frame, 0, 0);
+  ctx.putImageData(pixels, 0, 0);
   return canvas;
 }
 
@@ -44,97 +43,117 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-
-    const image = new Image();
-    image.src = "/1795638599702.jpg";
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    const source = new Image();
+    source.src = "/1795638599702.jpg";
     let raf = 0;
     let startedAt = 0;
-    let visible = variant === "welcome";
-    let finished = false;
+    let active = variant === "welcome";
     let disposed = false;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const keyed: Partial<Record<keyof typeof SPRITES, HTMLCanvasElement>> = {};
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const parts: Partial<Record<keyof typeof PARTS, HTMLCanvasElement>> = {};
 
-    const drawPart = (
-      key: keyof typeof SPRITES, x: number, y: number, w: number, h: number,
-      angle = 0, pivotX = w / 2, pivotY = 0,
-    ) => {
-      const part = keyed[key];
-      if (!part) return;
-      context.save();
-      context.translate(x + pivotX, y + pivotY);
-      context.rotate(angle);
-      context.drawImage(part, -pivotX, -pivotY, w, h);
-      context.restore();
+    const part = (name: keyof typeof PARTS, x: number, y: number, w: number, h: number, angle = 0, px = w / 2, py = 0, mirror = false) => {
+      const sprite = parts[name];
+      if (!sprite) return;
+      ctx.save();
+      ctx.translate(x + px, y + py);
+      ctx.rotate(angle);
+      if (mirror) ctx.scale(-1, 1);
+      ctx.drawImage(sprite, -px, -py, w, h);
+      ctx.restore();
     };
 
-    const draw = (now: number) => {
+    const render = (now: number) => {
       if (disposed) return;
-      if (!startedAt) startedAt = now;
-      const t = reducedMotion ? 5 : (now - startedAt) / 1000;
-      const fadeIn = variant === "welcome" ? Math.min(1, t / 0.75) : 1;
-      const fadeOut = variant === "farewell" && visible ? Math.max(0, 1 - Math.max(0, t - 3.8) / 0.8) : 1;
-      const nod = variant === "welcome"
-        ? (t > 1.0 && t < 2.25 ? Math.sin(((t - 1.0) / 1.25) * Math.PI) * 0.095 : 0)
-        : (t > 3.0 && t < 3.8 ? Math.sin(((t - 3.0) / 0.8) * Math.PI) * 0.075 : 0);
-      // Slow shoulder lift, then elbow-like angle from the supplied bent arm artwork.
-      const saluteProgress = variant === "farewell" ? Math.max(0, Math.min(1, (t - 1.0) / 1.45)) : 0;
-      const saluteEase = saluteProgress * saluteProgress * (3 - 2 * saluteProgress);
-      const saluteAngle = -saluteEase * 1.12;
-      const bob = reducedMotion ? 0 : Math.sin(now / 850) * 1.2;
+      const t = reduced ? 5 : (now - startedAt) / 1000;
+      const entering = variant === "welcome";
+      const beamIn = entering ? Math.max(0, 1 - t / 1.45) : 0;
+      const beamOut = !entering && active ? Math.max(0, Math.min(1, (t - 3.25) / 1.1)) : 0;
+      const beam = Math.max(beamIn, beamOut);
+      const arrival = entering ? Math.max(0, Math.min(1, (t - 0.2) / 1.3)) : 1 - beamOut;
+      const ease = arrival * arrival * (3 - 2 * arrival);
+      const fade = entering ? Math.min(1, t / 1.05) : (active ? Math.max(0, 1 - Math.max(0, t - 3.65) / 0.85) : 1);
+      const salute = !entering && active ? Math.max(0, Math.min(1, (t - 1.0) / 1.35)) : 0;
+      const saluteEase = salute * salute * (3 - 2 * salute);
+      const saluteAngle = -saluteEase * 0.92;
+      const nod = entering
+        ? (t > 1.65 && t < 2.55 ? Math.sin(((t - 1.65) / 0.9) * Math.PI) * 0.085 : 0)
+        : (t > 2.85 && t < 3.5 ? Math.sin(((t - 2.85) / 0.65) * Math.PI) * 0.075 : 0);
+      const floatY = reduced ? 0 : Math.sin(now / 700) * 1.5;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      context.save();
-      context.globalAlpha = variant === "welcome" ? fadeIn : (visible ? fadeOut : 1);
+      // UFO light cone: the craft stays off-screen; only its soft beam is visible.
+      if (beam > 0.01) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(0.88, beam * 0.9);
+        const top = ctx.createRadialGradient(240, 0, 5, 240, 0, 250);
+        top.addColorStop(0, "rgba(255,255,225,0.95)");
+        top.addColorStop(0.45, "rgba(255,226,153,0.42)");
+        top.addColorStop(1, "rgba(255,205,120,0)");
+        ctx.fillStyle = top;
+        ctx.beginPath();
+        ctx.moveTo(205, 0);
+        ctx.lineTo(35, 435);
+        ctx.quadraticCurveTo(240, 470, 445, 435);
+        ctx.lineTo(275, 0);
+        ctx.closePath();
+        ctx.fill();
+        const glow = ctx.createRadialGradient(240, 390, 12, 240, 390, 180);
+        glow.addColorStop(0, "rgba(255,245,190,0.5)");
+        glow.addColorStop(1, "rgba(255,220,150,0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 210, 480, 260);
+        ctx.restore();
+      }
 
-      // Back arm first, then legs and torso, so the shoulder sockets tuck behind the body.
-      drawPart("leftArm", 74, 202 + bob, 105, 184, 0.12, 88, 18);
-      drawPart("leftLeg", 163, 365 + bob, 73, 112);
-      drawPart("rightLeg", 226, 365 + bob, 73, 112);
-      drawPart("body", 145, 190 + bob, 190, 218);
+      // The beam controls scale and opacity, creating a gentle materialisation/dematerialisation.
+      const scale = 0.82 + ease * 0.18;
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.translate(240, 250 + floatY + (1 - ease) * 65);
+      ctx.scale(scale, scale);
+      ctx.translate(-240, -250);
 
-      // Saluting arm rotates from its shoulder toward the temple; the head remains unobstructed until the hand arrives.
-      drawPart("rightArm", 286, 202 + bob, 105, 184, saluteAngle, 18, 18);
-      drawPart("head", 105, 18 + bob, 270, 225, nod, 135, 190);
-      context.restore();
+      // Legs and torso use the original complete pieces, aligned at their socket centres.
+      part("legLeft", 160, 322, 78, 132);
+      part("legRight", 242, 322, 78, 132);
+      part("torso", 153, 174, 174, 220);
 
-      if (variant === "welcome" && t > 3.7) finished = true;
-      if (variant === "farewell" && visible && t > 4.7) finished = true;
-      if (variant === "welcome" ? !finished : visible && !finished) raf = requestAnimationFrame(draw);
+      // Shoulder caps overlap the torso edge intentionally, hiding cut seams.
+      // Character's right arm is on the viewer's left and performs the salute.
+      part("armRight", 73, 177, 112, 202, saluteAngle, 99, 28);
+      part("armLeft", 295, 177, 112, 202, 0, 13, 28, true);
+      part("head", 112, 8, 256, 207, nod, 128, 188);
+      ctx.restore();
+
+      if (entering ? t < 4.1 : active && t < 5.1) raf = requestAnimationFrame(render);
     };
 
     const start = () => {
-      visible = true;
-      finished = false;
+      active = true;
       startedAt = performance.now();
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(draw);
+      raf = requestAnimationFrame(render);
     };
 
     const observer = variant === "farewell" && sectionRef.current
       ? new IntersectionObserver((entries) => {
-          if (entries.some((entry) => entry.isIntersecting) && !visible) start();
-        }, { threshold: 0.35 })
+          if (entries.some((entry) => entry.isIntersecting) && !active) start();
+        }, { threshold: 0.3 })
       : null;
     if (observer && sectionRef.current) observer.observe(sectionRef.current);
 
-    image.onload = () => {
-      (Object.keys(SPRITES) as Array<keyof typeof SPRITES>).forEach((key) => {
-        keyed[key] = makeKeyedCrop(image, SPRITES[key]);
-      });
+    source.onload = () => {
+      (Object.keys(PARTS) as Array<keyof typeof PARTS>).forEach((key) => { parts[key] = preparePart(source, PARTS[key]); });
       if (variant === "welcome") start();
       else {
-        // Keep the farewell character visible in a neutral pose until it enters view.
-        startedAt = performance.now();
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        draw(startedAt);
-        cancelAnimationFrame(raf);
+        startedAt = performance.now() - 900;
+        render(performance.now());
       }
     };
-    image.onerror = () => context.clearRect(0, 0, canvas.width, canvas.height);
+    source.onerror = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     return () => {
       disposed = true;
@@ -144,20 +163,10 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
   }, [variant, replayKey]);
 
   return (
-    <section
-      ref={sectionRef}
-      aria-label={variant === "welcome" ? "ULAK karşılama animasyonu" : "ULAK asker selamıyla veda animasyonu"}
-      className={`ulak-motion ulak-motion--${variant}`}
-    >
-      <button
-        type="button"
-        className="ulak-motion__replay"
-        onClick={replay}
-        aria-label="ULAK animasyonunu yeniden oynat"
-        title="Tekrar oynat"
-      >
+    <section ref={sectionRef} aria-label={variant === "welcome" ? "ULAK ışınlanarak karşılama animasyonu" : "ULAK ışınlanarak asker selamıyla veda animasyonu"} className={`ulak-motion ulak-motion--${variant}`}>
+      <button type="button" className="ulak-motion__replay" onClick={replay} aria-label="ULAK animasyonunu yeniden oynat" title="Tekrar oynat">
         <span className="ulak-motion__character">
-          <canvas ref={canvasRef} width={480} height={470} role="img" aria-label="ULAK robot karakteri; dokunarak selamını tekrar izleyin" />
+          <canvas ref={canvasRef} width={480} height={470} role="img" aria-label="UFO ışık hüzmesiyle beliren ULAK robotu; dokunarak animasyonu tekrarlayın" />
           <span className="ulak-motion__tap-hint">↻ Tekrar izle</span>
         </span>
       </button>
