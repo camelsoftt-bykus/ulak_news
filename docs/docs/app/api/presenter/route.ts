@@ -91,7 +91,7 @@ function storySimilarity(a: string, b: string): boolean {
   return common >= 2 && common / Math.min(left.size, right.size) >= 0.65;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
 
@@ -116,7 +116,12 @@ export async function GET() {
         hourCycle: "h23"
       }).format(now)
     );
-    const edition = istanbulHour >= 5 && istanbulHour < 14 ? "morning" : "evening";
+    const requestedEdition = new URL(request.url).searchParams.get("edition");
+    const edition = requestedEdition === "evening"
+      ? "evening"
+      : istanbulHour >= 5 && istanbulHour < 14
+        ? "morning"
+        : "evening";
 
     const collectedNews = await collectRssNews();
 
