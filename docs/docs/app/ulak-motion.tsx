@@ -208,8 +208,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
         // Viewer-left arm is the character's right arm and performs the salute.
         // This is a shoulder rotation only; a separate elbow bend needs a split sprite.
-        drawPart("armLeft", 76, 224, 112, 204, -saluteProgress * 0.98, 94, 22);
-        drawPart("armRight", 292, 224, 112, 204, 0, 18, 22);
+        drawPart("armLeft", 70, 224, 112, 204, -0.06 - saluteProgress * 0.98, 94, 22);
+        drawPart("armRight", 298, 224, 112, 204, 0.06, 18, 22);
         drawPart("head", 112, 8, 256, 207, headNod, 128, 188);
 
         ctx.restore();
