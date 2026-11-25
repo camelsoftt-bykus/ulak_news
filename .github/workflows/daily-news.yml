@@ -1,4 +1,4 @@
-name: ULAK Günlük Yazılı Haber Bülteni
+name: ULAK Günlük Video Haber Bülteni
 
 on:
   schedule:
@@ -14,43 +14,110 @@ concurrency:
 
 jobs:
   daily-news:
-    if: vars.ULAK_AUTOMATION_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
     steps:
       - name: Depoyu indir
         uses: actions/checkout@v4
-      - name: Yazılı bülteni hazırla
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: FFmpeg ve Chromium kur
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: JavaScript bağımlılıklarını kur
+        working-directory: docs/docs
+        run: |
+          npm install --no-save --package-lock=false
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+
+      - name: Günün haber bültenini oluştur
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p docs/docs/public/data
           http_code=$(curl --silent --show-error --connect-timeout 20 --max-time 180 \
-            --output response.json --write-out "%{http_code}" \
+            --output /tmp/presenter.json --write-out "%{http_code}" \
             "https://ulaknews-docs.vercel.app/api/presenter")
           if [ "$http_code" != "200" ]; then
-            echo "::error::Haber sunucusu HTTP $http_code yanıtı verdi."
-            cat response.json
+            echo "::error::Haber servisi HTTP $http_code döndürdü."
+            cat /tmp/presenter.json
             exit 1
           fi
           jq -e '
             (.script | type == "string" and length > 0) and
-            (.news | type == "array" and length == 8) and
-            (.speechSegments | type == "array" and length == 10) and
+            (.news | type == "array" and length <= 10) and
+            (.speechSegments | type == "array" and length == (.news | length) + 2) and
             .speechSegments[0].type == "intro" and
-            ([.speechSegments[1:9][] | select(.type == "story")] | length == 8) and
-            .speechSegments[9].type == "closing"
-          ' response.json > /dev/null
-          mkdir -p docs/docs/public/data
+            ([.speechSegments[1:-1][] | select(.type == "story")] | length == (.news | length)) and
+            .speechSegments[-1].type == "closing"
+          ' /tmp/presenter.json >/dev/null
+          rm -f docs/docs/public/data/seg-*.wav
           jq --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            'del(.audioSegments) + {generatedAt: $generatedAt}' \
-            response.json > docs/docs/public/data/daily.json
-      - name: Yalnızca yazılı bülteni kaydet
+            '. + {generatedAt: $generatedAt, audioSegments: [range(0;(.speechSegments|length)) | "seg-" + (tostring | if length == 1 then "0" + . else . end) + ".wav"]}' \
+            /tmp/presenter.json > docs/docs/public/data/daily.json
+
+      - name: Konuşma bölümlerini seslendir
+        working-directory: docs/docs
+        shell: bash
         run: |
+          set -euo pipefail
+          segment_count=$(jq -r '.speechSegments | length' public/data/daily.json)
+          for i in $(seq 0 $((segment_count - 1))); do
+            index=$(printf "%02d" "$i")
+            text=$(jq -r ".speechSegments[$i].text" public/data/daily.json)
+            jq -n --arg text "$text" '{text: $text}' > "/tmp/tts-$index.json"
+            http_code=$(curl --silent --show-error --connect-timeout 20 --max-time 130 \
+              --output "public/data/seg-$index.wav" --write-out "%{http_code}" \
+              -H "Content-Type: application/json" \
+              --data-binary "@/tmp/tts-$index.json" \
+              "https://ulaknews-docs.vercel.app/api/tts")
+            if [ "$http_code" != "200" ]; then
+              echo "::error::Ses bölümü $index üretilemedi; HTTP $http_code."
+              cat "public/data/seg-$index.wav" || true
+              exit 1
+            fi
+            test -s "public/data/seg-$index.wav"
+            echo "Ses bölümü $((i+1))/$segment_count hazır."
+          done
+
+      - name: ULAK video sunumunu oluştur
+        working-directory: docs/docs
+        run: node scripts/render-video.mjs
+
+      - name: Yeni video ve ses dosyalarını doğrula
+        working-directory: docs/docs
+        run: |
+          set -euo pipefail
+          test -s public/data/daily.mp4
+          test -s public/data/daily-poster.jpg
+          ffprobe -v error -show_entries format=duration -of csv=p=0 public/data/daily.mp4
+          jq -e '.generatedAt and (.news | type == "array")' public/data/daily.json >/dev/null
+          echo "Yeni video ve kapak görseli hazır."
+
+      - name: Yeni bülten ve videoyu tek işlemde yayımla
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name "ULAK News Bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/docs/public/data/daily.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Günlük ULAK yazılı haber bülteni"
-            git pull --rebase origin "${GITHUB_REF_NAME}"
-            git push
-          fi
+          git add docs/docs/public/data/daily.json docs/docs/public/data/daily.mp4 docs/docs/public/data/daily-poster.jpg docs/docs/public/data/seg-*.wav
+          git commit -m "Günlük ULAK video haber bültenini yayımla"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push
+
+      - name: Video çıktısını ayrıca sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: ulak-gunluk-video
+          path: |
+            docs/docs/public/data/daily.mp4
+            docs/docs/public/data/daily-poster.jpg
+            docs/docs/public/data/daily.json
+          retention-days: 7

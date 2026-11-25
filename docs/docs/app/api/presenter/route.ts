@@ -171,21 +171,11 @@ export async function GET(request: Request) {
         !previousTitles.has(normalizeStoryTitle(item.title))
     );
     // Aynı olay farklı başlıklarla ve farklı kaynaklarda yayımlanmışsa tek haber olarak tut.
-    const news = filteredNews.filter((item, index) =>
-      !filteredNews.slice(0, index).some((prior) => storySimilarity(item.title, prior.title))
-    );
-
-    if (news.length !== 8) {
-      return Response.json(
-        {
-          error: "Tam 8 farklı haber bulunamadığı için bülten üretimi durduruldu.",
-          code: "INSUFFICIENT_NEWS",
-          requiredNews: 8,
-          availableNews: news.length
-        },
-        { status: 503 }
-      );
-    }
+    const news = filteredNews
+      .filter((item, index) =>
+        !filteredNews.slice(0, index).some((prior) => storySimilarity(item.title, prior.title))
+      )
+      .slice(0, 10);
 
     const newsText = news.map((item, index) => `
 HABER ${index + 1}
@@ -198,7 +188,7 @@ Yayın tarihi: ${item.publishedAt || "Belirtilmemiş"}
     const prompt = `
 Sen ULAK adlı haber sunucusu ve baş haber editörüsün. Gazetenin adı ULAK’TAN HABERLER.
 
-Aşağıdaki haber kayıtlarından yaklaşık 90 saniyelik doğal bir Türkçe haber sunumu hazırla.
+Aşağıdaki haber kayıtlarından bulunan haber sayısı kadar (0-10) haber içeren doğal bir Türkçe sunum hazırla. Hiç haber yoksa haber uydurma; kısa açılış ve dürüst bir kapanış oluştur.
 
 DOĞRULUK:
 - Yalnızca verilen haber bilgilerini kullan.
@@ -209,7 +199,7 @@ DOĞRULUK:
 - Başlığı aynen tekrar etme; dinleyiciye olayı kısa bir bağlamla anlat.
 - Haber sırasını değiştirme.
 - Kaynak adlarını, internet adreslerini, URL'leri, dosya uzantılarını veya teknik bağlantı metinlerini ASLA seslendirme.
-- Haber sayısı kadar stories kaydı oluştur.
+- Verilen haber sayısı kadar stories kaydı oluştur; sayı 0 ile 10 arasında olabilir.
 
 HER HABER İÇİN:
 - narration: ULAK'ın seslendireceği 2-3 kısa, akıcı cümle. Bir televizyon haber sunucusu gibi doğal konuş.
@@ -232,16 +222,7 @@ Yalnızca geçerli JSON üret. Markdown kullanma.
 {
   "intro": "Açılış",
   "closing": "Kapanış",
-  "stories": [
-    {
-      "index": 1,
-      "narration": "Seslendirilecek haber metni",
-      "summary": "Haber özeti",
-      "whyImportant": "Önemi",
-      "imageQuery": "English visual search phrase",
-      "imageEntities": []
-    }
-  ]
+  "stories": []
 }
 
 HABER KAYITLARI:
@@ -351,17 +332,17 @@ ${newsText}
 
     if (
       !Array.isArray(result.stories) ||
-      result.stories.length !== 8 ||
-      new Set(result.stories.map((story) => story.index)).size !== 8 ||
-      !Array.from({ length: 8 }, (_, index) =>
+      result.stories.length !== news.length ||
+      new Set(result.stories.map((story) => story.index)).size !== news.length ||
+      !Array.from({ length: news.length }, (_, index) =>
         result.stories?.some((story) => story.index === index + 1)
       ).every(Boolean)
     ) {
       return Response.json(
         {
-          error: "Gemini yanıtı tam 8 farklı haber içermiyor; eksik bülten yayınlanmadı.",
+          error: "Gemini yanıtındaki haber sayısı kaynaklarla eşleşmiyor; bülten yayınlanmadı.",
           code: "INVALID_STORY_COUNT",
-          requiredNews: 8,
+          requiredNews: news.length,
           receivedStories: Array.isArray(result.stories) ? result.stories.length : 0
         },
         { status: 502 }

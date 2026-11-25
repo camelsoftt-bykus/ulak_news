@@ -52,18 +52,18 @@ jobs:
           fi
           jq -e '
             .edition == "evening" and
-            (.news | type == "array" and length == 8) and
-            (.speechSegments | type == "array" and length == 10) and
+            (.news | type == "array" and length <= 10) and
+            (.speechSegments | type == "array" and length == (.news | length) + 2) and
             .speechSegments[0].type == "intro" and
-            ([.speechSegments[1:9][] | select(.type == "story")] | length == 8) and
-            .speechSegments[9].type == "closing"
+            ([.speechSegments[1:-1][] | select(.type == "story")] | length == (.news | length)) and
+            .speechSegments[-1].type == "closing"
           ' /tmp/presenter.json >/dev/null || {
             echo "::error::Akşam sürümü veya 8 haber / 10 ses bölümü doğrulanamadı."
             jq '{edition, count, code, error, availableNews}' /tmp/presenter.json
             exit 1
           }
           jq --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            '. + {generatedAt: $generatedAt, audioSegments: [range(0;10) | "seg-" + (tostring | if length == 1 then "0" + . else . end) + ".wav"]}' \
+            '. + {generatedAt: $generatedAt, audioSegments: [range(0;(.speechSegments|length)) | "seg-" + (tostring | if length == 1 then "0" + . else . end) + ".wav"]}' \
             /tmp/presenter.json > docs/docs/public/data/daily.json
 
       - name: 10 ses bölümünü üret
@@ -71,7 +71,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for i in $(seq 0 9); do
+          segment_count=$(jq -r '.speechSegments | length' public/data/daily.json)
+          for i in $(seq 0 $((segment_count - 1))); do
             index=$(printf "%02d" "$i")
             text=$(jq -r ".speechSegments[$i].text" public/data/daily.json)
             jq -n --arg text "$text" '{text: $text}' > "/tmp/tts-$index.json"
@@ -86,7 +87,7 @@ jobs:
               exit 1
             fi
             test -s "public/data/seg-$index.wav"
-            echo "Ses bölümü $((i+1))/10 hazır."
+            echo "Ses bölümü $((i+1))/$segment_count hazır."
           done
 
       - name: Akşam videosunu oluştur

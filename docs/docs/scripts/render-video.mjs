@@ -39,24 +39,24 @@ async function main() {
 
   if (hasSegments) {
     await verifySegments({ daily, dataDir: DATA_DIR });
-    console.log("10/10 WAV doğrulaması başarılı.");
+    console.log("Ses WAV doğrulaması başarılı.");
   }
 
   if (hasSegments) {
-    if (daily.news.length !== 8 || daily.speechSegments.length !== 10) {
+    if (daily.news.length > 10 || daily.speechSegments.length !== daily.news.length + 2) {
       throw new Error(
-        `Bülten yapısı geçersiz: ${daily.news.length} haber / ${daily.speechSegments.length} ses bölümü. 8 haber ve 10 bölüm gerekli.`
+        `Bülten yapısı geçersiz: ${daily.news.length} haber / ${daily.speechSegments.length} ses bölümü. 0-10 haber ve haber sayısı + 2 bölüm gerekli.`
       );
     }
 
     const expectedSegments = Array.from(
-      { length: 10 },
+      { length: daily.speechSegments.length },
       (_, index) => `seg-${String(index).padStart(2, "0")}.wav`
     );
 
     if (
       !Array.isArray(daily.audioSegments) ||
-      daily.audioSegments.length !== 10 ||
+      daily.audioSegments.length !== daily.speechSegments.length ||
       expectedSegments.some((filename, index) => daily.audioSegments[index] !== filename)
     ) {
       throw new Error(
@@ -232,8 +232,10 @@ async function main() {
     console.log(
       `Yüklenen haber görseli: ${imageStats.loaded}; tam ekran yayın görseli: ${imageStats.broadcast}`
     );
-    if (imageStats.loaded === 0 && imageStats.broadcast === 0) {
-      throw new Error("Hiçbir haber görseli yüklenmedi; görselsiz video yayınlanmayacak.");
+    if (daily.news.length > 0 && imageStats.broadcast < daily.news.length) {
+      throw new Error(
+        `Tam ekran yayın görseli eksik: ${imageStats.broadcast}/${daily.news.length}. Görselleri eksik bülten yayımlanmayacak.`
+      );
     }
 
     let audioDuration = 0;
