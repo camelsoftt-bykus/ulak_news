@@ -160,3 +160,12 @@ Claude'un ikinci tasarım revizyonu genel olarak kabul edilebilir; uygulamaya ge
 - **PR şartı:** Ayrı branch + PR; PR merge edilmez. PR gövdesinde her dosya, değişiklik gerekçesi, çalıştırılan test ve tam sonuç, yapılmayan testler, canlı doğrulanmayanlar ve kalan riskler yazılır.
 - **Doğrulama dürüstlüğü:** Çalıştırılmayan test "geçti" yazılamaz. Kullanıcının yerelde test çalıştıramadığı dikkate alınarak CI kanıtı ve PR diff'i ChatGPT'nin incelemesine sunulur.
 - **2026-11-24 – Proje sahibi yetkisi:** İlk dilim için kod yazma ve ayrı PR hazırlama, Gemini/TTS'siz mock testleri çalıştırma izni verildi. main/merge/workflow/deploy/secret/gerçek API yetkisi verilmedi.
+
+## G-003 – Video görsel yedeği ve ULAK marka seslendirmesi (2026-11-25)
+
+- **Durum:** Proje sahibi sohbet içinde ayrı dalda kod değişikliği ve yalnızca Vercel Preview oluşturulmasına açıkça izin verdi.
+- **Kapsam:** Haber görseli bulunmadığında videoda boş ekran yerine haber metninden oluşturulan markalı grafik kartı gösterilmesi; TTS yönergesinin ULAK marka adını açık telaffuz edecek ve sunucunun kendisine kişisel ad eklememesini belirtecek şekilde netleştirilmesi.
+- **Dosyalar:** `docs/docs/public/animasyon.html`, `docs/docs/scripts/render-video.mjs`, `docs/docs/scripts/broadcast-visuals.test.mjs`, `docs/docs/app/api/tts/route.ts`.
+- **İzin:** Ayrı dalda değişiklik, Gemini/TTS çağırmayan CI ve Preview build.
+- **Yasak:** Gerçek Gemini/TTS isteği, manuel veya zamanlanmış üretim workflow'u, main'e merge, production deploy, secret/ortam değişikliği.
+- **Doğrulama sınırı:** TTS yönergesi kod üzerinden kontrol edilir; gerçek ses çıktısı kota tüketmeden doğrulanamaz. Video render workflow'u çalıştırılmayacaktır.
