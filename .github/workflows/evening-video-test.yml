@@ -44,7 +44,7 @@ jobs:
           mkdir -p docs/docs/public/data
           http_code=$(curl --silent --show-error --connect-timeout 20 --max-time 180 \
             --output /tmp/presenter.json --write-out "%{http_code}" \
-            "https://ulaknews-docs.vercel.app/api/presenter")
+            "https://ulaknews-docs.vercel.app/api/presenter?edition=evening")
           if [ "$http_code" != "200" ]; then
             echo "::error::Haber servisi HTTP $http_code döndürdü."
             cat /tmp/presenter.json
