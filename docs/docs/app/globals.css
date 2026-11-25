@@ -1325,3 +1325,50 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Accessible tap-to-replay control for ULAK */
+.ulak-motion__replay {
+  display: block;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ulak-motion__replay:focus-visible {
+  outline: 3px solid #d8752e;
+  outline-offset: 5px;
+}
+.ulak-motion__character {
+  position: relative;
+}
+.ulak-motion__tap-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  border: 1px solid #ead8c4;
+  border-radius: 20px;
+  background: #fffaf3;
+  color: #9a5c2c;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: .85;
+  pointer-events: none;
+}
+.ulak-motion__copy small {
+  margin-top: 5px;
+  color: #9a806a;
+  font-size: 11px;
+}
+@media (max-width: 640px) {
+  .ulak-motion__replay {
+    width: 100%;
+  }
+}
