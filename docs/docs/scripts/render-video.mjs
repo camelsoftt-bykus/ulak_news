@@ -17,6 +17,7 @@ const RAW_VIDEO = path.join(DATA_DIR, "daily-raw.webm");
 const DAILY_POSTER = path.join(DATA_DIR, "daily-poster.jpg");
 
 const ANIMATION_URL =
+  process.env.ULAK_ANIMATION_URL ||
   "https://ulaknews-docs.vercel.app/animasyon.html";
 
 const TIMEOUT = 12 * 60 * 1000;
@@ -232,10 +233,14 @@ async function main() {
     console.log(
       `Yüklenen haber görseli: ${imageStats.loaded}; tam ekran yayın görseli: ${imageStats.broadcast}`
     );
-    if (daily.news.length > 0 && imageStats.broadcast < daily.news.length) {
-      throw new Error(
-        `Tam ekran yayın görseli eksik: ${imageStats.broadcast}/${daily.news.length}. Görselleri eksik bülten yayımlanmayacak.`
+    const fallbackCardCount = Math.max(0, daily.news.length - imageStats.broadcast);
+    if (fallbackCardCount > 0) {
+      console.log(
+        `Lisanslı tam ekran fotoğrafı olmayan ${fallbackCardCount} haber için animasyon stüdyosu yerine markalı haber kartı gösterilecek.`
       );
+    }
+    if (daily.news.length > 0 && imageStats.loaded === 0 && imageStats.broadcast === 0) {
+      console.log("Hiç haber fotoğrafı yüklenemedi; tüm haberlerde metin tabanlı ULAK kartı kullanılacak.");
     }
 
     let audioDuration = 0;
