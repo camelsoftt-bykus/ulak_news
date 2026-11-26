@@ -3,49 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type UlakMotionProps = { variant: "welcome" | "farewell" };
-type Crop = { x: number; y: number; w: number; h: number };
-
-// Existing 1024x1024 sheet coordinates. These are retained from the current
-// branch, but still require visual verification against the source image.
-const PARTS = {
-  head: { x: 35, y: 55, w: 350, h: 285 },
-  torso: { x: 418, y: 125, w: 195, h: 275 },
-  armLeft: { x: 650, y: 140, w: 170, h: 305 },
-  armRight: { x: 830, y: 140, w: 175, h: 305 },
-  legLeft: { x: 95, y: 545, w: 245, h: 415 },
-  legRight: { x: 690, y: 545, w: 245, h: 415 },
-} satisfies Record<string, Crop>;
-
-type PartName = keyof typeof PARTS;
-type SpriteMap = Partial<Record<PartName, HTMLCanvasElement>>;
-
-function preparePart(source: HTMLImageElement, crop: Crop): HTMLCanvasElement {
-  const canvas = document.createElement("canvas");
-  canvas.width = crop.w;
-  canvas.height = crop.h;
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) return canvas;
-
-  ctx.drawImage(source, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
-  const imageData = ctx.getImageData(0, 0, crop.w, crop.h);
-  const pixels = imageData.data;
-
-  for (let i = 0; i < pixels.length; i += 4) {
-    const red = pixels[i];
-    const green = pixels[i + 1];
-    const blue = pixels[i + 2];
-    const cyanDifference = Math.min(green, blue) - red;
-
-    if (green > 145 && blue > 145 && red < 105 && cyanDifference > 65) {
-      pixels[i + 3] = 0;
-    } else if (green > 125 && blue > 125 && red < 130 && cyanDifference > 38) {
-      pixels[i + 3] = Math.round(pixels[i + 3] * 0.12);
-    }
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-  return canvas;
-}
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
@@ -54,6 +11,38 @@ function clamp01(value: number): number {
 function smoothstep(start: number, end: number, value: number): number {
   const progress = clamp01((value - start) / (end - start));
   return progress * progress * (3 - 2 * progress);
+}
+
+// The supplied full-front reference is used as one intact character sprite.
+// Its checkerboard background is removed without cutting the robot's limbs apart.
+function prepareCharacter(source: HTMLImageElement): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  const crop = { x: 475, y: 24, width: 410, height: 710 };
+  canvas.width = crop.width;
+  canvas.height = crop.height;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return canvas;
+
+  ctx.drawImage(
+    source,
+    crop.x, crop.y, crop.width, crop.height,
+    0, 0, crop.width, crop.height
+  );
+
+  const image = ctx.getImageData(0, 0, crop.width, crop.height);
+  const pixels = image.data;
+  for (let i = 0; i < pixels.length; i += 4) {
+    const r = pixels[i];
+    const g = pixels[i + 1];
+    const b = pixels[i + 2];
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    // The reference JPG has a neutral grey/white checkerboard. The robot's
+    // cream armor is warm-toned, so its color channels remain distinguishable.
+    if (max - min < 20 && min > 105) pixels[i + 3] = 0;
+  }
+  ctx.putImageData(image, 0, 0);
+  return canvas;
 }
 
 export default function UlakMotion({ variant }: UlakMotionProps) {
@@ -71,186 +60,133 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
     if (!canvas || !ctx) return;
 
     const source = new Image();
-    source.src = "/1795638599702.jpg";
+    source.src = "/1795636155857.jpg";
 
     let animationFrame = 0;
     let startedAt = 0;
     let disposed = false;
-    let hasPlayed = false;
+    let hasStarted = false;
     let observer: IntersectionObserver | null = null;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const sprites: SpriteMap = {};
-
-    const drawPart = (
-      name: PartName,
-      x: number,
-      y: number,
-      width: number,
-      height: number,
-      angle = 0,
-      pivotX = width / 2,
-      pivotY = 0
-    ) => {
-      const sprite = sprites[name];
-      if (!sprite) return;
-
-      ctx.save();
-      ctx.translate(x + pivotX, y + pivotY);
-      ctx.rotate(angle);
-      ctx.drawImage(sprite, -pivotX, -pivotY, width, height);
-      ctx.restore();
-    };
+    let character: HTMLCanvasElement | null = null;
 
     const drawBeam = (opacity: number, descent: number) => {
       if (opacity <= 0.01 || descent <= 0.01) return;
-
       const width = canvas.width;
-      const height = canvas.height;
-      const bottom = 12 + descent * (height - 24);
-      const halfWidth = 24 + descent * 184;
-      const coreHalfWidth = 8 + descent * 68;
+      const bottom = 8 + descent * (canvas.height - 16);
+      const halfWidth = 20 + descent * 194;
+      const coreHalfWidth = 7 + descent * 76;
 
       ctx.save();
       ctx.globalAlpha = opacity;
-      ctx.shadowColor = "rgba(90,255,0,0.95)";
-      ctx.shadowBlur = 28;
+      ctx.globalCompositeOperation = "lighter";
+      ctx.shadowColor = "rgba(90,255,0,1)";
+      ctx.shadowBlur = 38;
 
       const outer = ctx.createLinearGradient(0, 0, 0, bottom);
-      outer.addColorStop(0, "rgba(245,255,220,0.98)");
-      outer.addColorStop(0.18, "rgba(145,255,0,0.9)");
-      outer.addColorStop(0.62, "rgba(55,245,0,0.5)");
-      outer.addColorStop(1, "rgba(45,230,0,0.04)");
+      outer.addColorStop(0, "rgba(245,255,215,1)");
+      outer.addColorStop(0.2, "rgba(145,255,0,0.98)");
+      outer.addColorStop(0.7, "rgba(65,255,0,0.64)");
+      outer.addColorStop(1, "rgba(45,235,0,0.04)");
       ctx.fillStyle = outer;
       ctx.beginPath();
-      ctx.moveTo(width / 2 - 18, 0);
+      ctx.moveTo(width / 2 - 12, 0);
       ctx.lineTo(width / 2 - halfWidth, bottom);
-      ctx.quadraticCurveTo(width / 2, bottom + 20, width / 2 + halfWidth, bottom);
-      ctx.lineTo(width / 2 + 18, 0);
+      ctx.quadraticCurveTo(width / 2, bottom + 22, width / 2 + halfWidth, bottom);
+      ctx.lineTo(width / 2 + 12, 0);
       ctx.closePath();
       ctx.fill();
 
       const core = ctx.createLinearGradient(0, 0, 0, bottom);
-      core.addColorStop(0, "rgba(255,255,240,0.98)");
-      core.addColorStop(0.42, "rgba(185,255,75,0.72)");
-      core.addColorStop(1, "rgba(100,255,25,0.02)");
-      ctx.shadowBlur = 12;
+      core.addColorStop(0, "rgba(255,255,240,1)");
+      core.addColorStop(0.45, "rgba(205,255,105,0.88)");
+      core.addColorStop(1, "rgba(105,255,20,0.02)");
+      ctx.shadowBlur = 18;
       ctx.fillStyle = core;
       ctx.beginPath();
-      ctx.moveTo(width / 2 - 7, 0);
+      ctx.moveTo(width / 2 - 5, 0);
       ctx.lineTo(width / 2 - coreHalfWidth, bottom - 3);
       ctx.quadraticCurveTo(width / 2, bottom + 8, width / 2 + coreHalfWidth, bottom - 3);
-      ctx.lineTo(width / 2 + 7, 0);
+      ctx.lineTo(width / 2 + 5, 0);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
     };
 
     const render = (now: number, fixedTime?: number) => {
-      if (disposed) return;
-
+      if (disposed || !character) return;
       const elapsed = fixedTime ?? (now - startedAt) / 1000;
       const isWelcome = variant === "welcome";
+      const idle = !isWelcome && elapsed >= 5.8;
+      const idleTime = idle ? elapsed - 5.8 : 0;
 
       let beamDescent = 0;
       let beamOpacity = 0;
       let characterOpacity = 1;
       let characterY = 0;
-      // Global 0.7 multiplier: shrink the complete character by 30%.
-      let characterScale = 0.7;
-      let headNod = 0;
-      let saluteProgress = 0;
-      const farewellIdle = !isWelcome && elapsed >= 5.7;
-      const idleTime = farewellIdle ? elapsed - 5.7 : 0;
+      let scale = 0.61;
 
       if (isWelcome) {
-        // Light descends first; ULAK starts materialising shortly afterward.
-        beamDescent = smoothstep(0.05, 0.85, elapsed);
-        beamOpacity = smoothstep(0.08, 0.32, elapsed) *
-          (1 - smoothstep(2.45, 3.15, elapsed));
-        const arrival = smoothstep(0.62, 1.85, elapsed);
-        characterOpacity = smoothstep(0.62, 1.2, elapsed);
-        characterY = (1 - arrival) * -118;
-        characterScale = 0.7 * (0.82 + arrival * 0.18);
-        if (elapsed >= 1.9 && elapsed <= 2.8) {
-          headNod = Math.sin(((elapsed - 1.9) / 0.9) * Math.PI) * 0.075;
-        }
+        beamDescent = smoothstep(0.02, 0.9, elapsed);
+        beamOpacity = smoothstep(0.02, 0.18, elapsed) *
+          (1 - smoothstep(2.55, 3.15, elapsed));
+        const arrival = smoothstep(0.55, 1.75, elapsed);
+        characterOpacity = smoothstep(0.52, 1.05, elapsed);
+        characterY = -150 * (1 - arrival);
+        scale = 0.61 * (0.9 + arrival * 0.1);
       } else {
-        // Salute completes before the beam begins its descent.
-        saluteProgress = smoothstep(0.35, 1.65, elapsed);
-        if (elapsed >= 1.75 && elapsed <= 2.5) {
-          headNod = Math.sin(((elapsed - 1.75) / 0.75) * Math.PI) * 0.065;
-        }
-        const beamArrival = smoothstep(2.0, 2.72, elapsed);
-        const beamRetraction = smoothstep(4.35, 5.35, elapsed);
-        beamDescent = beamArrival * (1 - beamRetraction);
-        beamOpacity = smoothstep(2.0, 2.35, elapsed) *
-          (1 - smoothstep(4.85, 5.65, elapsed));
-        const departure = smoothstep(2.85, 4.25, elapsed);
-        characterY = -departure * 178;
-        characterScale = 0.7 * (1 - departure * 0.2);
-        characterOpacity = 1 - smoothstep(3.45, 4.35, elapsed);
+        // Strong green beam is deliberately visible during the farewell lift.
+        const beamIn = smoothstep(0.12, 0.8, elapsed);
+        const beamOut = smoothstep(4.55, 5.75, elapsed);
+        beamDescent = beamIn * (1 - beamOut);
+        beamOpacity = smoothstep(0.1, 0.35, elapsed) *
+          (1 - smoothstep(5.0, 5.8, elapsed));
+        const lift = smoothstep(2.7, 4.5, elapsed);
+        characterY = -lift * 190;
+        characterOpacity = 1 - smoothstep(3.75, 4.75, elapsed);
 
-        // Once the farewell beam sequence ends, keep the second ULAK alive
-        // with a subtle, continuous idle loop instead of freezing on a blank frame.
-        if (farewellIdle) {
+        if (idle) {
           beamDescent = 0;
           beamOpacity = 0;
           characterOpacity = 1;
-          characterY = Math.sin(idleTime * 1.7) * 2.2;
-          characterScale = 0.7 * (1 + Math.sin(idleTime * 1.2) * 0.004);
-          saluteProgress = 0;
-          headNod = Math.sin(idleTime * 1.35) * 0.025;
+          characterY = Math.sin(idleTime * 1.65) * 3;
+          scale = 0.61 * (1 + Math.sin(idleTime * 1.2) * 0.006);
         }
       }
 
-      const breathing = reducedMotion ? 0 : Math.sin(now / 680) * (farewellIdle ? 2.0 : 1.2);
+      const breathing = reducedMotion ? 0 : Math.sin(now / 620) * (idle ? 2.3 : 1.1);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawBeam(beamOpacity, beamDescent);
 
       if (characterOpacity > 0.01) {
+        const drawWidth = character.width * scale;
+        const drawHeight = character.height * scale;
         ctx.save();
         ctx.globalAlpha = characterOpacity;
-        ctx.translate(canvas.width / 2, 248 + characterY + breathing);
-        ctx.scale(characterScale, characterScale);
-        ctx.translate(-canvas.width / 2, -248);
-
-        // Keep the original complete limb sprites intact. The current sheet does
-        // not provide confirmed upper-arm/forearm layers, so no artificial elbow cut is made.
-        const idleLegSway = farewellIdle && !reducedMotion ? Math.sin(idleTime * 1.4) * 0.012 : 0;
-        drawPart("legLeft", 157, 318, 80, 136, idleLegSway, 40, 10);
-        drawPart("legRight", 243, 318, 80, 136, -idleLegSway, 40, 10);
-        drawPart("torso", 153, 171, 174, 220);
-
-        // Viewer-left arm is the character's right arm and performs the salute.
-        // This is a shoulder rotation only; a separate elbow bend needs a split sprite.
-        const idleArmSway = farewellIdle && !reducedMotion ? Math.sin(idleTime * 1.6) * 0.018 : 0;
-        // Move both shoulder pivots slightly toward the torso so the joint caps
-        // sit closer to the shoulder sockets while preserving the original arms.
-        drawPart("armLeft", 78, 224, 112, 204, -0.06 - saluteProgress * 0.98 - idleArmSway, 94, 22);
-        drawPart("armRight", 290, 224, 112, 204, 0.06 + idleArmSway, 18, 22);
-        drawPart("head", 112, 8, 256, 207, headNod, 128, 188);
-
+        ctx.shadowColor = "rgba(255,150,45,0.12)";
+        ctx.shadowBlur = 12;
+        ctx.drawImage(
+          character,
+          (canvas.width - drawWidth) / 2,
+          (canvas.height - drawHeight) / 2 + characterY + breathing,
+          drawWidth,
+          drawHeight
+        );
         ctx.restore();
       }
 
       if (fixedTime === undefined && !reducedMotion && (isWelcome ? elapsed < 3.2 : true)) {
-        // Welcome is a one-shot entrance. Farewell continues indefinitely in
-        // idle mode after its beam departure sequence completes.
         animationFrame = requestAnimationFrame(render);
-      } else {
-        hasPlayed = true;
       }
     };
 
     const start = () => {
-      if (disposed) return;
-      hasPlayed = true;
+      if (disposed || !character) return;
+      hasStarted = true;
       startedAt = performance.now();
       cancelAnimationFrame(animationFrame);
-
       if (reducedMotion) {
-        // Show a still, accessible pose instead of running the full animation.
-        render(performance.now(), variant === "welcome" ? 2.3 : 1.8);
+        render(performance.now(), variant === "welcome" ? 2.1 : 1.2);
         return;
       }
       animationFrame = requestAnimationFrame(render);
@@ -258,39 +194,36 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
     source.onload = () => {
       if (disposed) return;
-      (Object.keys(PARTS) as PartName[]).forEach((name) => {
-        sprites[name] = preparePart(source, PARTS[name]);
-      });
-
+      character = prepareCharacter(source);
       if (variant === "welcome") {
         start();
         return;
       }
 
-      // Farewell stays in a neutral idle pose until its section enters view.
+      // Keep the farewell character visible and breathing while waiting.
       render(performance.now(), 0);
       if (reducedMotion) {
-        render(performance.now(), 1.8);
-        hasPlayed = true;
+        render(performance.now(), 1.2);
         return;
       }
 
       if (sectionRef.current) {
         observer = new IntersectionObserver(
           (entries) => {
-            if (!hasPlayed && entries.some((entry) => entry.isIntersecting)) {
+            if (!hasStarted && entries.some((entry) => entry.isIntersecting)) {
               observer?.disconnect();
               start();
             }
           },
-          { threshold: 0.3 }
+          // A low threshold ensures the animation also starts on short mobile viewports.
+          { threshold: 0.01, rootMargin: "0px 0px 80px 0px" }
         );
         observer.observe(sectionRef.current);
       }
     };
 
     source.onerror = () => {
-      if (!disposed) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!disposed) console.error("ULAK karakter görseli yüklenemedi:", source.src);
     };
 
     return () => {
