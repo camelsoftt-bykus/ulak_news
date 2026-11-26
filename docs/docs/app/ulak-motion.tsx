@@ -12,6 +12,8 @@ type RigPartName = "upperLeft" | "upperRight" | "foreLeft" | "foreRight" | "hand
 const PART_SHEET = "/1795656495621.jpg";
 // Eklemli kol parçaları: üst kol, ön kol ve eller ayrı sprite olarak kullanılır.
 const RIG_SHEET = "/1795733381339.jpg";
+// Geri dönüş kol sprite'ları, eklemli parçalar yüklenemezse kullanılır.
+const ARM_SHEET = "/1795638496249.jpg";
 // Bacaklar: önden referans
 const FRONT_REFERENCE = "/1795636155857.jpg";
 
@@ -42,6 +44,11 @@ const RIG_CROPS: Record<RigPartName, Crop> = {
   foreRight: { x: 544, y: 486, w: 79, h: 153 },
   handLeft: { x: 94, y: 665, w: 82, h: 103 },
   handRight: { x: 522, y: 665, w: 104, h: 103 },
+};
+// Fallback kol çizimi için eski sprite ölçeği ve omuz pivotları.
+const ARM_SCALE = 176 / 304;
+const ARM_PIVOTS: Record<ArmName, { x: number; y: number }> = {
+  armLeft: { x: 123, y: 29 }, armRight: { x: 23, y: 27 },
 };
 const RIG_SCALE = 0.56;
 const RIG_PIVOTS: Record<RigPartName, { x: number; y: number }> = {
