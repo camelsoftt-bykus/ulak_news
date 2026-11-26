@@ -250,9 +250,11 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
           if (saluteBlend > 0.001) {
             ctx.save();
             ctx.globalAlpha *= saluteBlend;
-            drawPart("saluteArmLeft", leftArmX, 194, armWidth, 176,
+            // Saluting bent arm rises by 30% of its rendered height.
+            drawPart("saluteArmLeft", leftArmX, 194 - 176 * 0.30, armWidth, 176,
               -outwardAngle, 69, 24);
-            drawPart("saluteArmRight", rightArmX, 194, armWidth, 176,
+            // The opposite arm lowers by 10% of its rendered height.
+            drawPart("saluteArmRight", rightArmX, 194 + 176 * 0.10, armWidth, 176,
               outwardAngle, 14, 24);
             ctx.restore();
           }
