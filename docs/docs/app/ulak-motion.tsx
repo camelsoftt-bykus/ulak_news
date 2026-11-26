@@ -227,11 +227,12 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         const leftArmX = 143 - outward;
         const rightArmX = 254 + outward;
         const outwardAngle = 0.20;
+        const armDrop = 176 * 0.05;
 
         if (welcome) {
-          drawPart("armLeft", leftArmX, 194, armWidth, 176,
+          drawPart("armLeft", leftArmX, 194 + armDrop, armWidth, 176,
             -outwardAngle - armSway, 69, 24);
-          drawPart("armRight", rightArmX, 194, armWidth, 176,
+          drawPart("armRight", rightArmX, 194 + armDrop, armWidth, 176,
             outwardAngle + armSway, 14, 24);
         } else {
           // Before the salute: correct the straight-arm attachment.
@@ -239,9 +240,9 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
           const saluteBlend = salute;
           ctx.save();
           ctx.globalAlpha *= 1 - saluteBlend;
-          drawPart("armLeft", leftArmX, 194, armWidth, 176,
+          drawPart("armLeft", leftArmX, 194 + armDrop, armWidth, 176,
             -outwardAngle - armSway, 69, 24);
-          drawPart("armRight", rightArmX, 194, armWidth, 176,
+          drawPart("armRight", rightArmX, 194 + armDrop, armWidth, 176,
             outwardAngle + armSway, 14, 24);
           ctx.restore();
 
@@ -251,10 +252,10 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
             ctx.save();
             ctx.globalAlpha *= saluteBlend;
             // Saluting bent arm rises by 30% of its rendered height.
-            drawPart("saluteArmLeft", leftArmX, 194 - 176 * 0.30, armWidth, 176,
+            drawPart("saluteArmLeft", leftArmX, 194 + armDrop - 176 * 0.30, armWidth, 176,
               -outwardAngle, 69, 24);
             // The opposite arm lowers by 10% of its rendered height.
-            drawPart("saluteArmRight", rightArmX, 194 + 176 * 0.10, armWidth, 176,
+            drawPart("saluteArmRight", rightArmX, 194 + armDrop + 176 * 0.10, armWidth, 176,
               outwardAngle, 14, 24);
             ctx.restore();
           }
