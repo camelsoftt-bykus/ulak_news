@@ -216,40 +216,52 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         drawPart("legRight", 242, 310, 72, 142, -legSway, 36, 12);
 
         drawPart("torso", 153, 174, 174, 212);
-        // Both arms open outward by approximately 5% of their rendered width.
-        // On farewell, exchange the left/right arm sprites at the shoulder positions.
+
+        // Move each shoulder outward by 5% of the torso width in both scenes.
         const armWidth = 83;
-        const leftArmX = 143 - armWidth * 0.05;
-        const rightArmX = 254 + armWidth * 0.05;
+        const outward = 174 * 0.05;
+        const leftArmX = 143 - outward;
+        const rightArmX = 254 + outward;
         const outwardAngle = 0.06;
-        const leftArmSprite: PartName = welcome ? "armLeft" : "armRight";
-        const rightArmSprite: PartName = welcome ? "armRight" : "armLeft";
 
-        // The bent salute sprite takes the viewer-right shoulder on farewell,
-        // matching the swapped arm arrangement; it fades in over the relaxed arm.
-        if (!welcome && salute > 0.01 && sprites.armSalute) {
+        if (welcome) {
+          drawPart("armLeft", leftArmX, 194, armWidth, 176,
+            -outwardAngle - armSway, 69, 24);
+          drawPart("armRight", rightArmX, 194, armWidth, 176,
+            outwardAngle + armSway, 14, 24);
+        } else {
+          // Swap the straight arms only in the pre-salute pose. As the salute
+          // begins, restore the natural free-arm side and replace only the
+          // saluting arm, avoiding the previous double-fade/vanishing-arm glitch.
+          const freeArmBlend = smoothstep(0.12, 0.88, salute);
           ctx.save();
-          ctx.globalAlpha *= salute;
-          ctx.translate(rightArmX + armWidth, 194);
-          ctx.drawImage(sprites.armSalute, -armWidth, 0, armWidth, 96);
+          ctx.globalAlpha *= 1 - freeArmBlend;
+          drawPart("armRight", leftArmX, 194, armWidth, 176,
+            -outwardAngle - armSway, 69, 24);
           ctx.restore();
-        }
 
-        ctx.save();
-        ctx.globalAlpha *= 1 - salute;
-        drawPart(leftArmSprite, leftArmX, 194, armWidth, 176,
-          -outwardAngle - armSway, 69, 24);
-        ctx.restore();
-
-        if (welcome || salute < 0.99) {
           ctx.save();
-          ctx.globalAlpha *= welcome ? 1 : 1 - salute;
-          drawPart(rightArmSprite, rightArmX, 194, armWidth, 176,
+          ctx.globalAlpha *= freeArmBlend;
+          drawPart("armLeft", leftArmX, 194, armWidth, 176,
+            -outwardAngle - armSway, 69, 24);
+          ctx.restore();
+
+          ctx.save();
+          ctx.globalAlpha *= 1 - salute;
+          drawPart("armLeft", rightArmX, 194, armWidth, 176,
             outwardAngle + armSway, 14, 24);
           ctx.restore();
-        }
-        drawPart("head", 119, 8, 242, 198, nod, 121, 176);
 
+          if (sprites.armSalute && salute > 0.001) {
+            ctx.save();
+            ctx.globalAlpha *= salute;
+            ctx.translate(rightArmX + armWidth, 194);
+            ctx.drawImage(sprites.armSalute, -armWidth, 0, armWidth, 96);
+            ctx.restore();
+          }
+        }
+
+        drawPart("head", 119, 8, 242, 198, nod, 121, 176);
         ctx.restore();
       }
 
