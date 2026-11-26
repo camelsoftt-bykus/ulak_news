@@ -159,6 +159,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       let characterScale = 0.7;
       let headNod = 0;
       let saluteProgress = 0;
+      const farewellIdle = !isWelcome && elapsed >= 5.7;
+      const idleTime = farewellIdle ? elapsed - 5.7 : 0;
 
       if (isWelcome) {
         // Light descends first; ULAK starts materialising shortly afterward.
@@ -187,9 +189,21 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         characterY = -departure * 178;
         characterScale = 0.7 * (1 - departure * 0.2);
         characterOpacity = 1 - smoothstep(3.45, 4.35, elapsed);
+
+        // Once the farewell beam sequence ends, keep the second ULAK alive
+        // with a subtle, continuous idle loop instead of freezing on a blank frame.
+        if (farewellIdle) {
+          beamDescent = 0;
+          beamOpacity = 0;
+          characterOpacity = 1;
+          characterY = Math.sin(idleTime * 1.7) * 2.2;
+          characterScale = 0.7 * (1 + Math.sin(idleTime * 1.2) * 0.004);
+          saluteProgress = 0;
+          headNod = Math.sin(idleTime * 1.35) * 0.025;
+        }
       }
 
-      const breathing = reducedMotion ? 0 : Math.sin(now / 680) * 1.2;
+      const breathing = reducedMotion ? 0 : Math.sin(now / 680) * (farewellIdle ? 2.0 : 1.2);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawBeam(beamOpacity, beamDescent);
 
@@ -202,20 +216,26 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
         // Keep the original complete limb sprites intact. The current sheet does
         // not provide confirmed upper-arm/forearm layers, so no artificial elbow cut is made.
-        drawPart("legLeft", 157, 318, 80, 136);
-        drawPart("legRight", 243, 318, 80, 136);
+        const idleLegSway = farewellIdle && !reducedMotion ? Math.sin(idleTime * 1.4) * 0.012 : 0;
+        drawPart("legLeft", 157, 318, 80, 136, idleLegSway, 40, 10);
+        drawPart("legRight", 243, 318, 80, 136, -idleLegSway, 40, 10);
         drawPart("torso", 153, 171, 174, 220);
 
         // Viewer-left arm is the character's right arm and performs the salute.
         // This is a shoulder rotation only; a separate elbow bend needs a split sprite.
-        drawPart("armLeft", 70, 224, 112, 204, -0.06 - saluteProgress * 0.98, 94, 22);
-        drawPart("armRight", 298, 224, 112, 204, 0.06, 18, 22);
+        const idleArmSway = farewellIdle && !reducedMotion ? Math.sin(idleTime * 1.6) * 0.018 : 0;
+        // Move both shoulder pivots slightly toward the torso so the joint caps
+        // sit closer to the shoulder sockets while preserving the original arms.
+        drawPart("armLeft", 78, 224, 112, 204, -0.06 - saluteProgress * 0.98 - idleArmSway, 94, 22);
+        drawPart("armRight", 290, 224, 112, 204, 0.06 + idleArmSway, 18, 22);
         drawPart("head", 112, 8, 256, 207, headNod, 128, 188);
 
         ctx.restore();
       }
 
-      if (fixedTime === undefined && !reducedMotion && (isWelcome ? elapsed < 3.2 : elapsed < 5.7)) {
+      if (fixedTime === undefined && !reducedMotion && (isWelcome ? elapsed < 3.2 : true)) {
+        // Welcome is a one-shot entrance. Farewell continues indefinitely in
+        // idle mode after its beam departure sequence completes.
         animationFrame = requestAnimationFrame(render);
       } else {
         hasPlayed = true;
