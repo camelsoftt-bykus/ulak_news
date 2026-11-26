@@ -282,17 +282,27 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
         // Front-view feet/legs match the supplied complete-character reference.
         // The two leg sprites are kept vertical and move only by a tiny symmetric sway.
-        drawPart("legLeft", 166, 310, 72, 142, legSway, 36, 12);
-        drawPart("legRight", 242, 310, 72, 142, -legSway, 36, 12);
+        // Kaynak görseldeki sağ/sol bacak parçaları yer değiştirilerek çizilir.
+        drawPart("legRight", 166, 310, 72, 142, legSway, 36, 12);
+        drawPart("legLeft", 242, 310, 72, 142, -legSway, 36, 12);
 
         // Kollar gövdenin arkasında: omuz soketleri gövde kenarının altında kalır.
         const leftAngle = lerp(ARM_OUT_ANGLE, WAVE_ANGLE, raise) + armSway + wave;
         const rightAngle = ARM_OUT_ANGLE + armSway;
 
         drawArm("armRight", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -rightAngle);
-        drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
+
+        // Kaldırılan sol kol gövdenin arkasında kaybolmasın; selam verirken
+        // gövdenin önünde çizilir. Dinlenme pozunda omuz birleşimi arkada kalır.
+        if (raise <= 0.05) {
+          drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
+        }
 
         drawPart("torso", TORSO.x, TORSO.y, TORSO.w, 212);
+
+        if (raise > 0.05) {
+          drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
+        }
 
         if (process.env.NODE_ENV !== "production") {
           ctx.fillStyle = "red";
