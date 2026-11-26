@@ -8,7 +8,7 @@ type PartName = "head" | "torso" | "armLeft" | "armRight" | "legLeft" | "legRigh
 type ArmName = "armLeft" | "armRight";
 
 // Gövde ve kafa: eski parça sayfası
-const PART_SHEET = "/1795733381339.jpg";
+const PART_SHEET = "/1795656495621.jpg";
 // Kollar: yeni kol sayfası (sol ve sağ kol ayrı parçalar)
 const ARM_SHEET = "/1795638496249.jpg";
 // Bacaklar: önden referans
@@ -17,8 +17,8 @@ const FRONT_REFERENCE = "/1795636155857.jpg";
 const ASSET_COUNT = 3;
 
 const PART_CROPS: Record<"head" | "torso", Crop> = {
-  head: { x: 230, y: 52, w: 246, h: 218 },
-  torso: { x: 260, y: 298, w: 186, h: 166 },
+  head: { x: 30, y: 52, w: 355, h: 310 },
+  torso: { x: 412, y: 118, w: 205, h: 292 },
 };
 
 // Kol kırpmaları, yeni sayfada piksel ölçümüyle belirlendi.
@@ -42,17 +42,17 @@ const ARM_PIVOTS: Record<ArmName, { x: number; y: number }> = {
   armRight: { x: 23, y: 27 },
 };
 
-const TORSO = { x: 153, y: 174, w: 174, h: 156 };
+const TORSO = { x: 153, y: 174, w: 174, h: 212 };
 
 const SHOULDER_LEFT = { x: 176, y: 239 };
 const SHOULDER_RIGHT = { x: 310, y: 239 };
 const ARM_OUT_ANGLE = 0.1;
 // Tek sol kolun selamlaşma/kaldırma açısı.
-const WAVE_ANGLE = (150 * Math.PI) / 180;
+const WAVE_ANGLE = (122 * Math.PI) / 180;
 
 type SpriteMap = Partial<Record<PartName, HTMLCanvasElement>>;
 
-function preparePart(source: HTMLImageElement, crop: Crop, background: "cyan" | "checker" | "white"): HTMLCanvasElement {
+function preparePart(source: HTMLImageElement, crop: Crop, background: "cyan" | "checker"): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.width = crop.w;
   canvas.height = crop.h;
@@ -73,14 +73,9 @@ function preparePart(source: HTMLImageElement, crop: Crop, background: "cyan" | 
       const cyanEdge = g > 125 && b > 125 && r < 135 && Math.min(g, b) - r > 32;
       if (cyan) pixels[i + 3] = 0;
       else if (cyanEdge) pixels[i + 3] = Math.round(pixels[i + 3] * 0.16);
-    } else if (background === "white") {
-      // White JPEG background: remove only near-neutral whites, preserving warm cream armor.
-      const spread = Math.max(r, g, b) - Math.min(r, g, b);
-      const min = Math.min(r, g, b);
-      if (spread < 20 && min > 238) pixels[i + 3] = 0;
-      else if (spread < 25 && min > 220) pixels[i + 3] = Math.round(pixels[i + 3] * 0.12);
     } else {
-      // Neutral checkerboard background; warm robot colors remain.
+      // The checkerboard is neutral grey/white; the warm cream/orange robot
+      // remains chromatically distinct. Softly feather edge pixels.
       const max = Math.max(r, g, b);
       const min = Math.min(r, g, b);
       if (max - min < 18 && min > 100) pixels[i + 3] = 0;
@@ -256,7 +251,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       const armSway = idle && !reducedMotion ? Math.sin(idleT * 1.6) * 0.018 : 0;
       const wave =
         !welcome && t > 1.6 && t < 2.9
-          ? Math.sin((t - 1.6) * Math.PI * 2 * 1.2) * 0.12
+          ? Math.sin((t - 1.6) * Math.PI * 2 * 1.2) * 0.10
           : 0;
       const legSway = idle && !reducedMotion ? Math.sin(idleT * 1.4) * 0.012 : 0;
 
@@ -288,7 +283,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
           drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
         }
 
-        drawPart("torso", TORSO.x, TORSO.y, TORSO.w, TORSO.h);
+        drawPart("torso", TORSO.x, TORSO.y, TORSO.w, 212);
 
         if (raise > 0.05) {
           drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
@@ -321,8 +316,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       readyCount += 1;
       if (readyCount !== ASSET_COUNT || disposed) return;
 
-      sprites.head = preparePart(partImage, PART_CROPS.head, "white");
-      sprites.torso = preparePart(partImage, PART_CROPS.torso, "white");
+      sprites.head = preparePart(partImage, PART_CROPS.head, "cyan");
+      sprites.torso = preparePart(partImage, PART_CROPS.torso, "cyan");
       sprites.armLeft = preparePart(armImage, ARM_CROPS.armLeft, "cyan");
       sprites.armRight = preparePart(armImage, ARM_CROPS.armRight, "cyan");
       sprites.legLeft = preparePart(frontImage, FRONT_LEG_CROPS.legLeft, "checker");
