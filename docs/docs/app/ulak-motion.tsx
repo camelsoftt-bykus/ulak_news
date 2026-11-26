@@ -306,13 +306,13 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         // Kaldırılan sol kol gövdenin arkasında kaybolmasın; selam verirken
         // gövdenin önünde çizilir. Dinlenme pozunda omuz birleşimi arkada kalır.
         if (raise <= 0.05) {
-          drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle, leftForeshorten);
+          drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
         }
 
         drawPart("torso", TORSO.x, TORSO.y, TORSO.w, 212);
 
         if (raise > 0.05) {
-          drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
+          drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle, leftForeshorten);
         }
 
         if (process.env.NODE_ENV !== "production") {
