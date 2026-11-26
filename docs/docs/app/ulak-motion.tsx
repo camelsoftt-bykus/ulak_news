@@ -88,6 +88,10 @@ function preparePart(source: HTMLImageElement, crop: Crop, background: "cyan" | 
   return canvas;
 }
 
+function lerp(start: number, end: number, amount: number): number {
+  return start + (end - start) * amount;
+}
+
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
@@ -282,7 +286,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
     };
 
     const start = () => {
-      if (disposed || readyCount !== 2) return;
+      if (disposed || readyCount !== ASSET_COUNT) return;
       started = true;
       startedAt = performance.now();
       cancelAnimationFrame(animationFrame);
@@ -297,7 +301,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
     const onAssetsReady = () => {
       readyCount += 1;
-      if (readyCount !== 2 || disposed) return;
+      if (readyCount !== ASSET_COUNT || disposed) return;
 
       sprites.head = preparePart(partImage, PART_CROPS.head, "cyan");
       sprites.torso = preparePart(partImage, PART_CROPS.torso, "cyan");
