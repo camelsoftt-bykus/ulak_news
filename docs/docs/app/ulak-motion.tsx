@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type UlakMotionProps = { variant: "welcome" | "farewell" };
 type Crop = { x: number; y: number; w: number; h: number };
-type PartName = "head" | "torso" | "armLeft" | "armRight" | "saluteArmLeft" | "saluteArmRight" | "legLeft" | "legRight";
-type ArmName = "armLeft" | "armRight" | "saluteArmLeft" | "saluteArmRight";
+type PartName = "head" | "torso" | "armLeft" | "armRight" | "saluteArmLeft" | "legLeft" | "legRight";
+type ArmName = "armLeft" | "armRight" | "saluteArmLeft";
 
 const PART_SHEET = "/1795656495621.jpg";
 const FRONT_REFERENCE = "/1795636155857.jpg";
@@ -19,9 +19,8 @@ const PART_CROPS: Record<Exclude<PartName, "legLeft" | "legRight">, Crop> = {
   // Pixel-measured bounds from the 1024×1024 modular parts sheet.
   armLeft: { x: 370, y: 456, w: 126, h: 304 },
   armRight: { x: 542, y: 456, w: 126, h: 304 },
-  // Salute mapping: source part B on the left, source part A on the right.
+  // Salute: source part B is used for the left arm; the right uses the full-length armRight sprite.
   saluteArmLeft: { x: 849, y: 141, w: 138, h: 297 },
-  saluteArmRight: { x: 640, y: 84, w: 170, h: 160 },
 };
 
 const FRONT_LEG_CROPS: Record<"legLeft" | "legRight", Crop> = {
@@ -37,7 +36,6 @@ const ARM_PIVOTS: Record<ArmName, { x: number; y: number }> = {
   armLeft: { x: 87, y: 32 },
   armRight: { x: 39, y: 33 },
   saluteArmLeft: { x: 37, y: 29 },
-  saluteArmRight: { x: 35, y: 121 },
 };
 
 const TORSO = { x: 153, y: 174, w: 174 };
@@ -45,9 +43,10 @@ const SHOULDER_INSET = 16;
 const SHOULDER_LEFT_X = TORSO.x + SHOULDER_INSET;
 const SHOULDER_RIGHT_X = TORSO.x + TORSO.w - SHOULDER_INSET;
 const ARM_Y = (194 + 176 * 0.05) * 1.05;
-const ARM_OUT_ANGLE = 0.12;
-// Rotate the left salute sprite clockwise so its hand stays beside the left edge of the head.
+const ARM_OUT_ANGLE = 0.35;
+// Left salute uses source part B; the right uses the full-length armRight sprite.
 const SALUTE_LEFT_ANGLE = (165 * Math.PI) / 180;
+const SALUTE_RIGHT_ANGLE = (-150 * Math.PI) / 180;
 
 type SpriteMap = Partial<Record<PartName, HTMLCanvasElement>>;
 
@@ -277,7 +276,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
           ctx.save();
           ctx.globalAlpha *= salute;
           drawArm("saluteArmLeft", SHOULDER_LEFT_X, ARM_Y, SALUTE_LEFT_ANGLE);
-          drawArm("saluteArmRight", SHOULDER_RIGHT_X, ARM_Y, 0);
+          drawArm("armRight", SHOULDER_RIGHT_X, ARM_Y, SALUTE_RIGHT_ANGLE);
           ctx.restore();
         }
         ctx.restore();
@@ -311,7 +310,6 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       sprites.armLeft = preparePart(modularImage, PART_CROPS.armLeft, "cyan");
       sprites.armRight = preparePart(modularImage, PART_CROPS.armRight, "cyan");
       sprites.saluteArmLeft = preparePart(modularImage, PART_CROPS.saluteArmLeft, "cyan");
-      sprites.saluteArmRight = preparePart(modularImage, PART_CROPS.saluteArmRight, "cyan");
       sprites.legLeft = preparePart(frontImage, FRONT_LEG_CROPS.legLeft, "checker");
       sprites.legRight = preparePart(frontImage, FRONT_LEG_CROPS.legRight, "checker");
 
