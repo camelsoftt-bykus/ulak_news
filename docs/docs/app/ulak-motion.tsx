@@ -220,10 +220,10 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
         drawPart("torso", 153, 174, 174, 212);
 
-        // Keep every arm pose visibly clear of the torso: shift each arm outward
-        // by 10% of torso width and angle it away from the body.
+        // Move every arm pose a further 10% of torso width outward.
+        // Total horizontal separation from the original shoulder anchors is now 20%.
         const armWidth = 83;
-        const outward = 174 * 0.10;
+        const outward = 174 * 0.20;
         const leftArmX = 143 - outward;
         const rightArmX = 254 + outward;
         const outwardAngle = 0.20;
