@@ -234,14 +234,14 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
           drawPart("armRight", rightArmX, 194, armWidth, 176,
             outwardAngle + armSway, 14, 24);
         } else {
-          // Before the salute: use the two straight arms from the lower-center
-          // pair, swapped left-to-right as requested.
+          // Before the salute: correct the straight-arm attachment.
+          // The previous mapping put the opposite source arm on each shoulder.
           const saluteBlend = salute;
           ctx.save();
           ctx.globalAlpha *= 1 - saluteBlend;
-          drawPart("armRight", leftArmX, 194, armWidth, 176,
+          drawPart("armLeft", leftArmX, 194, armWidth, 176,
             -outwardAngle - armSway, 69, 24);
-          drawPart("armLeft", rightArmX, 194, armWidth, 176,
+          drawPart("armRight", rightArmX, 194, armWidth, 176,
             outwardAngle + armSway, 14, 24);
           ctx.restore();
 
