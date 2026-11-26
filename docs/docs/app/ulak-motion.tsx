@@ -222,7 +222,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
         // Move each shoulder outward by 5% of the torso width in both scenes.
         const armWidth = 83;
-        const outward = 174 * 0.05;
+        // Add a clear 5% body-width gap on each side; the previous 5% was too subtle.
+        const outward = 174 * 0.10;
         const leftArmX = 143 - outward;
         const rightArmX = 254 + outward;
         const outwardAngle = 0.06;
