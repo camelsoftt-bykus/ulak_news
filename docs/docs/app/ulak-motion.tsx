@@ -59,11 +59,11 @@ const SOCKET_SHEET = {
   right: { x: 603, y: 207 },
 };
 
-const SHOULDER_LEFT = torsoPoint(SOCKET_SHEET.left.x, SOCKET_SHEET.left.y);
-const SHOULDER_RIGHT = torsoPoint(SOCKET_SHEET.right.x, SOCKET_SHEET.right.y);
-const ARM_OUT_ANGLE = 0.35;
-// Kaldırma pozundaki açı (radyan). Kollar başın iki yanında yukarı-dışa açılır.
-const RAISE_ANGLE = (122 * Math.PI) / 180;
+const SHOULDER_LEFT = { x: 176, y: 239 };
+const SHOULDER_RIGHT = { x: 310, y: 239 };
+const ARM_OUT_ANGLE = 0.1;
+// Tek sol kolun selamlaşma/kaldırma açısı.
+const WAVE_ANGLE = (150 * Math.PI) / 180;
 
 type SpriteMap = Partial<Record<PartName, HTMLCanvasElement>>;
 
@@ -264,6 +264,10 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
       const breathing = reducedMotion ? 0 : Math.sin(now / 650) * (idle ? 2.1 : 1.0);
       const armSway = idle && !reducedMotion ? Math.sin(idleT * 1.6) * 0.018 : 0;
+      const wave =
+        !welcome && t > 1.6 && t < 2.9
+          ? Math.sin((t - 1.6) * Math.PI * 2 * 1.2) * 0.12
+          : 0;
       const legSway = idle && !reducedMotion ? Math.sin(idleT * 1.4) * 0.012 : 0;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -281,14 +285,20 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         drawPart("legLeft", 166, 310, 72, 142, legSway, 36, 12);
         drawPart("legRight", 242, 310, 72, 142, -legSway, 36, 12);
 
+        // Kollar gövdenin arkasında: omuz soketleri gövde kenarının altında kalır.
+        const leftAngle = lerp(ARM_OUT_ANGLE, WAVE_ANGLE, raise) + armSway + wave;
+        const rightAngle = ARM_OUT_ANGLE + armSway;
+
+        drawArm("armRight", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -rightAngle);
+        drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
+
         drawPart("torso", TORSO.x, TORSO.y, TORSO.w, 212);
 
-        // Duruştan kaldırma pozuna yumuşak geçiş.
-        // Sol kol pozitif yönde, sağ kol negatif yönde döner.
-        const armAngle = lerp(ARM_OUT_ANGLE, RAISE_ANGLE, raise);
-
-        drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, armAngle + armSway);
-        drawArm("armRight", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -(armAngle + armSway));
+        if (process.env.NODE_ENV !== "production") {
+          ctx.fillStyle = "red";
+          ctx.fillRect(SHOULDER_LEFT.x - 2, SHOULDER_LEFT.y - 2, 4, 4);
+          ctx.fillRect(SHOULDER_RIGHT.x - 2, SHOULDER_RIGHT.y - 2, 4, 4);
+        }
 
         drawPart("head", 119, 8, 242, 198, nod, 121, 176);
         ctx.restore();
