@@ -4,9 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type UlakMotionProps = { variant: "welcome" | "farewell" };
 type Crop = { x: number; y: number; w: number; h: number };
-type PartName = "head" | "torso" | "armLeft" | "armRight" | "legLeft" | "legRight";
+type PartName = "head" | "torso" | "armLeft" | "armRight" | "armSalute" | "legLeft" | "legRight";
 
-const PART_SHEET = "/1795638599702.jpg";
+const PART_SHEET = "/1795656495621.jpg";
 const FRONT_REFERENCE = "/1795636155857.jpg";
 
 // Head, torso and hanging arms are taken from the modular parts sheet.
@@ -15,8 +15,9 @@ const FRONT_REFERENCE = "/1795636155857.jpg";
 const PART_CROPS: Record<Exclude<PartName, "legLeft" | "legRight">, Crop> = {
   head: { x: 30, y: 52, w: 355, h: 310 },
   torso: { x: 412, y: 118, w: 205, h: 292 },
-  armLeft: { x: 380, y: 448, w: 150, h: 330 },
-  armRight: { x: 520, y: 448, w: 150, h: 330 },
+  armLeft: { x: 360, y: 452, w: 165, h: 330 },
+  armRight: { x: 510, y: 452, w: 165, h: 330 },
+  armSalute: { x: 632, y: 76, w: 190, h: 182 },
 };
 
 const FRONT_LEG_CROPS: Record<"legLeft" | "legRight", Crop> = {
@@ -216,7 +217,19 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
         drawPart("torso", 153, 174, 174, 212);
         // Shoulder pivots sit inside the torso edge; salute rotates the viewer-left arm.
-        drawPart("armLeft", 143, 194, 83, 176, -0.025 - salute * 0.92 - armSway, 69, 24);
+        // Crossfade the relaxed arm into the bent-arm salute pose from the new sheet.
+        if (salute > 0.01 && sprites.armSalute) {
+          ctx.save();
+          ctx.globalAlpha *= salute;
+          ctx.translate(185, 170);
+          ctx.scale(-1, 1);
+          ctx.drawImage(sprites.armSalute, 0, 0, 100, 96);
+          ctx.restore();
+        }
+        ctx.save();
+        ctx.globalAlpha *= 1 - salute;
+        drawPart("armLeft", 143, 194, 83, 176, -0.025 - armSway, 69, 24);
+        ctx.restore();
         drawPart("armRight", 254, 194, 83, 176, 0.025 + armSway, 14, 24);
         drawPart("head", 119, 8, 242, 198, nod, 121, 176);
 
@@ -250,6 +263,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       sprites.torso = preparePart(modularImage, PART_CROPS.torso, "cyan");
       sprites.armLeft = preparePart(modularImage, PART_CROPS.armLeft, "cyan");
       sprites.armRight = preparePart(modularImage, PART_CROPS.armRight, "cyan");
+      sprites.armSalute = preparePart(modularImage, PART_CROPS.armSalute, "cyan");
       sprites.legLeft = preparePart(frontImage, FRONT_LEG_CROPS.legLeft, "checker");
       sprites.legRight = preparePart(frontImage, FRONT_LEG_CROPS.legRight, "checker");
 
