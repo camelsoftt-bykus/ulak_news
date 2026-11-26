@@ -4,23 +4,28 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type UlakMotionProps = { variant: "welcome" | "farewell" };
 type Crop = { x: number; y: number; w: number; h: number };
-type PartName = "head" | "torso" | "armLeft" | "armRight" | "saluteArmLeft" | "legLeft" | "legRight";
-type ArmName = "armLeft" | "armRight" | "saluteArmLeft";
+type PartName = "head" | "torso" | "armLeft" | "armRight" | "legLeft" | "legRight";
+type ArmName = "armLeft" | "armRight";
 
+// Gövde ve kafa: eski parça sayfası
 const PART_SHEET = "/1795656495621.jpg";
+// Kollar: yeni kol sayfası (sol ve sağ kol ayrı parçalar)
+const ARM_SHEET = "/1795638496249.jpg";
+// Bacaklar: önden referans
 const FRONT_REFERENCE = "/1795636155857.jpg";
 
-// Head, torso and hanging arms are taken from the modular parts sheet.
-// The legs are taken from the full-front reference so the feet keep their
-// correct forward-facing orientation instead of using the side-view leg parts.
-const PART_CROPS: Record<Exclude<PartName, "legLeft" | "legRight">, Crop> = {
+const ASSET_COUNT = 3;
+
+const PART_CROPS: Record<"head" | "torso", Crop> = {
   head: { x: 30, y: 52, w: 355, h: 310 },
   torso: { x: 412, y: 118, w: 205, h: 292 },
-  // Pixel-measured bounds from the 1024×1024 modular parts sheet.
-  armLeft: { x: 370, y: 456, w: 126, h: 304 },
-  armRight: { x: 542, y: 456, w: 126, h: 304 },
-  // Salute: source part B is used for the left arm; the right uses the full-length armRight sprite.
-  saluteArmLeft: { x: 849, y: 141, w: 138, h: 297 },
+};
+
+// Kol kırpmaları, yeni sayfada piksel ölçümüyle belirlendi.
+// Sol kol 664–807 x 145–435, sağ kol 851–984 x 143–436.
+const ARM_CROPS: Record<ArmName, Crop> = {
+  armLeft: { x: 660, y: 141, w: 152, h: 299 },
+  armRight: { x: 847, y: 139, w: 141, h: 301 },
 };
 
 const FRONT_LEG_CROPS: Record<"legLeft" | "legRight", Crop> = {
@@ -33,9 +38,8 @@ const ARM_SCALE = 176 / 304;
 
 // Socket centers measured inside each corresponding crop.
 const ARM_PIVOTS: Record<ArmName, { x: number; y: number }> = {
-  armLeft: { x: 87, y: 32 },
-  armRight: { x: 39, y: 33 },
-  saluteArmLeft: { x: 37, y: 29 },
+  armLeft: { x: 120, y: 26 },
+  armRight: { x: 45, y: 27 },
 };
 
 const TORSO = { x: 153, y: 174, w: 174 };
@@ -44,9 +48,8 @@ const SHOULDER_LEFT_X = TORSO.x + SHOULDER_INSET;
 const SHOULDER_RIGHT_X = TORSO.x + TORSO.w - SHOULDER_INSET;
 const ARM_Y = (194 + 176 * 0.05) * 1.05;
 const ARM_OUT_ANGLE = 0.35;
-// Left salute uses source part B; the right uses the full-length armRight sprite.
-const SALUTE_LEFT_ANGLE = (165 * Math.PI) / 180;
-const SALUTE_RIGHT_ANGLE = (-150 * Math.PI) / 180;
+// Kaldırma pozundaki açı (radyan). Kollar başın iki yanında yukarı-dışa açılır.
+const RAISE_ANGLE = (122 * Math.PI) / 180;
 
 type SpriteMap = Partial<Record<PartName, HTMLCanvasElement>>;
 
@@ -105,9 +108,12 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
 
-    const modularImage = new Image();
+    const partImage = new Image();
+    const armImage = new Image();
     const frontImage = new Image();
-    modularImage.src = PART_SHEET;
+
+    partImage.src = PART_SHEET;
+    armImage.src = ARM_SHEET;
     frontImage.src = FRONT_REFERENCE;
 
     const sprites: SpriteMap = {};
@@ -198,7 +204,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
     };
 
     const render = (now: number, fixedTime?: number) => {
-      if (disposed || readyCount !== 2) return;
+      if (disposed || readyCount !== ASSET_COUNT) return;
       const t = fixedTime ?? (now - startedAt) / 1000;
       const welcome = variant === "welcome";
       const idle = !welcome && t >= 5.8;
@@ -208,7 +214,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       let beamOpacity = 0;
       let characterOpacity = 1;
       let characterY = 0;
-      let salute = 0;
+      let raise = 0;
       let nod = 0;
 
       if (welcome) {
@@ -219,7 +225,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         characterY = -105 * (1 - arrival);
         nod = t > 1.8 && t < 2.8 ? Math.sin(((t - 1.8) / 1.0) * Math.PI) * 0.055 : 0;
       } else {
-        salute = smoothstep(0.35, 1.55, t);
+        raise = smoothstep(0.35, 1.55, t);
         nod = t > 1.6 && t < 2.35 ? Math.sin(((t - 1.6) / 0.75) * Math.PI) * 0.045 : 0;
         const beamArrival = smoothstep(2.0, 2.72, t);
         const beamRetraction = smoothstep(4.35, 5.35, t);
@@ -233,7 +239,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
           beamOpacity = 0;
           characterOpacity = 1;
           characterY = Math.sin(idleT * 1.65) * 2.5;
-          salute = 0;
+          raise = 0;
           nod = Math.sin(idleT * 1.25) * 0.025;
         }
       }
@@ -259,26 +265,14 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
         drawPart("torso", TORSO.x, TORSO.y, TORSO.w, 212);
 
-        const armAngleLeft = ARM_OUT_ANGLE + armSway;
-        const armAngleRight = -(ARM_OUT_ANGLE + armSway);
+        // Duruştan kaldırma pozuna yumuşak geçiş.
+        // Sol kol pozitif yönde, sağ kol negatif yönde döner.
+        const armAngle = lerp(ARM_OUT_ANGLE, RAISE_ANGLE, raise);
 
-        // Straight arms remain attached to their own shoulder sockets in both animations.
-        ctx.save();
-        ctx.globalAlpha *= welcome ? 1 : 1 - salute;
-        drawArm("armLeft", SHOULDER_LEFT_X, ARM_Y, armAngleLeft);
-        drawArm("armRight", SHOULDER_RIGHT_X, ARM_Y, armAngleRight);
-        ctx.restore();
+        drawArm("armLeft", SHOULDER_LEFT_X, ARM_Y, armAngle + armSway);
+        drawArm("armRight", SHOULDER_RIGHT_X, ARM_Y, -(armAngle + armSway));
 
         drawPart("head", 119, 8, 242, 198, nod, 121, 176);
-
-        // Both distinct bent-arm sprites form the salute, in front of the head.
-        if (!welcome && salute > 0.001) {
-          ctx.save();
-          ctx.globalAlpha *= salute;
-          drawArm("saluteArmLeft", SHOULDER_LEFT_X, ARM_Y, SALUTE_LEFT_ANGLE);
-          drawArm("armRight", SHOULDER_RIGHT_X, ARM_Y, SALUTE_RIGHT_ANGLE);
-          ctx.restore();
-        }
         ctx.restore();
       }
 
@@ -305,11 +299,10 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       readyCount += 1;
       if (readyCount !== 2 || disposed) return;
 
-      sprites.head = preparePart(modularImage, PART_CROPS.head, "cyan");
-      sprites.torso = preparePart(modularImage, PART_CROPS.torso, "cyan");
-      sprites.armLeft = preparePart(modularImage, PART_CROPS.armLeft, "cyan");
-      sprites.armRight = preparePart(modularImage, PART_CROPS.armRight, "cyan");
-      sprites.saluteArmLeft = preparePart(modularImage, PART_CROPS.saluteArmLeft, "cyan");
+      sprites.head = preparePart(partImage, PART_CROPS.head, "cyan");
+      sprites.torso = preparePart(partImage, PART_CROPS.torso, "cyan");
+      sprites.armLeft = preparePart(armImage, ARM_CROPS.armLeft, "cyan");
+      sprites.armRight = preparePart(armImage, ARM_CROPS.armRight, "cyan");
       sprites.legLeft = preparePart(frontImage, FRONT_LEG_CROPS.legLeft, "checker");
       sprites.legRight = preparePart(frontImage, FRONT_LEG_CROPS.legRight, "checker");
 
@@ -334,18 +327,22 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       }
     };
 
-    modularImage.onload = onAssetsReady;
+    partImage.onload = onAssetsReady;
+    armImage.onload = onAssetsReady;
     frontImage.onload = onAssetsReady;
-    modularImage.onerror = () => console.error("ULAK parça görseli yüklenemedi:", PART_SHEET);
+    partImage.onerror = () => console.error("ULAK parça görseli yüklenemedi:", PART_SHEET);
+    armImage.onerror = () => console.error("ULAK kol görseli yüklenemedi:", ARM_SHEET);
     frontImage.onerror = () => console.error("ULAK önden referans görseli yüklenemedi:", FRONT_REFERENCE);
 
     return () => {
       disposed = true;
       cancelAnimationFrame(animationFrame);
       observer?.disconnect();
-      modularImage.onload = null;
+      partImage.onload = null;
+      armImage.onload = null;
       frontImage.onload = null;
-      modularImage.onerror = null;
+      partImage.onerror = null;
+      armImage.onerror = null;
       frontImage.onerror = null;
     };
   }, [variant, replayKey]);
