@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type UlakMotionProps = { variant: "welcome" | "farewell" };
 type Crop = { x: number; y: number; w: number; h: number };
-type PartName = "head" | "torso" | "armLeft" | "armRight" | "armSalute" | "legLeft" | "legRight";
+type PartName = "head" | "torso" | "armLeft" | "armRight" | "saluteArmLeft" | "saluteArmRight" | "legLeft" | "legRight";
 
 const PART_SHEET = "/1795656495621.jpg";
 const FRONT_REFERENCE = "/1795636155857.jpg";
@@ -15,9 +15,12 @@ const FRONT_REFERENCE = "/1795636155857.jpg";
 const PART_CROPS: Record<Exclude<PartName, "legLeft" | "legRight">, Crop> = {
   head: { x: 30, y: 52, w: 355, h: 310 },
   torso: { x: 412, y: 118, w: 205, h: 292 },
-  armLeft: { x: 360, y: 452, w: 165, h: 330 },
-  armRight: { x: 510, y: 452, w: 165, h: 330 },
-  armSalute: { x: 632, y: 76, w: 190, h: 182 },
+  // First pose: the two straight hanging arms at the lower center of the PNG.
+  armLeft: { x: 390, y: 458, w: 145, h: 345 },
+  armRight: { x: 535, y: 458, w: 150, h: 345 },
+  // Second pose: both separate bent salute arms at the upper-right of the PNG.
+  saluteArmLeft: { x: 632, y: 72, w: 190, h: 190 },
+  saluteArmRight: { x: 820, y: 130, w: 190, h: 330 },
 };
 
 const FRONT_LEG_CROPS: Record<"legLeft" | "legRight", Crop> = {
@@ -230,33 +233,26 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
           drawPart("armRight", rightArmX, 194, armWidth, 176,
             outwardAngle + armSway, 14, 24);
         } else {
-          // Swap the straight arms only in the pre-salute pose. As the salute
-          // begins, restore the natural free-arm side and replace only the
-          // saluting arm, avoiding the previous double-fade/vanishing-arm glitch.
-          const freeArmBlend = smoothstep(0.12, 0.88, salute);
+          // Before the salute: use the two straight arms from the lower-center
+          // pair, swapped left-to-right as requested.
+          const saluteBlend = salute;
           ctx.save();
-          ctx.globalAlpha *= 1 - freeArmBlend;
+          ctx.globalAlpha *= 1 - saluteBlend;
           drawPart("armRight", leftArmX, 194, armWidth, 176,
             -outwardAngle - armSway, 69, 24);
-          ctx.restore();
-
-          ctx.save();
-          ctx.globalAlpha *= freeArmBlend;
-          drawPart("armLeft", leftArmX, 194, armWidth, 176,
-            -outwardAngle - armSway, 69, 24);
-          ctx.restore();
-
-          ctx.save();
-          ctx.globalAlpha *= 1 - salute;
           drawPart("armLeft", rightArmX, 194, armWidth, 176,
             outwardAngle + armSway, 14, 24);
           ctx.restore();
 
-          if (sprites.armSalute && salute > 0.001) {
+          // During the salute: use BOTH bent arms from the upper-right pair.
+          // Each sprite stays on its own shoulder; no single-arm overlay.
+          if (saluteBlend > 0.001) {
             ctx.save();
-            ctx.globalAlpha *= salute;
-            ctx.translate(rightArmX + armWidth, 194);
-            ctx.drawImage(sprites.armSalute, -armWidth, 0, armWidth, 96);
+            ctx.globalAlpha *= saluteBlend;
+            drawPart("saluteArmLeft", leftArmX, 194, armWidth, 176,
+              -outwardAngle, 69, 24);
+            drawPart("saluteArmRight", rightArmX, 194, armWidth, 176,
+              outwardAngle, 14, 24);
             ctx.restore();
           }
         }
@@ -292,7 +288,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       sprites.torso = preparePart(modularImage, PART_CROPS.torso, "cyan");
       sprites.armLeft = preparePart(modularImage, PART_CROPS.armLeft, "cyan");
       sprites.armRight = preparePart(modularImage, PART_CROPS.armRight, "cyan");
-      sprites.armSalute = preparePart(modularImage, PART_CROPS.armSalute, "cyan");
+      sprites.saluteArmLeft = preparePart(modularImage, PART_CROPS.saluteArmLeft, "cyan");
+      sprites.saluteArmRight = preparePart(modularImage, PART_CROPS.saluteArmRight, "cyan");
       sprites.legLeft = preparePart(frontImage, FRONT_LEG_CROPS.legLeft, "checker");
       sprites.legRight = preparePart(frontImage, FRONT_LEG_CROPS.legRight, "checker");
 
