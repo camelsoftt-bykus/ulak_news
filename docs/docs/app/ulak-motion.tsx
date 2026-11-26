@@ -6,15 +6,16 @@ type UlakMotionProps = { variant: "welcome" | "farewell" };
 type Crop = { x: number; y: number; w: number; h: number };
 type PartName = "head" | "torso" | "armLeft" | "armRight" | "legLeft" | "legRight";
 type ArmName = "armLeft" | "armRight";
+type RigPartName = "upperLeft" | "upperRight" | "foreLeft" | "foreRight" | "handLeft" | "handRight";
 
 // Gövde ve kafa: eski parça sayfası
 const PART_SHEET = "/1795656495621.jpg";
-// Kollar: yeni kol sayfası (sol ve sağ kol ayrı parçalar)
-const ARM_SHEET = "/1795638496249.jpg";
+// Eklemli kol parçaları: üst kol, ön kol ve eller ayrı sprite olarak kullanılır.
+const RIG_SHEET = "/1795733381339.jpg";
 // Bacaklar: önden referans
 const FRONT_REFERENCE = "/1795636155857.jpg";
 
-const ASSET_COUNT = 3;
+const ASSET_COUNT = 4;
 
 const PART_CROPS: Record<"head" | "torso", Crop> = {
   head: { x: 30, y: 52, w: 355, h: 310 },
@@ -33,13 +34,20 @@ const FRONT_LEG_CROPS: Record<"legLeft" | "legRight", Crop> = {
   legRight: { x: 685, y: 470, w: 122, h: 245 },
 };
 
-// Preserve the source aspect ratio for every arm sprite.
-const ARM_SCALE = 176 / 304;
-
-// Socket centers measured inside each corresponding crop.
-const ARM_PIVOTS: Record<ArmName, { x: number; y: number }> = {
-  armLeft: { x: 123, y: 29 },
-  armRight: { x: 23, y: 27 },
+// Ayrı üst kol, ön kol ve el kırpmaları; kaynak görsel 704 x 1524.
+const RIG_CROPS: Record<RigPartName, Crop> = {
+  upperLeft: { x: 94, y: 302, w: 106, h: 158 },
+  upperRight: { x: 506, y: 302, w: 112, h: 158 },
+  foreLeft: { x: 91, y: 486, w: 78, h: 153 },
+  foreRight: { x: 544, y: 486, w: 79, h: 153 },
+  handLeft: { x: 94, y: 665, w: 82, h: 103 },
+  handRight: { x: 522, y: 665, w: 104, h: 103 },
+};
+const RIG_SCALE = 0.56;
+const RIG_PIVOTS: Record<RigPartName, { x: number; y: number }> = {
+  upperLeft: { x: 72, y: 29 }, upperRight: { x: 29, y: 29 },
+  foreLeft: { x: 39, y: 14 }, foreRight: { x: 39, y: 14 },
+  handLeft: { x: 41, y: 13 }, handRight: { x: 52, y: 13 },
 };
 
 const TORSO = { x: 153, y: 174, w: 174, h: 212 };
@@ -51,6 +59,7 @@ const ARM_OUT_ANGLE = 0.1;
 const WAVE_ANGLE = (122 * Math.PI) / 180;
 
 type SpriteMap = Partial<Record<PartName, HTMLCanvasElement>>;
+type RigSpriteMap = Partial<Record<RigPartName, HTMLCanvasElement>>;
 
 function preparePart(source: HTMLImageElement, crop: Crop, background: "cyan" | "checker"): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
@@ -87,6 +96,24 @@ function preparePart(source: HTMLImageElement, crop: Crop, background: "cyan" | 
   return canvas;
 }
 
+function prepareRigPart(source: HTMLImageElement, crop: Crop): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = crop.w; canvas.height = crop.h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return canvas;
+  ctx.drawImage(source, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
+  const frame = ctx.getImageData(0, 0, crop.w, crop.h);
+  const p = frame.data;
+  for (let i = 0; i < p.length; i += 4) {
+    const rr=p[i], gg=p[i+1], bb=p[i+2];
+    const spread=Math.max(rr,gg,bb)-Math.min(rr,gg,bb);
+    if (rr > 242 && gg > 242 && bb > 238 && spread < 18) p[i+3]=0;
+    else if (rr > 232 && gg > 232 && bb > 228 && spread < 15) p[i+3]=Math.round(p[i+3]*0.18);
+  }
+  ctx.putImageData(frame,0,0);
+  return canvas;
+}
+
 function lerp(start: number, end: number, amount: number): number {
   return start + (end - start) * amount;
 }
@@ -113,13 +140,16 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
     const partImage = new Image();
     const armImage = new Image();
+    const rigImage = new Image();
     const frontImage = new Image();
 
     partImage.src = PART_SHEET;
     armImage.src = ARM_SHEET;
+    rigImage.src = RIG_SHEET;
     frontImage.src = FRONT_REFERENCE;
 
     const sprites: SpriteMap = {};
+    const rigSprites: RigSpriteMap = {};
     let readyCount = 0;
     let animationFrame = 0;
     let startedAt = 0;
@@ -147,7 +177,29 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.restore();
     };
 
-    // Rotate each arm around its measured shoulder socket without distorting its aspect ratio.
+    // Omuz -> üst kol -> dirsek -> ön kol -> bilek -> el zinciri.
+    const drawJointArm = (side: "Left" | "Right", shoulderX: number, shoulderY: number, shoulderAngle: number, elbowBend: number, wristAngle: number) => {
+      const upperName: RigPartName = side === "Left" ? "upperLeft" : "upperRight";
+      const foreName: RigPartName = side === "Left" ? "foreLeft" : "foreRight";
+      const handName: RigPartName = side === "Left" ? "handLeft" : "handRight";
+      const upper=rigSprites[upperName], fore=rigSprites[foreName], hand=rigSprites[handName];
+      if (!upper || !fore || !hand) return;
+      const up=RIG_PIVOTS[upperName], fp=RIG_PIVOTS[foreName], hp=RIG_PIVOTS[handName];
+      const elbowLocal = side === "Left" ? {x:-49*RIG_SCALE,y:91*RIG_SCALE} : {x:55*RIG_SCALE,y:91*RIG_SCALE};
+      ctx.save();
+      ctx.translate(shoulderX,shoulderY);
+      ctx.rotate(shoulderAngle);
+      ctx.drawImage(upper,-up.x*RIG_SCALE,-up.y*RIG_SCALE,upper.width*RIG_SCALE,upper.height*RIG_SCALE);
+      ctx.translate(elbowLocal.x,elbowLocal.y);
+      ctx.rotate((side === "Left" ? -0.10 : 0.10)+elbowBend);
+      ctx.drawImage(fore,-fp.x*RIG_SCALE,-fp.y*RIG_SCALE,fore.width*RIG_SCALE,fore.height*RIG_SCALE);
+      ctx.translate(0,121*RIG_SCALE);
+      ctx.rotate(wristAngle);
+      ctx.drawImage(hand,-hp.x*RIG_SCALE,-hp.y*RIG_SCALE,hand.width*RIG_SCALE,hand.height*RIG_SCALE);
+      ctx.restore();
+    };
+
+    // Eski kol çizimi, yeni parça görseli yüklenemezse geri dönüş olarak kalır.
     const drawArm = (name: ArmName, shoulderX: number, shoulderY: number, angle: number) => {
       const sprite = sprites[name];
       if (!sprite) return;
@@ -275,18 +327,21 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         const leftAngle = lerp(ARM_OUT_ANGLE, WAVE_ANGLE, raise) + armSway + wave;
         const rightAngle = ARM_OUT_ANGLE + armSway;
 
-        drawArm("armRight", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -rightAngle);
+        if (rigSprites.upperRight && rigSprites.foreRight && rigSprites.handRight) drawJointArm("Right", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -0.12-rightAngle, 0.16, 0);
+        else drawArm("armRight", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -rightAngle);
 
         // Kaldırılan sol kol gövdenin arkasında kaybolmasın; selam verirken
         // gövdenin önünde çizilir. Dinlenme pozunda omuz birleşimi arkada kalır.
         if (raise <= 0.05) {
-          drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
+          if (rigSprites.upperLeft && rigSprites.foreLeft && rigSprites.handLeft) drawJointArm("Left", SHOULDER_LEFT.x, SHOULDER_LEFT.y, -0.12+armSway, 0.18, 0);
+          else drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
         }
 
         drawPart("torso", TORSO.x, TORSO.y, TORSO.w, 212);
 
         if (raise > 0.05) {
-          drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
+          if (rigSprites.upperLeft && rigSprites.foreLeft && rigSprites.handLeft) drawJointArm("Left", SHOULDER_LEFT.x, SHOULDER_LEFT.y, -0.12+raise*2.05+armSway, 0.18+raise*0.72, wave*2);
+          else drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
         }
 
         drawPart("head", 119, 8, 242, 198, nod, 121, 176);
@@ -320,6 +375,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       sprites.torso = preparePart(partImage, PART_CROPS.torso, "cyan");
       sprites.armLeft = preparePart(armImage, ARM_CROPS.armLeft, "cyan");
       sprites.armRight = preparePart(armImage, ARM_CROPS.armRight, "cyan");
+      for (const name of Object.keys(RIG_CROPS) as RigPartName[]) rigSprites[name] = prepareRigPart(rigImage, RIG_CROPS[name]);
       sprites.legLeft = preparePart(frontImage, FRONT_LEG_CROPS.legLeft, "checker");
       sprites.legRight = preparePart(frontImage, FRONT_LEG_CROPS.legRight, "checker");
 
@@ -346,9 +402,11 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
     partImage.onload = onAssetsReady;
     armImage.onload = onAssetsReady;
+    rigImage.onload = onAssetsReady;
     frontImage.onload = onAssetsReady;
     partImage.onerror = () => console.error("ULAK parça görseli yüklenemedi:", PART_SHEET);
     armImage.onerror = () => console.error("ULAK kol görseli yüklenemedi:", ARM_SHEET);
+    rigImage.onerror = () => console.error("ULAK eklemli uzuv görseli yüklenemedi:", RIG_SHEET);
     frontImage.onerror = () => console.error("ULAK önden referans görseli yüklenemedi:", FRONT_REFERENCE);
 
     return () => {
@@ -357,9 +415,11 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       observer?.disconnect();
       partImage.onload = null;
       armImage.onload = null;
+      rigImage.onload = null;
       frontImage.onload = null;
       partImage.onerror = null;
       armImage.onerror = null;
+      rigImage.onerror = null;
       frontImage.onerror = null;
     };
   }, [variant, replayKey]);
