@@ -216,21 +216,38 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         drawPart("legRight", 242, 310, 72, 142, -legSway, 36, 12);
 
         drawPart("torso", 153, 174, 174, 212);
-        // Shoulder pivots sit inside the torso edge; salute rotates the viewer-left arm.
-        // Crossfade the relaxed arm into the bent-arm salute pose from the new sheet.
-        if (salute > 0.01 && sprites.armSalute) {
+        // Both arms open outward by approximately 5% of their rendered width.
+        // On farewell, exchange the left/right arm sprites at the shoulder positions.
+        const armWidth = 83;
+        const leftArmX = 143 - armWidth * 0.05;
+        const rightArmX = 254 + armWidth * 0.05;
+        const outwardAngle = 0.06;
+        const leftArmSprite: PartName = welcome ? "armLeft" : "armRight";
+        const rightArmSprite: PartName = welcome ? "armRight" : "armLeft";
+
+        // The bent salute sprite takes the viewer-right shoulder on farewell,
+        // matching the swapped arm arrangement; it fades in over the relaxed arm.
+        if (!welcome && salute > 0.01 && sprites.armSalute) {
           ctx.save();
           ctx.globalAlpha *= salute;
-          ctx.translate(185, 170);
-          ctx.scale(-1, 1);
-          ctx.drawImage(sprites.armSalute, 0, 0, 100, 96);
+          ctx.translate(rightArmX + armWidth, 194);
+          ctx.drawImage(sprites.armSalute, -armWidth, 0, armWidth, 96);
           ctx.restore();
         }
+
         ctx.save();
         ctx.globalAlpha *= 1 - salute;
-        drawPart("armLeft", 143, 194, 83, 176, -0.025 - armSway, 69, 24);
+        drawPart(leftArmSprite, leftArmX, 194, armWidth, 176,
+          -outwardAngle - armSway, 69, 24);
         ctx.restore();
-        drawPart("armRight", 254, 194, 83, 176, 0.025 + armSway, 14, 24);
+
+        if (welcome || salute < 0.99) {
+          ctx.save();
+          ctx.globalAlpha *= welcome ? 1 : 1 - salute;
+          drawPart(rightArmSprite, rightArmX, 194, armWidth, 176,
+            outwardAngle + armSway, 14, 24);
+          ctx.restore();
+        }
         drawPart("head", 119, 8, 242, 198, nod, 121, 176);
 
         ctx.restore();
