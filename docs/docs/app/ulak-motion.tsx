@@ -38,15 +38,29 @@ const ARM_SCALE = 176 / 304;
 
 // Socket centers measured inside each corresponding crop.
 const ARM_PIVOTS: Record<ArmName, { x: number; y: number }> = {
-  armLeft: { x: 120, y: 26 },
-  armRight: { x: 45, y: 27 },
+  armLeft: { x: 123, y: 29 },
+  armRight: { x: 23, y: 27 },
 };
 
-const TORSO = { x: 153, y: 174, w: 174 };
-const SHOULDER_INSET = 16;
-const SHOULDER_LEFT_X = TORSO.x + SHOULDER_INSET;
-const SHOULDER_RIGHT_X = TORSO.x + TORSO.w - SHOULDER_INSET;
-const ARM_Y = (194 + 176 * 0.05) * 1.05;
+// Gövde sprite'ındaki soket koordinatlarını çizilen gövde boyutuna dönüştür.
+const TORSO = { x: 153, y: 174, w: 174, h: 212 };
+
+function torsoPoint(sx: number, sy: number) {
+  const src = PART_CROPS.torso;
+  return {
+    x: TORSO.x + (sx - src.x) * (TORSO.w / src.w),
+    y: TORSO.y + (sy - src.y) * (TORSO.h / src.h),
+  };
+}
+
+// Kaynak görsel üzerinde tahmini ölçülen omuz soket merkezleri.
+const SOCKET_SHEET = {
+  left: { x: 433, y: 207 },
+  right: { x: 603, y: 207 },
+};
+
+const SHOULDER_LEFT = torsoPoint(SOCKET_SHEET.left.x, SOCKET_SHEET.left.y);
+const SHOULDER_RIGHT = torsoPoint(SOCKET_SHEET.right.x, SOCKET_SHEET.right.y);
 const ARM_OUT_ANGLE = 0.35;
 // Kaldırma pozundaki açı (radyan). Kollar başın iki yanında yukarı-dışa açılır.
 const RAISE_ANGLE = (122 * Math.PI) / 180;
@@ -273,8 +287,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         // Sol kol pozitif yönde, sağ kol negatif yönde döner.
         const armAngle = lerp(ARM_OUT_ANGLE, RAISE_ANGLE, raise);
 
-        drawArm("armLeft", SHOULDER_LEFT_X, ARM_Y, armAngle + armSway);
-        drawArm("armRight", SHOULDER_RIGHT_X, ARM_Y, -(armAngle + armSway));
+        drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, armAngle + armSway);
+        drawArm("armRight", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -(armAngle + armSway));
 
         drawPart("head", 119, 8, 242, 198, nod, 121, 176);
         ctx.restore();
