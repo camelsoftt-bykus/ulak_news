@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 type UlakMotionProps = { variant: "welcome" | "farewell" };
 type Crop = { x: number; y: number; w: number; h: number };
 type PartName = "head" | "torso" | "armLeft" | "armRight" | "saluteArmLeft" | "saluteArmRight" | "legLeft" | "legRight";
+type ArmName = "armLeft" | "armRight" | "saluteArmLeft" | "saluteArmRight";
 
 const PART_SHEET = "/1795656495621.jpg";
 const FRONT_REFERENCE = "/1795636155857.jpg";
@@ -15,18 +16,35 @@ const FRONT_REFERENCE = "/1795636155857.jpg";
 const PART_CROPS: Record<Exclude<PartName, "legLeft" | "legRight">, Crop> = {
   head: { x: 30, y: 52, w: 355, h: 310 },
   torso: { x: 412, y: 118, w: 205, h: 292 },
-  // First pose: the two straight hanging arms at the lower center of the PNG.
-  armLeft: { x: 390, y: 458, w: 145, h: 345 },
-  armRight: { x: 535, y: 458, w: 150, h: 345 },
-  // Second pose: both separate bent salute arms at the upper-right of the PNG.
-  saluteArmLeft: { x: 632, y: 72, w: 190, h: 190 },
-  saluteArmRight: { x: 820, y: 130, w: 190, h: 330 },
+  // Pixel-measured bounds from the 1024×1024 modular parts sheet.
+  armLeft: { x: 370, y: 456, w: 126, h: 304 },
+  armRight: { x: 542, y: 456, w: 126, h: 304 },
+  saluteArmLeft: { x: 640, y: 84, w: 170, h: 160 },
+  saluteArmRight: { x: 849, y: 141, w: 138, h: 297 },
 };
 
 const FRONT_LEG_CROPS: Record<"legLeft" | "legRight", Crop> = {
   legLeft: { x: 570, y: 470, w: 122, h: 245 },
   legRight: { x: 685, y: 470, w: 122, h: 245 },
 };
+
+// Preserve the source aspect ratio for every arm sprite.
+const ARM_SCALE = 176 / 304;
+
+// Socket centers measured inside each corresponding crop.
+const ARM_PIVOTS: Record<ArmName, { x: number; y: number }> = {
+  armLeft: { x: 87, y: 32 },
+  armRight: { x: 39, y: 33 },
+  saluteArmLeft: { x: 35, y: 121 },
+  saluteArmRight: { x: 37, y: 29 },
+};
+
+const TORSO = { x: 153, y: 174, w: 174 };
+const SHOULDER_INSET = 16;
+const SHOULDER_LEFT_X = TORSO.x + SHOULDER_INSET;
+const SHOULDER_RIGHT_X = TORSO.x + TORSO.w - SHOULDER_INSET;
+const ARM_Y = (194 + 176 * 0.05) * 1.05;
+const ARM_OUT_ANGLE = 0.12;
 
 type SpriteMap = Partial<Record<PartName, HTMLCanvasElement>>;
 
@@ -115,6 +133,25 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.translate(x + pivotX, y + pivotY);
       ctx.rotate(angle);
       ctx.drawImage(sprite, -pivotX, -pivotY, width, height);
+      ctx.restore();
+    };
+
+    // Rotate each arm around its measured shoulder socket without distorting its aspect ratio.
+    const drawArm = (name: ArmName, shoulderX: number, shoulderY: number, angle: number) => {
+      const sprite = sprites[name];
+      if (!sprite) return;
+      const pivot = ARM_PIVOTS[name];
+
+      ctx.save();
+      ctx.translate(shoulderX, shoulderY);
+      ctx.rotate(angle);
+      ctx.drawImage(
+        sprite,
+        -pivot.x * ARM_SCALE,
+        -pivot.y * ARM_SCALE,
+        sprite.width * ARM_SCALE,
+        sprite.height * ARM_SCALE
+      );
       ctx.restore();
     };
 
@@ -218,50 +255,28 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         drawPart("legLeft", 166, 310, 72, 142, legSway, 36, 12);
         drawPart("legRight", 242, 310, 72, 142, -legSway, 36, 12);
 
-        drawPart("torso", 153, 174, 174, 212);
+        drawPart("torso", TORSO.x, TORSO.y, TORSO.w, 212);
 
-        // Move every arm pose a further 5% of torso width outward.
-        // Total horizontal separation from the original shoulder anchors is now 25%.
-        const armWidth = 83;
-        const outward = 174 * 0.25;
-        const leftArmX = 143 - outward;
-        const rightArmX = 254 + outward;
-        const outwardAngle = 0.20;
-        const armDrop = 176 * 0.05;
+        const armAngleLeft = ARM_OUT_ANGLE + armSway;
+        const armAngleRight = -(ARM_OUT_ANGLE + armSway);
 
-        if (welcome) {
-          drawPart("armLeft", leftArmX, 194 + armDrop, armWidth, 176,
-            -outwardAngle - armSway, 69, 24);
-          drawPart("armRight", rightArmX, 194 + armDrop, armWidth, 176,
-            outwardAngle + armSway, 14, 24);
-        } else {
-          // Before the salute: correct the straight-arm attachment.
-          // The previous mapping put the opposite source arm on each shoulder.
-          const saluteBlend = salute;
-          ctx.save();
-          ctx.globalAlpha *= 1 - saluteBlend;
-          drawPart("armLeft", leftArmX, 194 + armDrop, armWidth, 176,
-            -outwardAngle - armSway, 69, 24);
-          drawPart("armRight", rightArmX, 194 + armDrop, armWidth, 176,
-            outwardAngle + armSway, 14, 24);
-          ctx.restore();
-
-          // During the salute: use BOTH bent arms from the upper-right pair.
-          // Each sprite stays on its own shoulder; no single-arm overlay.
-          if (saluteBlend > 0.001) {
-            ctx.save();
-            ctx.globalAlpha *= saluteBlend;
-            // Saluting bent arm rises by 30% of its rendered height.
-            drawPart("saluteArmLeft", leftArmX, 194 + armDrop - 176 * 0.30, armWidth, 176,
-              -outwardAngle, 69, 24);
-            // The opposite arm lowers by 10% of its rendered height.
-            drawPart("saluteArmRight", rightArmX, 194 + armDrop + 176 * 0.10, armWidth, 176,
-              outwardAngle, 14, 24);
-            ctx.restore();
-          }
-        }
+        // Straight arms remain attached to their own shoulder sockets in both animations.
+        ctx.save();
+        ctx.globalAlpha *= welcome ? 1 : 1 - salute;
+        drawArm("armLeft", SHOULDER_LEFT_X, ARM_Y, armAngleLeft);
+        drawArm("armRight", SHOULDER_RIGHT_X, ARM_Y, armAngleRight);
+        ctx.restore();
 
         drawPart("head", 119, 8, 242, 198, nod, 121, 176);
+
+        // Both distinct bent-arm sprites form the salute, in front of the head.
+        if (!welcome && salute > 0.001) {
+          ctx.save();
+          ctx.globalAlpha *= salute;
+          drawArm("saluteArmLeft", SHOULDER_LEFT_X, ARM_Y - 176 * 0.30, 0);
+          drawArm("saluteArmRight", SHOULDER_RIGHT_X, ARM_Y + 176 * 0.10, 0);
+          ctx.restore();
+        }
         ctx.restore();
       }
 
