@@ -220,13 +220,13 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
         drawPart("torso", 153, 174, 174, 212);
 
-        // Move each shoulder outward by 5% of the torso width in both scenes.
+        // Keep every arm pose visibly clear of the torso: shift each arm outward
+        // by 10% of torso width and angle it away from the body.
         const armWidth = 83;
-        // Add a clear 5% body-width gap on each side; the previous 5% was too subtle.
         const outward = 174 * 0.10;
         const leftArmX = 143 - outward;
         const rightArmX = 254 + outward;
-        const outwardAngle = 0.06;
+        const outwardAngle = 0.20;
 
         if (welcome) {
           drawPart("armLeft", leftArmX, 194, armWidth, 176,
