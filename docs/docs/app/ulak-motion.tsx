@@ -202,7 +202,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.drawImage(fore,-fp.x*RIG_SCALE,-fp.y*RIG_SCALE,fore.width*RIG_SCALE,fore.height*RIG_SCALE);
       ctx.translate(0,121*RIG_SCALE);
       ctx.rotate(wristAngle);
-      if (side === "Left" && !welcome) {
+      if (side === "Left" && variant === "farewell") {
         // Vedada eli bilek ekseninde yatay aynala; avuç/el yönü ters tarafa bakmasın.
         ctx.scale(-1, 1);
         ctx.drawImage(hand, -(hand.width - hp.x) * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
