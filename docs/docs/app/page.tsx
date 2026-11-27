@@ -1,13 +1,25 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import NewsFeed from "./news-feed";
 import UlakMotion from "./ulak-motion";
 
 type Bulletin = {
   generatedAt?: string;
-  news?: Array<{ title?: string }>;
+  count: number;
+  script: string;
+  news: Array<{
+    sourceId: string;
+    sourceName: string;
+    title: string;
+    link: string;
+    summary: string;
+    editorialSummary?: string;
+    whyImportant?: string;
+    publishedAt: string | null;
+    imageUrl?: string;
+    imageTitle?: string;
+    fallbackImageUrl?: string;
+    fallbackImageTitle?: string;
+  }>;
 };
 
 const sections = [
@@ -18,31 +30,25 @@ const sections = [
   { name: "Bilim & Uzay", id: "bilim-ve-uzay" },
 ];
 
-export default function Home() {
-  const [bulletin, setBulletin] = useState<Bulletin | null>(null);
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    let active = true;
-    const loadBulletin = () => {
-      fetch("/data/daily.json?t=" + Date.now(), { cache: "no-store" })
-        .then((response) => {
-          if (!response.ok) throw new Error("Bülten alınamadı");
-          return response.json();
-        })
-        .then((data: Bulletin) => {
-          if (active && data && Array.isArray(data.news) && data.generatedAt) setBulletin(data);
-        })
-        .catch(() => {
-          // Ağ hatasında son başarılı video ekranda kalır.
-        });
-    };
-    loadBulletin();
-    const refresh = window.setInterval(loadBulletin, 60_000);
-    return () => {
-      active = false;
-      window.clearInterval(refresh);
-    };
-  }, []);
+async function loadLatestBulletin(): Promise<Bulletin | null> {
+  try {
+    const response = await fetch("https://ulaknews-docs.vercel.app/data/daily.json", {
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (!data || !Array.isArray(data.news) || !data.generatedAt) return null;
+    return data as Bulletin;
+  } catch {
+    return null;
+  }
+}
+
+export default async function Home() {
+  const bulletin = await loadLatestBulletin();
 
   const today = new Intl.DateTimeFormat("tr-TR", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
@@ -113,7 +119,7 @@ export default function Home() {
             </div>
           )}
         </section>
-        <NewsFeed />
+        <NewsFeed initialBulletin={bulletin} />
       </section>
       <UlakMotion variant="farewell" />
       <footer style={{ marginTop: 36, borderTop: "3px double #3b352e", background: "#f2ece1" }}>

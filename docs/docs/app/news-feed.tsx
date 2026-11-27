@@ -84,9 +84,9 @@ function uniqueStories(items: NewsItem[]): NewsItem[] {
   return kept;
 }
 
-export default function NewsFeed() {
-  const [bulletin, setBulletin] = useState<DailyBulletin | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function NewsFeed({ initialBulletin }: { initialBulletin: DailyBulletin | null }) {
+  const [bulletin, setBulletin] = useState<DailyBulletin | null>(initialBulletin);
+  const [loading, setLoading] = useState(!initialBulletin);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -96,20 +96,29 @@ export default function NewsFeed() {
         const response = await fetch("/data/daily.json?t=" + Date.now(), { cache: "no-store" });
         if (!response.ok) throw new Error("Günlük haberler alınamadı.");
         const data = await response.json();
-        if (!Array.isArray(data.news)) throw new Error("Haber listesi geçersiz.");
-        if (active) setBulletin(data);
+        if (!Array.isArray(data.news) || !data.generatedAt) throw new Error("Haber listesi geçersiz.");
+        if (active) {
+          setBulletin(data);
+          setError(false);
+        }
       } catch {
-        if (active) setError(true);
+        if (active && !initialBulletin) setError(true);
       } finally {
         if (active) setLoading(false);
       }
     }
-    loadBulletin();
-    return () => { active = false; };
+    void loadBulletin();
+    const refresh = window.setInterval(loadBulletin, 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(refresh);
+    };
   }, []);
 
-  if (loading) return <p className="muted">ULAK’TAN HABERLER hazırlanıyor...</p>;
-  if (error || !bulletin) return <p className="muted">Haberler şu anda yüklenemiyor. Lütfen biraz sonra yeniden dene.</p>;
+  if (loading && !bulletin) return <p className="muted">ULAK’TAN HABERLER hazırlanıyor...</p>;
+  if (error && !bulletin) return <p className="muted">Haberler şu anda yüklenemiyor. Lütfen biraz sonra yeniden dene.</p>;
+
+  if (!bulletin) return <p className="muted">Haberler şu anda görüntülenemiyor.</p>;
 
   const stories = uniqueStories(bulletin.news);
   return (
