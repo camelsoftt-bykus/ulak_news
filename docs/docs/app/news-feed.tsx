@@ -130,7 +130,7 @@ export default function NewsFeed() {
             {items.length === 0 ? <p className="muted">Bu bölümde bugün yeni bir haber bulunmuyor.</p> : (
               <div className="news-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
                 {items.map((item, index) => (
-                  <article key={item.sourceId + "-" + item.link} className="news-card" style={{ padding: 0, overflow: "hidden", borderRadius: 8, borderColor: "#d9d0c4", background: "url(/ulak-paper-texture.jpg) repeat", backgroundSize: "320px 320px", boxShadow: "0 5px 18px rgba(75, 54, 35, 0.08)" }}>
+                  <article key={item.sourceId + "-" + item.link} className="news-card paper-card" style={{ padding: 0, overflow: "hidden", borderRadius: 8, borderColor: "#d9d0c4" }}>
                     {item.imageUrl ? <img src={"/api/news-image?url=" + encodeURIComponent(item.imageUrl)} alt={item.imageTitle || item.title} loading="lazy" referrerPolicy="no-referrer" onError={(event) => {
                       const image = event.currentTarget;
                       if (item.fallbackImageUrl && image.dataset.fallback !== "used") {
@@ -154,7 +154,7 @@ export default function NewsFeed() {
                         <strong style={{ fontSize: 11, color: "#986033", textTransform: "uppercase", letterSpacing: 1 }}>Haberin özeti</strong>
                         <p style={{ marginTop: 6 }}>{item.editorialSummary || item.summary || "Bu haber için özet bulunmuyor."}</p>
                       </div>
-                      {item.whyImportant && <div style={{ marginTop: 10, padding: 12, background: "url(/ulak-paper-texture.jpg) repeat", borderLeft: "3px solid #bd8958" }}>
+                      {item.whyImportant && <div className="paper-card paper-card--inset" style={{ marginTop: 10, padding: 12, borderLeft: "3px solid #bd8958" }}>
                         <strong style={{ fontSize: 12 }}>Neden önemli?</strong>
                         <p style={{ margin: "5px 0 0" }}>{item.whyImportant}</p>
                       </div>}
