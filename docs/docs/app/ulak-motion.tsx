@@ -330,8 +330,10 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         // Front-view feet/legs match the supplied complete-character reference.
         // The two leg sprites are kept vertical and move only by a tiny symmetric sway.
         // Kaynak görseldeki sağ/sol bacak parçaları yer değiştirilerek çizilir.
-        drawPart("legRight", 166, 310, 72, 142, legSway, 36, 12);
-        drawPart("legLeft", 242, 310, 72, 142, -legSway, 36, 12);
+        // Ayak uçlarını dışa çevir: ekranda soldaki bacak +, sağdaki bacak - açı alır.
+        const TOE_OUT_ANGLE = (10 * Math.PI) / 180;
+        drawPart("legRight", 166, 310, 72, 142, TOE_OUT_ANGLE + legSway, 36, 12);
+        drawPart("legLeft", 242, 310, 72, 142, -TOE_OUT_ANGLE - legSway, 36, 12);
 
         // Kollar tek bir sabit z-sırasında, daima gövdenin arkasında çizilir.
         const rigReady = Boolean(
