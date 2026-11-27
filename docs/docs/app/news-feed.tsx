@@ -144,7 +144,7 @@ export default function NewsFeed() {
                       }
                     }} style={{ width: "100%", height: 190, objectFit: "cover", display: "block", background: "#eee7dc" }} /> : null}
                     <div style={{ height: 190, display: item.imageUrl ? "none" : "flex", alignItems: "center", justifyContent: "center", padding: 20, textAlign: "center", color: "#756d63", background: "linear-gradient(135deg,#eee7dc,#d9cbb8)", fontFamily: "Georgia,serif", fontSize: 18 }}>{item.title}</div>
-                    <div style={{ padding: 18, display: "flex", flexDirection: "column", flex: 1 }}>
+                    <div className="paper-surface" style={{ padding: 18, display: "flex", flexDirection: "column", flex: 1 }}>
                       <div className="news-card-top">
                         <span className="news-number">{String(index + 1).padStart(2, "0")}</span>
                         <span className="news-category">{categoryInfo[item.sourceId]?.label || "GÜNDEM"}</span>
