@@ -1489,11 +1489,12 @@ a {
   width: clamp(92px, 12vw, 124px);
   height: clamp(92px, 12vw, 124px);
   aspect-ratio: 1 / 1;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
+  box-sizing: border-box;
   border-radius: 50%;
   border: 1px solid rgba(105, 69, 43, 0.72);
-  padding: 3px;
+  padding: 7px;
   background-color: #eee4d3;
   background-image: url("/ulak-paper-texture.jpg");
   background-repeat: repeat;
