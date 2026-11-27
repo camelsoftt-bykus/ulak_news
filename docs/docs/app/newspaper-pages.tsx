@@ -18,7 +18,7 @@ function formatEditionDate(value?: string): string {
       });
 }
 
-function formatStoryDate(value: string | null): string {
+function formatStoryDate(value?: string | null): string {
   if (!value) return "";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("tr-TR");
@@ -32,6 +32,10 @@ export default function NewspaperPages({ items, generatedAt }: Props) {
 
   const [current, setCurrent] = useState(0);
   const [turning, setTurning] = useState<"next" | "prev" | null>(null);
+
+  useEffect(() => {
+    setCurrent((page) => Math.min(page, Math.max(0, pages.length - 1)));
+  }, [pages.length]);
 
   useEffect(() => {
     if (!turning) return;
@@ -54,17 +58,18 @@ export default function NewspaperPages({ items, generatedAt }: Props) {
   const secondary = pageItems.slice(1);
 
   const renderImage = (item: NewspaperItem, className: string) => {
-    if (!item.imageUrl) return null;
+    const initialImageUrl = item.imageUrl || item.fallbackImageUrl;
+    if (!initialImageUrl) return null;
     return (
       <img
         className={className}
-        src={"/api/news-image?url=" + encodeURIComponent(item.imageUrl)}
+        src={"/api/news-image?url=" + encodeURIComponent(initialImageUrl)}
         alt={item.imageTitle || item.title}
         loading="lazy"
         referrerPolicy="no-referrer"
         onError={(event) => {
           const image = event.currentTarget;
-          if (item.fallbackImageUrl && image.dataset.fallback !== "used") {
+          if (item.imageUrl && item.fallbackImageUrl && image.dataset.fallback !== "used") {
             image.dataset.fallback = "used";
             image.src = "/api/news-image?url=" + encodeURIComponent(item.fallbackImageUrl);
             image.alt = item.fallbackImageTitle || item.title;
@@ -74,6 +79,7 @@ export default function NewspaperPages({ items, generatedAt }: Props) {
             if (fallback) fallback.style.display = "grid";
           }
         }}
+        data-fallback={!item.imageUrl && item.fallbackImageUrl ? "used" : undefined}
       />
     );
   };
@@ -87,7 +93,7 @@ export default function NewspaperPages({ items, generatedAt }: Props) {
       {leadStory ? <h2>{item.title}</h2> : <h3>{item.title}</h3>}
       <p>{item.editorialSummary || item.summary || "Bu haber için özet bulunmuyor."}</p>
       {item.whyImportant && <p className="np-why"><strong>Neden önemli?</strong> {item.whyImportant}</p>}
-      <a href={item.link} target="_blank" rel="noopener noreferrer">Haberin devamı →</a>
+      {item.link ? <a href={item.link} target="_blank" rel="noopener noreferrer">Haberin devamı →</a> : <span className="np-source-unavailable">Kaynak bağlantısı mevcut değil.</span>}
     </>
   );
 
@@ -111,7 +117,7 @@ export default function NewspaperPages({ items, generatedAt }: Props) {
             <section className="np-lead">
               <div className="np-image-frame">
                 {renderImage(lead, "np-lead-image")}
-                <div className="np-image-fallback" style={{ display: lead.imageUrl ? "none" : "grid" }}>{lead.title}</div>
+                <div className="np-image-fallback" style={{ display: lead.imageUrl || lead.fallbackImageUrl ? "none" : "grid" }}>{lead.title}</div>
               </div>
               <div className="np-lead-copy">{renderStoryText(lead, true)}</div>
             </section>
@@ -121,7 +127,7 @@ export default function NewspaperPages({ items, generatedAt }: Props) {
                   <article className="np-story" key={item.sourceId + "-" + item.link}>
                     <div className="np-image-frame">
                       {renderImage(item, "np-story-image")}
-                      <div className="np-image-fallback" style={{ display: item.imageUrl ? "none" : "grid" }}>{item.title}</div>
+                      <div className="np-image-fallback" style={{ display: item.imageUrl || item.fallbackImageUrl ? "none" : "grid" }}>{item.title}</div>
                     </div>
                     {renderStoryText(item)}
                   </article>
@@ -138,11 +144,11 @@ export default function NewspaperPages({ items, generatedAt }: Props) {
       </article>
 
       <nav className="np-nav" aria-label="Gazete sayfaları arasında gezin">
-        <button type="button" onClick={() => go("prev")} disabled={current === 0 || !!turning}>
+        <button type="button" aria-label="Önceki haber sayfası" onClick={() => go("prev")} disabled={current === 0 || !!turning}>
           ← Önceki sayfa
         </button>
         <span className="np-page-count">{pages.length ? current + 1 + " / " + pages.length : "0 / 0"}</span>
-        <button type="button" onClick={() => go("next")} disabled={current >= pages.length - 1 || !!turning}>
+        <button type="button" aria-label="Sonraki haber sayfası" onClick={() => go("next")} disabled={current >= pages.length - 1 || !!turning}>
           Sonraki sayfa →
         </button>
       </nav>
