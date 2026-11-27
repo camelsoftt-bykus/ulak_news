@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import NewspaperPages from "./newspaper-pages";
 
-type NewsItem = {
+export type NewsItem = {
   sourceId: string;
   sourceName: string;
   title: string;
@@ -111,65 +112,15 @@ export default function NewsFeed() {
   if (loading) return <p className="muted">ULAK’TAN HABERLER hazırlanıyor...</p>;
   if (error || !bulletin) return <p className="muted">Haberler şu anda yüklenemiyor. Lütfen biraz sonra yeniden dene.</p>;
 
-  const stories = uniqueStories(bulletin.news);
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, borderBottom: "1px solid #cfc5b7", paddingBottom: 12, marginBottom: 24 }}>
-        <div>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#986033", fontWeight: 800 }}>SON GELİŞMELER</div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 22, marginTop: 4 }}>Bugünün manşetleri</div>
-          <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{formatGeneratedAt(bulletin.generatedAt)} · {stories.length} haber</div>
-        </div>
-      </div>
+  const stories = uniqueStories(bulletin.news).map((item) => ({
+    ...item,
+    categoryLabel: categoryInfo[item.sourceId]?.label || "GÜNDEM",
+  }));
 
-      {sections.map((section) => {
-        const items = stories.filter((item) => categoryInfo[item.sourceId]?.section === section.name);
-        return (
-          <section key={section.id} style={{ marginBottom: 34 }}>
-            <h2 id={section.id} style={{ fontFamily: "Georgia, serif", fontSize: 27, borderBottom: "2px solid #3b352e", paddingBottom: 9, marginBottom: 16, scrollMarginTop: 90 }}>{section.name}</h2>
-            {items.length === 0 ? <p className="muted">Bu bölümde bugün yeni bir haber bulunmuyor.</p> : (
-              <div className="news-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-                {items.map((item, index) => (
-                  <article key={item.sourceId + "-" + item.link} className="news-card paper-card" style={{ padding: 0, overflow: "hidden", borderRadius: 8, borderColor: "#d9d0c4" }}>
-                    {item.imageUrl ? <img src={"/api/news-image?url=" + encodeURIComponent(item.imageUrl)} alt={item.imageTitle || item.title} loading="lazy" referrerPolicy="no-referrer" onError={(event) => {
-                      const image = event.currentTarget;
-                      if (item.fallbackImageUrl && image.dataset.fallback !== "used") {
-                        image.dataset.fallback = "used";
-                        image.src = "/api/news-image?url=" + encodeURIComponent(item.fallbackImageUrl);
-                        image.alt = item.fallbackImageTitle || item.title;
-                      } else {
-                        image.style.display = "none";
-                        const fallback = image.nextElementSibling as HTMLElement | null;
-                        if (fallback) fallback.style.display = "flex";
-                      }
-                    }} style={{ width: "100%", height: 190, objectFit: "cover", display: "block", background: "#eee7dc" }} /> : null}
-                    <div style={{ height: 190, display: item.imageUrl ? "none" : "flex", alignItems: "center", justifyContent: "center", padding: 20, textAlign: "center", color: "#756d63", background: "linear-gradient(135deg,#eee7dc,#d9cbb8)", fontFamily: "Georgia,serif", fontSize: 18 }}>{item.title}</div>
-                    <div className="paper-surface" style={{ padding: 18, display: "flex", flexDirection: "column", flex: 1 }}>
-                      <div className="news-card-top">
-                        <span className="news-number">{String(index + 1).padStart(2, "0")}</span>
-                        <span className="news-category">{categoryInfo[item.sourceId]?.label || "GÜNDEM"}</span>
-                      </div>
-                      <h3 style={{ fontFamily: "Georgia, serif", fontSize: 21, lineHeight: 1.3, margin: "14px 0 5px" }}>{item.title}</h3>
-                      <div style={{ marginTop: 12 }}>
-                        <strong style={{ fontSize: 11, color: "#986033", textTransform: "uppercase", letterSpacing: 1 }}>Haberin özeti</strong>
-                        <p style={{ marginTop: 6 }}>{item.editorialSummary || item.summary || "Bu haber için özet bulunmuyor."}</p>
-                      </div>
-                      {item.whyImportant && <div className="paper-card paper-card--inset" style={{ marginTop: 10, padding: 12, borderLeft: "3px solid #bd8958" }}>
-                        <strong style={{ fontSize: 12 }}>Neden önemli?</strong>
-                        <p style={{ margin: "5px 0 0" }}>{item.whyImportant}</p>
-                      </div>}
-                      <div className="news-coming" style={{ marginTop: "auto", paddingTop: 16 }}>
-                        {item.sourceName}{formatDate(item.publishedAt) ? " · " + formatDate(item.publishedAt) : ""}
-                      </div>
-                      <a href={item.link} target="_blank" rel="noopener noreferrer" style={{ marginTop: 10, color: "#985d32", fontWeight: 700, fontSize: 13 }}>Haberin devamı →</a>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
-        );
-      })}
-    </div>
+  return (
+    <NewspaperPages
+      items={stories}
+      generatedAt={bulletin.generatedAt}
+    />
   );
 }
