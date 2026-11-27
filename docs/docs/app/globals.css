@@ -2296,3 +2296,75 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .np-page { scroll-behavior: auto; }
 }
+
+
+/* Masthead category controls stay above decorative/page-turn layers */
+.masthead-header {
+  position: relative;
+  z-index: 40;
+  isolation: isolate;
+}
+.masthead-category-nav {
+  position: relative;
+  z-index: 41;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px clamp(12px, 2.2vw, 28px);
+  padding: 10px 0;
+  border-top: 3px double #3b352e;
+  border-bottom: 1px solid #3b352e;
+}
+.masthead-category-nav button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 3px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #3b352e;
+  font: 800 13px/1.2 inherit;
+  letter-spacing: .035em;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: none;
+  transition: color .18s ease, background-color .18s ease;
+}
+.masthead-category-nav button:hover,
+.masthead-category-nav button:focus-visible {
+  color: #a94d2c;
+  background: rgba(169, 77, 44, .07);
+}
+.masthead-category-nav button.is-active {
+  color: #a94d2c;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+.masthead-category-nav button:focus-visible {
+  outline: 2px solid #a94d2c;
+  outline-offset: 4px;
+}
+.news-feed-anchor {
+  scroll-margin-top: 20px;
+}
+@media (max-width: 600px) {
+  .masthead-category-nav {
+    gap: 4px 12px;
+    padding: 8px 2px;
+  }
+  .masthead-category-nav button {
+    min-height: 34px;
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .masthead-category-nav button {
+    transition: none;
+  }
+}
