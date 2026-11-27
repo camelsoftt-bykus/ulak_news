@@ -233,10 +233,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         // Yeni el, mevcut el sprite'ıyla aynı kutuya sığdırılır; bilek alt kenardan sabitlenir.
         const handWidth = hand.width * RIG_SCALE;
         const handHeight = hand.height * RIG_SCALE;
-        ctx.save();
-        ctx.scale(-1, 1);
         ctx.drawImage(waveHand, -handWidth / 2, -handHeight, handWidth, handHeight);
-        ctx.restore();
       } else {
         ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
       }
@@ -386,7 +383,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
 
           // Sol kol ve el tek parça gibi yükselir; bilekte bağımsız sallanma yoktur.
           const leftShoulder = -0.12 + armSway + waveAmt * 1.57;
-          const leftElbow = 0.18 + waveAmt * 1.27;
+          // Dirsek açısı ters yönde kapanır; ön kol ve parmaklar yukarı bakar.
+          const leftElbow = 0.18 - waveAmt * 0.95;
           const leftWrist = 0;
           drawJointArm(
             "Left",
