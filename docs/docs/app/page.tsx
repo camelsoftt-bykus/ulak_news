@@ -70,7 +70,7 @@ export default function Home() {
       </header>
       <UlakMotion variant="welcome" />
       <section className="container" style={{ paddingTop: 28, paddingBottom: 12 }}>
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <div className="newspaper-intro" style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontSize: 11, letterSpacing: 3, fontWeight: 800, color: "#9a5c2c" }}>ULAK’TAN HABERLER · GÜNÜN GAZETESİ</div>
           <h1 style={{ fontFamily: "Georgia, serif", fontSize: "clamp(28px, 4vw, 42px)", margin: "8px 0" }}>Gündem, olduğu gibi.</h1>
           <p style={{ color: "#756d63", margin: 0 }}>Türkiye’den ve dünyadan, doğru haberin adresi.</p>
