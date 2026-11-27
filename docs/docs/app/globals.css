@@ -2327,7 +2327,10 @@ a {
   border-radius: 0;
   background: transparent;
   color: #3b352e;
-  font: 800 13px/1.2 inherit;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
   letter-spacing: .035em;
   cursor: pointer;
   pointer-events: auto;
