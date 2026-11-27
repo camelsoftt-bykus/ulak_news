@@ -1448,7 +1448,7 @@ a {
 }
 
 
-/* Gazete amblemi: tam görünüm, dairesel çerçeve ve kabartmalı yüzey */
+/* Gazete amblemi: görseli daireyi dolduracak şekilde üstten kadrajla; kabartma/gölgeyi güçlendir */
 .masthead-brand {
   align-items: center;
 }
@@ -1457,29 +1457,28 @@ a {
   width: clamp(92px, 12vw, 124px);
   height: clamp(92px, 12vw, 124px);
   aspect-ratio: 1 / 1;
-  object-fit: contain;
-  object-position: center;
+  object-fit: cover;
+  object-position: center 18%;
   flex: 0 0 auto;
   display: block;
-  padding: 7px;
-  overflow: hidden;
+  padding: 0;
   border-radius: 50%;
-  border: 1px solid rgba(126, 91, 62, 0.48);
-  background-color: #f4ecdf;
-  background-image: url("/ulak-paper-texture.jpg");
-  background-size: 220px 220px;
+  border: 1px solid rgba(105, 69, 43, 0.72);
+  background: #f4ecdf;
+  mix-blend-mode: normal;
   box-shadow:
-    0 2px 3px rgba(55, 35, 20, 0.22),
-    0 7px 14px rgba(55, 35, 20, 0.16),
-    inset 0 2px 3px rgba(255, 255, 255, 0.88),
-    inset 0 -3px 6px rgba(91, 61, 39, 0.18);
-  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.55));
+    0 3px 5px rgba(42, 26, 15, 0.30),
+    0 9px 18px rgba(42, 26, 15, 0.24),
+    0 16px 28px rgba(42, 26, 15, 0.13),
+    inset 0 2px 4px rgba(255, 255, 255, 0.95),
+    inset 0 -4px 8px rgba(75, 47, 27, 0.24);
+  filter: drop-shadow(0 2px 2px rgba(55, 35, 20, 0.22));
 }
 
 @media (max-width: 480px) {
   .masthead-emblem {
     width: 82px;
     height: 82px;
-    padding: 6px;
+    object-position: center 18%;
   }
 }
