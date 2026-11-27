@@ -1482,3 +1482,47 @@ a {
     object-position: center 18%;
   }
 }
+
+
+/* Amblem için yeni kırpılmış görsel ve ortak gazete kâğıdı dokusu */
+.masthead-emblem {
+  width: clamp(92px, 12vw, 124px);
+  height: clamp(92px, 12vw, 124px);
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+  border: 1px solid rgba(105, 69, 43, 0.72);
+  padding: 3px;
+  background-color: #eee4d3;
+  background-image: url("/ulak-paper-texture.jpg");
+  background-repeat: repeat;
+  background-size: 180px 180px;
+  mix-blend-mode: normal;
+  box-shadow:
+    0 3px 5px rgba(42, 26, 15, 0.30),
+    0 9px 18px rgba(42, 26, 15, 0.24),
+    inset 0 2px 4px rgba(255, 255, 255, 0.9),
+    inset 0 -4px 8px rgba(75, 47, 27, 0.22);
+}
+
+.paper-page {
+  background-color: #eee7da;
+  background-image: url("/ulak-paper-texture.jpg");
+  background-repeat: repeat;
+  background-size: 320px 320px;
+}
+
+.news-card {
+  background-color: #eee7da;
+  background-image: url("/ulak-paper-texture.jpg");
+  background-repeat: repeat;
+  background-size: 320px 320px;
+}
+
+@media (max-width: 480px) {
+  .masthead-emblem {
+    width: 82px;
+    height: 82px;
+  }
+}
