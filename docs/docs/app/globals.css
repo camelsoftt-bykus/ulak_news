@@ -1446,3 +1446,40 @@ a {
     font-size: 9px;
   }
 }
+
+
+/* Gazete amblemi: tam görünüm, dairesel çerçeve ve kabartmalı yüzey */
+.masthead-brand {
+  align-items: center;
+}
+
+.masthead-emblem {
+  width: clamp(92px, 12vw, 124px);
+  height: clamp(92px, 12vw, 124px);
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  object-position: center;
+  flex: 0 0 auto;
+  display: block;
+  padding: 7px;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid rgba(126, 91, 62, 0.48);
+  background-color: #f4ecdf;
+  background-image: url("/ulak-paper-texture.jpg");
+  background-size: 220px 220px;
+  box-shadow:
+    0 2px 3px rgba(55, 35, 20, 0.22),
+    0 7px 14px rgba(55, 35, 20, 0.16),
+    inset 0 2px 3px rgba(255, 255, 255, 0.88),
+    inset 0 -3px 6px rgba(91, 61, 39, 0.18);
+  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.55));
+}
+
+@media (max-width: 480px) {
+  .masthead-emblem {
+    width: 82px;
+    height: 82px;
+    padding: 6px;
+  }
+}
