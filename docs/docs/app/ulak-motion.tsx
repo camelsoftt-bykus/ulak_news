@@ -307,11 +307,14 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       }
 
       const breathing = reducedMotion ? 0 : Math.sin(now / 650) * (idle ? 2.1 : 1.0);
-      const armSway = idle && !reducedMotion ? Math.sin(idleT * 1.6) * 0.018 : 0;
-      const wave =
-        !welcome && t > 1.6 && t < 2.9
-          ? Math.sin((t - 1.6) * Math.PI * 2 * 1.2) * 0.10
-          : 0;
+      // El sallama yumuşak girip çıkar; omuz açısına salınım eklenmez.
+      const waveEnvelope = !welcome
+        ? smoothstep(1.55, 1.8, t) * (1 - smoothstep(2.6, 2.9, t))
+        : 0;
+      const wave = waveEnvelope * Math.sin((t - 1.6) * Math.PI * 2 * 1.2) * 0.10;
+      const armSwayWrist = idle && !reducedMotion
+        ? Math.sin(idleT * 1.6) * 0.018
+        : 0;
       const legSway = idle && !reducedMotion ? Math.sin(idleT * 1.4) * 0.012 : 0;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -330,27 +333,44 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         drawPart("legRight", 166, 310, 72, 142, legSway, 36, 12);
         drawPart("legLeft", 242, 310, 72, 142, -legSway, 36, 12);
 
-        // Kollar gövdenin arkasında: omuz soketleri gövde kenarının altında kalır.
-        const leftAngle = lerp(ARM_OUT_ANGLE, WAVE_ANGLE, raise) + armSway + wave;
-        const rightAngle = ARM_OUT_ANGLE + armSway;
+        // Kollar tek bir sabit z-sırasında, daima gövdenin arkasında çizilir.
+        const rigReady = Boolean(
+          rigSprites.upperLeft && rigSprites.foreLeft && rigSprites.handLeft &&
+          rigSprites.upperRight && rigSprites.foreRight && rigSprites.handRight
+        );
 
-        if (rigSprites.upperRight && rigSprites.foreRight && rigSprites.handRight) drawJointArm("Right", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -0.12-rightAngle, 0.16, 0);
-        else drawArm("armRight", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -rightAngle);
+        if (rigReady) {
+          // Sağ kol: omuz salınımı yok.
+          drawJointArm(
+            "Right",
+            SHOULDER_RIGHT.x,
+            SHOULDER_RIGHT.y,
+            -0.12 - ARM_OUT_ANGLE,
+            0.16,
+            0
+          );
 
-        // Kaldırılan sol kol gövdenin arkasında kaybolmasın; selam verirken
-        // gövdenin önünde çizilir. Dinlenme pozunda omuz birleşimi arkada kalır.
-        if (raise <= 0.05) {
-          if (rigSprites.upperLeft && rigSprites.foreLeft && rigSprites.handLeft) drawJointArm("Left", SHOULDER_LEFT.x, SHOULDER_LEFT.y, -0.12+armSway, 0.18, 0);
-          else drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
+          // Sol kol: kaldırma omuz/dirsekten, sallama yalnızca bilekten.
+          const leftShoulder = -0.12 + raise * 2.05;
+          const leftElbow = 0.18 + raise * 0.72;
+          const leftWrist = wave * 2 + armSwayWrist;
+          drawJointArm(
+            "Left",
+            SHOULDER_LEFT.x,
+            SHOULDER_LEFT.y,
+            leftShoulder,
+            leftElbow,
+            leftWrist
+          );
+        } else {
+          // Eski tek-parça sprite yedeği: eklemli bilek hareketi desteklenmez.
+          // Ölçülmemiş rig koordinatlarına veya kafa/gövde geometrisine dokunulmaz.
+          drawArm("armRight", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -ARM_OUT_ANGLE);
+          const fallbackLeftAngle = lerp(ARM_OUT_ANGLE, WAVE_ANGLE, raise);
+          drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, fallbackLeftAngle);
         }
 
         drawPart("torso", TORSO.x, TORSO.y, TORSO.w, 212);
-
-        if (raise > 0.05) {
-          if (rigSprites.upperLeft && rigSprites.foreLeft && rigSprites.handLeft) drawJointArm("Left", SHOULDER_LEFT.x, SHOULDER_LEFT.y, -0.12+raise*2.05+armSway, 0.18+raise*0.72, wave*2);
-          else drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, leftAngle);
-        }
-
         drawPart("head", 119, 8, 242, 198, nod, 121, 176);
         ctx.restore();
       }
