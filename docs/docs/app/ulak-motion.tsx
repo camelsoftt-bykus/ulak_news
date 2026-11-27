@@ -202,7 +202,13 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.drawImage(fore,-fp.x*RIG_SCALE,-fp.y*RIG_SCALE,fore.width*RIG_SCALE,fore.height*RIG_SCALE);
       ctx.translate(0,121*RIG_SCALE);
       ctx.rotate(wristAngle);
-      ctx.drawImage(hand,-hp.x*RIG_SCALE,-hp.y*RIG_SCALE,hand.width*RIG_SCALE,hand.height*RIG_SCALE);
+      if (side === "Left" && !welcome) {
+        // Vedada eli bilek ekseninde yatay aynala; avuç/el yönü ters tarafa bakmasın.
+        ctx.scale(-1, 1);
+        ctx.drawImage(hand, -(hand.width - hp.x) * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
+      } else {
+        ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
+      }
       ctx.restore();
     };
 
@@ -347,8 +353,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
             "Right",
             SHOULDER_RIGHT.x,
             SHOULDER_RIGHT.y,
-            -0.12 - ARM_OUT_ANGLE,
-            0.16,
+            0.12,
+            -0.18,
             0
           );
 
