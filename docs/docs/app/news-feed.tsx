@@ -85,7 +85,7 @@ function uniqueStories(items: NewsItem[]): NewsItem[] {
   return kept;
 }
 
-export default function NewsFeed() {
+export default function NewsFeed({ selectedSection = "Tümü" }: { selectedSection?: string }) {
   const [bulletin, setBulletin] = useState<DailyBulletin | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -116,10 +116,13 @@ export default function NewsFeed() {
     ...item,
     categoryLabel: categoryInfo[item.sourceId]?.label || "GÜNDEM",
   }));
+  const visibleStories = selectedSection === "Tümü"
+    ? stories
+    : stories.filter((item) => categoryInfo[item.sourceId]?.section === selectedSection);
 
   return (
     <NewspaperPages
-      items={stories}
+      items={visibleStories}
       generatedAt={bulletin.generatedAt}
     />
   );
