@@ -6,7 +6,7 @@ import type { NewsItem } from "./news-feed";
 type NewspaperItem = NewsItem & { categoryLabel: string };
 type Props = { items: NewspaperItem[]; generatedAt?: string };
 
-const PER_PAGE = 3;
+const PER_PAGE = 1;
 
 function formatEditionDate(value?: string): string {
   if (!value) return new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" });
