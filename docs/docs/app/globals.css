@@ -1665,30 +1665,31 @@ a {
   box-shadow: inset 0 1px 4px rgba(75, 54, 35, 0.08);
 }
 
-/* Amblemi dairesel çerçevenin içinde daha küçük göster */
+/* Logo görselini dairesel çerçeveye yuvarlak biçimde sığdır */
 .masthead-emblem-frame {
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: clamp(92px, 12vw, 124px);
-  height: clamp(92px, 12vw, 124px);
+  width: clamp(102px, 13vw, 136px);
+  height: clamp(102px, 13vw, 136px);
   overflow: hidden;
   border-radius: 50%;
 }
 
 .masthead-emblem-frame > img.masthead-emblem {
   display: block;
-  flex: 0 1 auto;
-  width: 64% !important;
-  height: 64% !important;
-  max-width: 64% !important;
-  max-height: 64% !important;
+  flex: 0 0 auto;
+  width: 86% !important;
+  height: 86% !important;
+  max-width: 86% !important;
+  max-height: 86% !important;
   object-fit: contain !important;
   object-position: center !important;
   padding: 0 !important;
   border: 0 !important;
-  border-radius: 0 !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
   background: transparent !important;
   box-shadow: none !important;
   filter: none !important;
@@ -1697,7 +1698,7 @@ a {
 
 @media (max-width: 480px) {
   .masthead-emblem-frame {
-    width: 82px;
-    height: 82px;
+    width: 90px;
+    height: 90px;
   }
 }
