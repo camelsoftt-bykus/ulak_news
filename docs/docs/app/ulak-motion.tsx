@@ -203,8 +203,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.translate(0,121*RIG_SCALE);
       ctx.rotate(wristAngle);
       if (side === "Left" && variant === "farewell") {
-        // Vedalaşma sırasında elin yönünü bilek ekseninde 180 derece çevir.
-        ctx.rotate(Math.PI);
+        // Avuç içini izleyiciye çevirmek için eli dikey eksende ters çevir.
+        ctx.scale(1, -1);
         ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
       } else {
         ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
