@@ -130,6 +130,7 @@ export default function NewsFeed({ selectedSection = "Tümü" }: { selectedSecti
 
   return (
     <NewspaperPages
+      key={selectedSection}
       items={visibleStories}
       generatedAt={bulletin.generatedAt}
     />
