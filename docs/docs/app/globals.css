@@ -1359,3 +1359,90 @@ a {
     scroll-behavior: auto;
   }
 }
+
+
+/* ULAK gazete amblemi ve kâğıt yüzeyi */
+.paper-page {
+  min-height: 100vh;
+  background-color: #efebe2;
+  background-image: url("/ulak-paper-texture.jpg");
+  background-repeat: repeat;
+  background-size: 320px 320px;
+}
+
+.masthead-header {
+  box-shadow: 0 3px 12px rgba(65, 43, 27, 0.07);
+}
+
+.masthead-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 2.5vw, 24px);
+  padding: 10px 0 14px;
+  color: #2d1d17;
+}
+
+.masthead-emblem {
+  display: block;
+  width: clamp(82px, 12vw, 116px);
+  height: auto;
+  flex: 0 0 auto;
+  mix-blend-mode: multiply;
+}
+
+.masthead-wordmark {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 0.98;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.masthead-wordmark strong {
+  font-size: clamp(30px, 5vw, 48px);
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.masthead-wordmark b {
+  margin-top: 3px;
+  color: #a94d2c;
+  font-family: Arial, sans-serif;
+  font-size: clamp(26px, 4.4vw, 42px);
+  letter-spacing: 1px;
+}
+
+.masthead-wordmark small {
+  margin-top: 8px;
+  color: #59483d;
+  font-family: Arial, sans-serif;
+  font-size: clamp(9px, 1.3vw, 12px);
+  line-height: 1.35;
+  letter-spacing: 0.15px;
+}
+
+.news-card {
+  background-image: url("/ulak-paper-texture.jpg");
+  background-repeat: repeat;
+  background-size: 320px 320px;
+}
+
+@media (max-width: 480px) {
+  .masthead-brand {
+    gap: 10px;
+  }
+  .masthead-emblem {
+    width: 76px;
+  }
+  .masthead-wordmark strong {
+    font-size: 29px;
+  }
+  .masthead-wordmark b {
+    font-size: 25px;
+  }
+  .masthead-wordmark small {
+    max-width: 205px;
+    font-size: 9px;
+  }
+}
