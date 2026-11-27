@@ -203,10 +203,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.translate(0,121*RIG_SCALE);
       ctx.rotate(wristAngle);
       if (side === "Left" && variant === "farewell") {
-        // Avuç içi karşıya bakarken parmak uçları yukarıda kalsın.
-        // Dikey aynalamaya 180 derece dönüş eklemek, parmak yönünü yukarı taşır.
-        ctx.rotate(Math.PI);
-        ctx.scale(1, -1);
+        // Başparmak karakterin içine bakacak şekilde elin yatay yönünü düzelt.
         ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
       } else {
         ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
