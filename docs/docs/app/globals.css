@@ -1991,3 +1991,20 @@ a {
     margin: 3px 0 4px;
   }
 }
+
+
+/* Amblem görselini kendi iç boşluklarından yakınlaştır; çerçeve içinde tam dolu görünsün */
+.masthead-brand .masthead-emblem-frame {
+  padding: 0;
+}
+.masthead-brand .masthead-emblem-frame > img.masthead-emblem {
+  flex: 0 0 116% !important;
+  width: 116% !important;
+  height: 116% !important;
+  max-width: none !important;
+  max-height: none !important;
+  padding: 0 !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  border-radius: 50% !important;
+}
