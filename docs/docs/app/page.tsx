@@ -11,7 +11,7 @@ type Bulletin = {
 };
 
 const sections = [
-  { name: "Sincan & Etimesgut", id: "yerel-gundem" },
+  { name: "Yerel Gündem", id: "yerel-gundem" },
   { name: "Ankara", id: "ankara" },
   { name: "Türkiye", id: "turkiye" },
   { name: "Dünya", id: "dunya" },
@@ -20,6 +20,7 @@ const sections = [
 
 export default function Home() {
   const [bulletin, setBulletin] = useState<Bulletin | null>(null);
+  const [activeSection, setActiveSection] = useState("Tümü");
 
   useEffect(() => {
     let active = true;
@@ -63,8 +64,21 @@ export default function Home() {
             <span>{today}</span><span>TÜRKİYE’DEN DÜNYAYA</span>
           </div>
           <Link href="/" aria-label="ULAK’TAN HABERLER ana sayfa" className="masthead-brand"><span className="masthead-emblem-frame"><img className="masthead-emblem" src="/1795820554734.jpg" alt="ULAK Gazete amblemi" /></span><span className="masthead-wordmark"><strong>ULAK’TAN</strong><b>HABERLER</b><small>Dijital Haber Platformu · Teknoloji ve Bilim Rehberiniz</small></span></Link>
-          <nav style={{ borderTop: "3px double #3b352e", borderBottom: "1px solid #3b352e", padding: "10px 0", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "10px 28px", fontSize: 13, fontWeight: 700 }}>
-            <span>YEREL GÜNDEM</span><span>ANKARA</span><span>TÜRKİYE</span><span>DÜNYA</span><span>BİLİM &amp; UZAY</span>
+          <nav className="masthead-category-nav" aria-label="Haber kategorileri">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                type="button"
+                className={activeSection === section.name ? "is-active" : ""}
+                aria-pressed={activeSection === section.name}
+                onClick={() => {
+                  setActiveSection(section.name);
+                  document.getElementById("haber-akisi")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                {section.name === "Bilim ve Uzay" ? "BİLİM & UZAY" : section.name.toLocaleUpperCase("tr-TR")}
+              </button>
+            ))}
           </nav>
         </div>
       </header>
@@ -113,7 +127,7 @@ export default function Home() {
             </div>
           )}
         </section>
-        <NewsFeed />
+        <div id="haber-akisi" className="news-feed-anchor"><NewsFeed selectedSection={activeSection} /></div>
       </section>
       <UlakMotion variant="farewell" />
       <footer style={{ marginTop: 36, borderTop: "3px double #3b352e", background: "#f2ece1" }}>
