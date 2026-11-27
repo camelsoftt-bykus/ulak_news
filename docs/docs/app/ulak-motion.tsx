@@ -203,9 +203,9 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.translate(0,121*RIG_SCALE);
       ctx.rotate(wristAngle);
       if (side === "Left" && variant === "farewell") {
-        // Vedada eli bilek ekseninde yatay aynala; avuç/el yönü ters tarafa bakmasın.
-        ctx.scale(-1, 1);
-        ctx.drawImage(hand, -(hand.width - hp.x) * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
+        // Vedalaşma sırasında elin yönünü bilek ekseninde 180 derece çevir.
+        ctx.rotate(Math.PI);
+        ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
       } else {
         ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
       }
@@ -340,8 +340,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         // Kaynak görseldeki sağ/sol bacak parçaları yer değiştirilerek çizilir.
         // Ayak uçlarını dışa çevir: ekranda soldaki bacak +, sağdaki bacak - açı alır.
         const TOE_OUT_ANGLE = (10 * Math.PI) / 180;
-        drawPart("legRight", 166, 310, 72, 142, TOE_OUT_ANGLE + legSway, 36, 12);
-        drawPart("legLeft", 242, 310, 72, 142, -TOE_OUT_ANGLE - legSway, 36, 12);
+        drawPart("legRight", 166, 288, 72, 164, TOE_OUT_ANGLE + legSway, 36, 34);
+        drawPart("legLeft", 242, 288, 72, 164, -TOE_OUT_ANGLE - legSway, 36, 34);
 
         // Kollar tek bir sabit z-sırasında, daima gövdenin arkasında çizilir.
         const rigReady = Boolean(
