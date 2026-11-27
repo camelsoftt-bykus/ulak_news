@@ -282,7 +282,6 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       let beamOpacity = 0;
       let characterOpacity = 1;
       let characterY = 0;
-      let raise = 0;
       let nod = 0;
 
       if (welcome) {
@@ -293,7 +292,6 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         characterY = -105 * (1 - arrival);
         nod = t > 1.8 && t < 2.8 ? Math.sin(((t - 1.8) / 1.0) * Math.PI) * 0.055 : 0;
       } else {
-        raise = smoothstep(0.35, 1.55, t);
         nod = t > 1.6 && t < 2.35 ? Math.sin(((t - 1.6) / 0.75) * Math.PI) * 0.045 : 0;
         const beamArrival = smoothstep(2.0, 2.72, t);
         const beamRetraction = smoothstep(4.35, 5.35, t);
@@ -307,17 +305,21 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
           beamOpacity = 0;
           characterOpacity = 1;
           characterY = Math.sin(idleT * 1.65) * 2.5;
-          raise = 0;
           nod = Math.sin(idleT * 1.25) * 0.025;
         }
       }
 
       const breathing = reducedMotion ? 0 : Math.sin(now / 650) * (idle ? 2.1 : 1.0);
-      // El sallama yumuşak girip çıkar; omuz açısına salınım eklenmez.
-      const waveEnvelope = !welcome
-        ? smoothstep(1.55, 1.8, t) * (1 - smoothstep(2.6, 2.9, t))
-        : 0;
-      const wave = waveEnvelope * Math.sin((t - 1.6) * Math.PI * 2 * 1.2) * 0.10;
+      // Hoşçakal zarfı: kol yükselmeden önce kalkar, karakter yükselirken iner.
+      const waveIn = !welcome ? smoothstep(0.35, 1.45, t) : 0;
+      const waveOut = !welcome ? 1 - smoothstep(2.75, 3.25, t) : 0;
+      const waveAmt = waveIn * waveOut;
+      // Omuz ve dirsek sabitken yalnızca bilek 1.6 Hz hızla sallanır.
+      const waveWobble =
+        waveAmt > 0
+          ? Math.sin((t - 1.0) * Math.PI * 2 * 1.6) * 0.35 * waveAmt
+          : 0;
+      const armSway = 0;
       const armSwayWrist = idle && !reducedMotion
         ? Math.sin(idleT * 1.6) * 0.018
         : 0;
@@ -348,20 +350,22 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         );
 
         if (rigReady) {
-          // Sağ kol: omuz salınımı yok.
+          const rightAngle = ARM_OUT_ANGLE + armSway;
+
+          // Sağ kol: dinlenme pozunda.
           drawJointArm(
             "Right",
             SHOULDER_RIGHT.x,
             SHOULDER_RIGHT.y,
-            0.12,
-            -0.18,
+            -0.12 - rightAngle,
+            0.16,
             0
           );
 
-          // Sol kol: kaldırma omuz/dirsekten, sallama yalnızca bilekten.
-          const leftShoulder = -0.12 + raise * 2.05;
-          const leftElbow = 0.18 + raise * 0.72;
-          const leftWrist = wave * 2 + armSwayWrist;
+          // Sol kol: omuzdan dışa kalkar, dirsek bükülür; yalnızca bilek sallanır.
+          const leftShoulder = -0.12 + armSway + waveAmt * 1.57;
+          const leftElbow = 0.18 + waveAmt * 1.27;
+          const leftWrist = waveWobble + armSwayWrist;
           drawJointArm(
             "Left",
             SHOULDER_LEFT.x,
@@ -371,10 +375,9 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
             leftWrist
           );
         } else {
-          // Eski tek-parça sprite yedeği: eklemli bilek hareketi desteklenmez.
-          // Ölçülmemiş rig koordinatlarına veya kafa/gövde geometrisine dokunulmaz.
-          drawArm("armRight", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -ARM_OUT_ANGLE);
-          const fallbackLeftAngle = lerp(ARM_OUT_ANGLE, WAVE_ANGLE, raise);
+          // Tek-parça sprite yedeğinde bilek ayrı hareket edemez.
+          drawArm("armRight", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -(ARM_OUT_ANGLE + armSway));
+          const fallbackLeftAngle = lerp(ARM_OUT_ANGLE, WAVE_ANGLE, waveAmt);
           drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, fallbackLeftAngle);
         }
 
