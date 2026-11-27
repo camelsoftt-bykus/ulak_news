@@ -1665,31 +1665,41 @@ a {
   box-shadow: inset 0 1px 4px rgba(75, 54, 35, 0.08);
 }
 
-/* Logo görselini dairesel çerçeveye yuvarlak biçimde sığdır */
-.masthead-emblem-frame {
+/* ULAK amblemi: kare oranlı, dairesel ve responsive kapsayıcı */
+.masthead-brand .masthead-emblem-frame {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 auto;
-  width: clamp(102px, 13vw, 136px);
-  height: clamp(102px, 13vw, 136px);
+  flex: 0 0 clamp(88px, 10vw, 112px);
+  width: clamp(88px, 10vw, 112px);
+  height: clamp(88px, 10vw, 112px);
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;
   overflow: hidden;
+  border: 2px solid #c8a77d;
   border-radius: 50%;
+  padding: 3px;
+  background: #f5ede1;
+  box-shadow: 0 3px 10px rgba(55, 36, 20, 0.18), inset 0 1px 2px rgba(255,255,255,.8);
 }
 
-.masthead-emblem-frame > img.masthead-emblem {
+.masthead-brand .masthead-emblem-frame > img.masthead-emblem {
   display: block;
-  flex: 0 0 auto;
-  width: 86% !important;
-  height: 86% !important;
-  max-width: 86% !important;
-  max-height: 86% !important;
+  flex: 0 0 100%;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0;
+  min-height: 0;
+  max-width: none !important;
+  max-height: none !important;
+  box-sizing: border-box;
   object-fit: contain !important;
   object-position: center !important;
-  padding: 0 !important;
+  padding: 2px !important;
+  margin: 0;
   border: 0 !important;
   border-radius: 50% !important;
-  overflow: hidden !important;
+  overflow: hidden;
   background: transparent !important;
   box-shadow: none !important;
   filter: none !important;
@@ -1697,9 +1707,10 @@ a {
 }
 
 @media (max-width: 480px) {
-  .masthead-emblem-frame {
-    width: 90px;
-    height: 90px;
+  .masthead-brand .masthead-emblem-frame {
+    flex-basis: 78px;
+    width: 78px;
+    height: 78px;
   }
 }
 
