@@ -25,31 +25,39 @@ type DailyBulletin = {
   generatedAt?: string;
 };
 
-const categoryInfo: Record<string, { label: string; section: string }> = {
+const sourceSection: Record<string, { label: string; section: string }> = {
+  // Yerel Gündem: Sincan ve Etimesgut
   sincan: { label: "SİNCAN", section: "Yerel Gündem" },
   etimesgut: { label: "ETİMESGUT", section: "Yerel Gündem" },
   "google-sincan": { label: "SİNCAN & ETİMESGUT", section: "Yerel Gündem" },
+  "google-sincan-only": { label: "SİNCAN", section: "Yerel Gündem" },
+  "google-etimesgut": { label: "ETİMESGUT", section: "Yerel Gündem" },
+
+  // Ankara geneli
   ankara: { label: "ANKARA", section: "Ankara" },
   "google-ankara": { label: "ANKARA", section: "Ankara" },
+  "google-ankara-local": { label: "ANKARA", section: "Ankara" },
+
+  // Türkiye gündemi
   "trt-turkiye": { label: "TÜRKİYE", section: "Türkiye" },
   "aa-guncel": { label: "TÜRKİYE", section: "Türkiye" },
   "bbc-turkce": { label: "TÜRKİYE", section: "Türkiye" },
+  "google-turkey": { label: "TÜRKİYE", section: "Türkiye" },
+  "google-turkey-economy": { label: "TÜRKİYE", section: "Türkiye" },
+
+  // Dünya gündemi
   "trt-dunya": { label: "DÜNYA", section: "Dünya" },
   "aa-dunya": { label: "DÜNYA", section: "Dünya" },
   "bbc-dunya": { label: "DÜNYA", section: "Dünya" },
-  tubitak: { label: "BİLİM & TEKNOLOJİ", section: "Bilim ve Uzay" },
-  "tubitak-uzay": { label: "BİLİM & UZAY", section: "Bilim ve Uzay" },
-  "trt-uzay": { label: "BİLİM & UZAY", section: "Bilim ve Uzay" },
-  nasa: { label: "BİLİM & UZAY", section: "Bilim ve Uzay" },
-};
+  "google-world": { label: "DÜNYA", section: "Dünya" },
 
-const sections = [
-  { name: "Yerel Gündem", id: "yerel-gundem" },
-  { name: "Ankara", id: "ankara" },
-  { name: "Türkiye", id: "turkiye" },
-  { name: "Dünya", id: "dunya" },
-  { name: "Bilim ve Uzay", id: "bilim-ve-uzay" },
-];
+  // Bilim ve uzay
+  tubitak: { label: "BİLİM & UZAY", section: "Bilim & Uzay" },
+  "tubitak-uzay": { label: "BİLİM & UZAY", section: "Bilim & Uzay" },
+  "trt-uzay": { label: "BİLİM & UZAY", section: "Bilim & Uzay" },
+  nasa: { label: "BİLİM & UZAY", section: "Bilim & Uzay" },
+  "google-science": { label: "BİLİM & UZAY", section: "Bilim & Uzay" },
+};
 
 function formatDate(value: string | null): string {
   if (!value) return "";
@@ -114,11 +122,11 @@ export default function NewsFeed({ selectedSection = "Tümü" }: { selectedSecti
 
   const stories = uniqueStories(bulletin.news).map((item) => ({
     ...item,
-    categoryLabel: categoryInfo[item.sourceId]?.label || "GÜNDEM",
+    categoryLabel: sourceSection[item.sourceId]?.label || "GÜNDEM",
   }));
   const visibleStories = selectedSection === "Tümü"
     ? stories
-    : stories.filter((item) => categoryInfo[item.sourceId]?.section === selectedSection);
+    : stories.filter((item) => sourceSection[item.sourceId]?.section === selectedSection);
 
   return (
     <NewspaperPages
