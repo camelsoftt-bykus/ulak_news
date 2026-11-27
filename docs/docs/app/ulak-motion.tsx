@@ -332,7 +332,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         ctx.save();
         ctx.globalAlpha = characterOpacity;
         ctx.translate(canvas.width / 2, 235 + characterY + breathing);
-        ctx.scale(0.72, 0.72);
+        ctx.scale(0.576, 0.576);
         ctx.translate(-canvas.width / 2, -235);
 
         // Front-view feet/legs match the supplied complete-character reference.
