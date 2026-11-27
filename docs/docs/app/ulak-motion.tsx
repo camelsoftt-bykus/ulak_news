@@ -16,8 +16,9 @@ const RIG_SHEET = "/1795733381339.jpg";
 const ARM_SHEET = "/1795638496249.jpg";
 // Bacaklar: önden referans
 const FRONT_REFERENCE = "/1795636155857.jpg";
+const WAVE_HAND_SHEET = "/1795766911583.jpg";
 
-const ASSET_COUNT = 4;
+const ASSET_COUNT = 5;
 
 const PART_CROPS: Record<"head" | "torso", Crop> = {
   head: { x: 30, y: 52, w: 355, h: 310 },
@@ -37,6 +38,8 @@ const FRONT_LEG_CROPS: Record<"legLeft" | "legRight", Crop> = {
 };
 
 // Ayrı üst kol, ön kol ve el kırpmaları; kaynak görsel 704 x 1524.
+const WAVE_HAND_CROP: Crop = { x: 65, y: 410, w: 545, h: 700 };
+
 const RIG_CROPS: Record<RigPartName, Crop> = {
   upperLeft: { x: 94, y: 302, w: 106, h: 158 },
   upperRight: { x: 506, y: 302, w: 112, h: 158 },
@@ -121,6 +124,26 @@ function prepareRigPart(source: HTMLImageElement, crop: Crop): HTMLCanvasElement
   return canvas;
 }
 
+function prepareWaveHand(source: HTMLImageElement): HTMLCanvasElement {
+  const crop = WAVE_HAND_CROP;
+  const canvas = document.createElement("canvas");
+  canvas.width = crop.w;
+  canvas.height = crop.h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return canvas;
+  ctx.drawImage(source, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
+  const frame = ctx.getImageData(0, 0, crop.w, crop.h);
+  const p = frame.data;
+  for (let i = 0; i < p.length; i += 4) {
+    const r = p[i], g = p[i + 1], b = p[i + 2];
+    const spread = Math.max(r, g, b) - Math.min(r, g, b);
+    if (spread < 15 && Math.min(r, g, b) > 38) p[i + 3] = 0;
+    else if (spread < 22 && Math.min(r, g, b) > 75) p[i + 3] = Math.round(p[i + 3] * 0.28);
+  }
+  ctx.putImageData(frame, 0, 0);
+  return canvas;
+}
+
 function lerp(start: number, end: number, amount: number): number {
   return start + (end - start) * amount;
 }
@@ -149,14 +172,17 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
     const armImage = new Image();
     const rigImage = new Image();
     const frontImage = new Image();
+    const waveHandImage = new Image();
 
     partImage.src = PART_SHEET;
     armImage.src = ARM_SHEET;
     rigImage.src = RIG_SHEET;
     frontImage.src = FRONT_REFERENCE;
+    waveHandImage.src = WAVE_HAND_SHEET;
 
     const sprites: SpriteMap = {};
     const rigSprites: RigSpriteMap = {};
+    let waveHandSprite: HTMLCanvasElement | null = null;
     let readyCount = 0;
     let animationFrame = 0;
     let startedAt = 0;
@@ -185,7 +211,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
     };
 
     // Omuz -> üst kol -> dirsek -> ön kol -> bilek -> el zinciri.
-    const drawJointArm = (side: "Left" | "Right", shoulderX: number, shoulderY: number, shoulderAngle: number, elbowBend: number, wristAngle: number, handTurn = 0) => {
+    const drawJointArm = (side: "Left" | "Right", shoulderX: number, shoulderY: number, shoulderAngle: number, elbowBend: number, wristAngle: number, raisedHand = false) => {
       const upperName: RigPartName = side === "Left" ? "upperLeft" : "upperRight";
       const foreName: RigPartName = side === "Left" ? "foreLeft" : "foreRight";
       const handName: RigPartName = side === "Left" ? "handLeft" : "handRight";
@@ -202,10 +228,12 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.drawImage(fore,-fp.x*RIG_SCALE,-fp.y*RIG_SCALE,fore.width*RIG_SCALE,fore.height*RIG_SCALE);
       ctx.translate(0,121*RIG_SCALE);
       ctx.rotate(wristAngle);
-      if (side === "Left" && variant === "farewell") ctx.rotate(handTurn);
-      if (side === "Left" && variant === "farewell") {
-        // Başparmak karakterin içine bakacak şekilde elin yatay yönünü düzelt.
-        ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
+      const waveHand = side === "Left" && variant === "farewell" && raisedHand ? waveHandSprite : null;
+      if (waveHand) {
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.drawImage(waveHand, -waveHand.width * RIG_SCALE / 2, -waveHand.height * RIG_SCALE, waveHand.width * RIG_SCALE, waveHand.height * RIG_SCALE);
+        ctx.restore();
       } else {
         ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
       }
@@ -371,7 +399,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
             leftShoulder,
             leftElbow,
             leftWrist,
-            Math.PI * waveAmt
+            waveAmt > 0.04
           );
         } else {
           // Tek-parça sprite yedeğinde bilek ayrı hareket edemez.
@@ -415,6 +443,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       for (const name of Object.keys(RIG_CROPS) as RigPartName[]) rigSprites[name] = prepareRigPart(rigImage, RIG_CROPS[name]);
       sprites.legLeft = preparePart(frontImage, FRONT_LEG_CROPS.legLeft, "checker");
       sprites.legRight = preparePart(frontImage, FRONT_LEG_CROPS.legRight, "checker");
+      waveHandSprite = prepareWaveHand(waveHandImage);
 
       if (variant === "welcome") {
         start();
@@ -441,10 +470,12 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
     armImage.onload = onAssetsReady;
     rigImage.onload = onAssetsReady;
     frontImage.onload = onAssetsReady;
+    waveHandImage.onload = onAssetsReady;
     partImage.onerror = () => console.error("ULAK parça görseli yüklenemedi:", PART_SHEET);
     armImage.onerror = () => console.error("ULAK kol görseli yüklenemedi:", ARM_SHEET);
     rigImage.onerror = () => console.error("ULAK eklemli uzuv görseli yüklenemedi:", RIG_SHEET);
     frontImage.onerror = () => console.error("ULAK önden referans görseli yüklenemedi:", FRONT_REFERENCE);
+    waveHandImage.onerror = () => console.error("ULAK selamlama eli yüklenemedi:", WAVE_HAND_SHEET);
 
     return () => {
       disposed = true;
@@ -454,10 +485,12 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       armImage.onload = null;
       rigImage.onload = null;
       frontImage.onload = null;
+      waveHandImage.onload = null;
       partImage.onerror = null;
       armImage.onerror = null;
       rigImage.onerror = null;
       frontImage.onerror = null;
+      waveHandImage.onerror = null;
     };
   }, [variant, replayKey]);
 
