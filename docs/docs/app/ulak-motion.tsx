@@ -350,15 +350,13 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         );
 
         if (rigReady) {
-          const rightAngle = ARM_OUT_ANGLE + armSway;
-
-          // Sağ kol: dinlenme pozunda.
+          // Sağ kolun normal duruşu, sol kolun ayna simetriğidir.
           drawJointArm(
             "Right",
             SHOULDER_RIGHT.x,
             SHOULDER_RIGHT.y,
-            -0.12 - rightAngle,
-            0.16,
+            0.12,
+            -0.18,
             0
           );
 
