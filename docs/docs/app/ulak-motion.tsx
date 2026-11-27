@@ -230,9 +230,12 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.rotate(wristAngle);
       const waveHand = side === "Left" && variant === "farewell" && raisedHand ? waveHandSprite : null;
       if (waveHand) {
+        // Yeni el, mevcut el sprite'ıyla aynı kutuya sığdırılır; bilek alt kenardan sabitlenir.
+        const handWidth = hand.width * RIG_SCALE;
+        const handHeight = hand.height * RIG_SCALE;
         ctx.save();
         ctx.scale(-1, 1);
-        ctx.drawImage(waveHand, -waveHand.width * RIG_SCALE / 2, -waveHand.height * RIG_SCALE, waveHand.width * RIG_SCALE, waveHand.height * RIG_SCALE);
+        ctx.drawImage(waveHand, -handWidth / 2, -handHeight, handWidth, handHeight);
         ctx.restore();
       } else {
         ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
@@ -342,15 +345,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       const waveIn = !welcome ? smoothstep(0.35, 1.45, t) : 0;
       const waveOut = !welcome ? 1 - smoothstep(2.75, 3.25, t) : 0;
       const waveAmt = waveIn * waveOut;
-      // Omuz ve dirsek sabitken yalnızca bilek 1.6 Hz hızla sallanır.
-      const waveWobble =
-        waveAmt > 0
-          ? Math.sin((t - 1.0) * Math.PI * 2 * 1.6) * 0.35 * waveAmt
-          : 0;
+      // El bileğe kilitlidir; selamlama boyunca yalnızca omuz ve kol birlikte hareket eder.
       const armSway = 0;
-      const armSwayWrist = idle && !reducedMotion
-        ? Math.sin(idleT * 1.6) * 0.018
-        : 0;
       const legSway = idle && !reducedMotion ? Math.sin(idleT * 1.4) * 0.012 : 0;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -388,10 +384,10 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
             0
           );
 
-          // Sol kol: omuzdan dışa kalkar, dirsek bükülür; yalnızca bilek sallanır.
+          // Sol kol ve el tek parça gibi yükselir; bilekte bağımsız sallanma yoktur.
           const leftShoulder = -0.12 + armSway + waveAmt * 1.57;
           const leftElbow = 0.18 + waveAmt * 1.27;
-          const leftWrist = waveWobble + armSwayWrist;
+          const leftWrist = 0;
           drawJointArm(
             "Left",
             SHOULDER_LEFT.x,
