@@ -185,7 +185,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
     };
 
     // Omuz -> üst kol -> dirsek -> ön kol -> bilek -> el zinciri.
-    const drawJointArm = (side: "Left" | "Right", shoulderX: number, shoulderY: number, shoulderAngle: number, elbowBend: number, wristAngle: number) => {
+    const drawJointArm = (side: "Left" | "Right", shoulderX: number, shoulderY: number, shoulderAngle: number, elbowBend: number, wristAngle: number, handTurn = 0) => {
       const upperName: RigPartName = side === "Left" ? "upperLeft" : "upperRight";
       const foreName: RigPartName = side === "Left" ? "foreLeft" : "foreRight";
       const handName: RigPartName = side === "Left" ? "handLeft" : "handRight";
@@ -202,6 +202,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.drawImage(fore,-fp.x*RIG_SCALE,-fp.y*RIG_SCALE,fore.width*RIG_SCALE,fore.height*RIG_SCALE);
       ctx.translate(0,121*RIG_SCALE);
       ctx.rotate(wristAngle);
+      if (side === "Left" && variant === "farewell") ctx.rotate(handTurn);
       if (side === "Left" && variant === "farewell") {
         // Başparmak karakterin içine bakacak şekilde elin yatay yönünü düzelt.
         ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
@@ -369,7 +370,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
             SHOULDER_LEFT.y,
             leftShoulder,
             leftElbow,
-            leftWrist
+            leftWrist,
+            Math.PI * waveAmt
           );
         } else {
           // Tek-parça sprite yedeğinde bilek ayrı hareket edemez.
