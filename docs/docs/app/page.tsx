@@ -62,7 +62,7 @@ export default function Home() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#766e64", fontSize: 12 }}>
             <span>{today}</span><span>TÜRKİYE’DEN DÜNYAYA</span>
           </div>
-          <Link href="/" aria-label="ULAK’TAN HABERLER ana sayfa" className="masthead-brand"><img className="masthead-emblem" src="/IMG_20261127_112032.jpg" alt="ULAK Gazete amblemi" /><span className="masthead-wordmark"><strong>ULAK’TAN</strong><b>HABERLER</b><small>Dijital Haber Platformu · Teknoloji ve Bilim Rehberiniz</small></span></Link>
+          <Link href="/" aria-label="ULAK’TAN HABERLER ana sayfa" className="masthead-brand"><span className="masthead-emblem-frame"><img className="masthead-emblem" src="/IMG_20261127_112032.jpg" alt="ULAK Gazete amblemi" /></span><span className="masthead-wordmark"><strong>ULAK’TAN</strong><b>HABERLER</b><small>Dijital Haber Platformu · Teknoloji ve Bilim Rehberiniz</small></span></Link>
           <nav style={{ borderTop: "3px double #3b352e", borderBottom: "1px solid #3b352e", padding: "10px 0", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "10px 28px", fontSize: 13, fontWeight: 700 }}>
             {sections.map((section) => <a key={section.id} href={"#" + section.id}>{section.name}</a>)}
           </nav>
