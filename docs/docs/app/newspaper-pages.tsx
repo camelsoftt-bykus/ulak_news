@@ -111,7 +111,7 @@ export default function NewspaperPages({ items, generatedAt }: Props) {
             <section className="np-lead">
               <div className="np-image-frame">
                 {renderImage(lead, "np-lead-image")}
-                <div className="np-image-fallback">{lead.title}</div>
+                <div className="np-image-fallback" style={{ display: lead.imageUrl ? "none" : "grid" }}>{lead.title}</div>
               </div>
               <div className="np-lead-copy">{renderStoryText(lead, true)}</div>
             </section>
@@ -121,7 +121,7 @@ export default function NewspaperPages({ items, generatedAt }: Props) {
                   <article className="np-story" key={item.sourceId + "-" + item.link}>
                     <div className="np-image-frame">
                       {renderImage(item, "np-story-image")}
-                      <div className="np-image-fallback">{item.title}</div>
+                      <div className="np-image-fallback" style={{ display: item.imageUrl ? "none" : "grid" }}>{item.title}</div>
                     </div>
                     {renderStoryText(item)}
                   </article>
