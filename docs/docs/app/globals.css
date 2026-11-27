@@ -1963,3 +1963,31 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .np-turn-next, .np-turn-prev { animation: none; }
 }
+
+
+/* Masthead amblemini tarih satirina ve alt cizgiye yaklastirarak buyut */
+.masthead-brand {
+  padding: 5px 0 7px;
+  gap: clamp(12px, 2vw, 20px);
+}
+.masthead-brand .masthead-emblem-frame {
+  flex: 0 0 clamp(116px, 13vw, 140px);
+  width: clamp(116px, 13vw, 140px);
+  height: clamp(116px, 13vw, 140px);
+  margin: 3px 0 4px;
+}
+.masthead-brand .masthead-emblem-frame > img.masthead-emblem {
+  width: 100% !important;
+  height: 100% !important;
+}
+@media (max-width: 480px) {
+  .masthead-brand {
+    padding: 4px 0 6px;
+  }
+  .masthead-brand .masthead-emblem-frame {
+    flex-basis: 100px;
+    width: 100px;
+    height: 100px;
+    margin: 3px 0 4px;
+  }
+}
