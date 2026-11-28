@@ -66,7 +66,7 @@ const SHOULDER_LEFT = { x: 176, y: 239 };
 const SHOULDER_RIGHT = { x: 310, y: 239 };
 const ARM_OUT_ANGLE = 0.1;
 // Tek sol kolun selamlaşma/kaldırma açısı.
-const WAVE_ANGLE = (210 * Math.PI) / 180;
+const WAVE_ANGLE = (110 * Math.PI) / 180;
 
 type SpriteMap = Partial<Record<PartName, HTMLCanvasElement>>;
 type RigSpriteMap = Partial<Record<RigPartName, HTMLCanvasElement>>;
