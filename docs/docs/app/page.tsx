@@ -64,6 +64,11 @@ export default function Home() {
             <span>{today}</span><span>TÜRKİYE’DEN DÜNYAYA</span>
           </div>
           <Link href="/" aria-label="ULAK’TAN HABERLER ana sayfa" className="masthead-brand"><span className="masthead-emblem-frame"><img className="masthead-emblem" src="/1795820554734.jpg" alt="ULAK Gazete amblemi" /></span><span className="masthead-wordmark"><strong>ULAK’TAN</strong><b>HABERLER</b><small>Dijital Haber Platformu · Teknoloji ve Bilim Rehberiniz</small></span></Link>
+          <div className="newspaper-intro masthead-intro" style={{ textAlign: "center", margin: "14px 0 12px" }}>
+            <div style={{ fontSize: 11, letterSpacing: 3, fontWeight: 800, color: "#9a5c2c" }}>ULAK’TAN HABERLER · GÜNÜN GAZETESİ</div>
+            <h1 style={{ fontFamily: "Georgia, serif", fontSize: "clamp(28px, 4vw, 42px)", margin: "8px 0" }}>Gündem, olduğu gibi.</h1>
+            <p style={{ color: "#756d63", margin: 0 }}>Türkiye’den ve dünyadan, doğru haberin adresi.</p>
+          </div>
           <nav className="masthead-category-nav" aria-label="Haber kategorileri">
             {sections.map((section) => (
               <button
@@ -84,11 +89,6 @@ export default function Home() {
       </header>
       <UlakMotion variant="welcome" />
       <section className="container" style={{ paddingTop: 28, paddingBottom: 12 }}>
-        <div className="newspaper-intro" style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, fontWeight: 800, color: "#9a5c2c" }}>ULAK’TAN HABERLER · GÜNÜN GAZETESİ</div>
-          <h1 style={{ fontFamily: "Georgia, serif", fontSize: "clamp(28px, 4vw, 42px)", margin: "8px 0" }}>Gündem, olduğu gibi.</h1>
-          <p style={{ color: "#756d63", margin: 0 }}>Türkiye’den ve dünyadan, doğru haberin adresi.</p>
-        </div>
         <section aria-labelledby="ulak-sunuyor" style={{ margin: "0 0 34px", border: "1px solid #d8d0c4", background: "#211e1b", color: "#f8f1e7", borderRadius: 10, overflow: "hidden" }}>
           <div style={{ padding: "18px 20px 12px", borderBottom: "1px solid #50483f" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", marginBottom: 16 }}>
