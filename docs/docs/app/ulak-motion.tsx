@@ -220,22 +220,12 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       const up=RIG_PIVOTS[upperName], fp=RIG_PIVOTS[foreName], hp=RIG_PIVOTS[handName];
       const elbowLocal = side === "Left" ? {x:-49*RIG_SCALE,y:91*RIG_SCALE} : {x:55*RIG_SCALE,y:91*RIG_SCALE};
       ctx.save();
-      // DEBUG (geçici): dönüştürülmüş eklem orijinlerini canvas pikselinde işaretle.
-      // getTransform() mevcut tüm ölçek/dönüşümleri içerir; setTransform yalnızca
-      // işaretçiyi sabit piksel boyutunda çizmek için kullanılır.
+      // DEBUG (geçici): eklem konumlarını kaydet; karakter çizimi bittikten
+      // sonra üst katmanda göstereceğiz ki gövdenin arkasında kaybolmasın.
       const debugJoint = (color: string) => {
         if (variant !== "farewell") return;
         const m = ctx.getTransform();
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.beginPath();
-        ctx.arc(m.e, m.f, 4, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = "#202020";
-        ctx.stroke();
-        ctx.restore();
+        debugPoints.push({ x: m.e, y: m.f, color });
       };
       ctx.translate(shoulderX,shoulderY);
       ctx.rotate(shoulderAngle);
@@ -321,8 +311,11 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.restore();
     };
 
+    let debugPoints: Array<{ x: number; y: number; color: string }> = [];
+
     const render = (now: number, fixedTime?: number) => {
       if (disposed || readyCount !== ASSET_COUNT) return;
+      debugPoints = [];
       const t = fixedTime ?? (now - startedAt) / 1000;
       const welcome = variant === "welcome";
       const idle = !welcome && t >= 5.8;
@@ -422,6 +415,22 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         } else {
           const fallbackLeftAngle = lerp(ARM_OUT_ANGLE, WAVE_ANGLE, waveAmt);
           drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, fallbackLeftAngle);
+        }
+        ctx.restore();
+      }
+
+      // DEBUG (geçici): sabit piksel boyutlu işaretçiler en üst katmanda çizilir.
+      if (variant === "farewell" && debugPoints.length) {
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        for (const point of debugPoints) {
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = point.color;
+          ctx.fill();
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = "#202020";
+          ctx.stroke();
         }
         ctx.restore();
       }
