@@ -218,7 +218,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       const upper=rigSprites[upperName], fore=rigSprites[foreName], hand=rigSprites[handName];
       if (!upper || !fore || !hand) return;
       const up=RIG_PIVOTS[upperName], fp=RIG_PIVOTS[foreName], hp=RIG_PIVOTS[handName];
-      const elbowLocal = side === "Left" ? {x:-49*RIG_SCALE,y:91*RIG_SCALE} : {x:0,y:91*RIG_SCALE};
+      const elbowLocal = side === "Left" ? {x:-49*RIG_SCALE,y:91*RIG_SCALE} : {x:48*RIG_SCALE,y:91*RIG_SCALE};
       ctx.save();
       ctx.translate(shoulderX,shoulderY);
       ctx.rotate(shoulderAngle);
