@@ -338,11 +338,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       }
 
       const breathing = reducedMotion ? 0 : Math.sin(now / 650) * (idle ? 2.1 : 1.0);
-      // Hoşçakal zarfı: kol yükselmeden önce kalkar, karakter yükselirken iner.
-      const waveIn = !welcome ? smoothstep(0.35, 1.45, t) : 0;
-      const waveOut = !welcome ? 1 - smoothstep(2.75, 3.25, t) : 0;
-      const waveAmt = waveIn * waveOut;
-      // El bileğe kilitlidir; selamlama boyunca yalnızca omuz ve kol birlikte hareket eder.
+      // Veda boyunca tek kol sabit Vulcan selamı pozunda kalır; el sallama yoktur.
+      const waveAmt = welcome ? 0 : 1;
       const armSway = 0;
       const legSway = idle && !reducedMotion ? Math.sin(idleT * 1.4) * 0.012 : 0;
 
@@ -382,9 +379,9 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
           );
 
           // Sol kol ve el tek parça gibi yükselir; bilekte bağımsız sallanma yoktur.
-          const leftShoulder = -0.12 + armSway + waveAmt * 1.57;
-          // Dirsek açısı ters yönde kapanır; ön kol ve parmaklar yukarı bakar.
-          const leftElbow = 0.18 - waveAmt * 0.95;
+          const leftShoulder = -0.12 + armSway + waveAmt * WAVE_ANGLE;
+          // Dirsek sabit biçimde yukarı katlanır; bilek bağımsız dönmez veya sallanmaz.
+          const leftElbow = 0.18 + waveAmt * 0.95;
           const leftWrist = 0;
           drawJointArm(
             "Left",
