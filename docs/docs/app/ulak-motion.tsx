@@ -338,8 +338,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       }
 
       const breathing = reducedMotion ? 0 : Math.sin(now / 650) * (idle ? 2.1 : 1.0);
-      // Veda boyunca tek kol sabit Vulcan selamı pozunda kalır; el sallama yoktur.
-      const waveAmt = welcome ? 0 : 1;
+      // Veda önce doğal duruşta başlar; ardından sol kol kontrollü biçimde Vulcan selamına kalkar.
+      const waveAmt = welcome ? 0 : smoothstep(0.55, 1.5, t);
       const armSway = 0;
       const legSway = idle && !reducedMotion ? Math.sin(idleT * 1.4) * 0.012 : 0;
 
@@ -368,7 +368,7 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         );
 
         if (rigReady) {
-          // Sağ kolun normal duruşu, sol kolun ayna simetriğidir.
+          // Sağ kol başlangıç duruşunda kalır ve gövdenin arkasında çizilir.
           drawJointArm(
             "Right",
             SHOULDER_RIGHT.x,
@@ -377,30 +377,30 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
             -0.18,
             0
           );
+        } else {
+          drawArm("armRight", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -(ARM_OUT_ANGLE + armSway));
+        }
 
-          // Sol kol ve el tek parça gibi yükselir; bilekte bağımsız sallanma yoktur.
+        drawPart("torso", TORSO.x, TORSO.y, TORSO.w, 212);
+        drawPart("head", 119, 8, 242, 198, nod, 121, 176);
+
+        // Selam veren sol kol önde çizilir; elin kafa arkasında kaybolması önlenir.
+        if (rigReady) {
           const leftShoulder = -0.12 + armSway + waveAmt * WAVE_ANGLE;
-          // Dirsek sabit biçimde yukarı katlanır; bilek bağımsız dönmez veya sallanmaz.
           const leftElbow = 0.18 + waveAmt * 0.95;
-          const leftWrist = 0;
           drawJointArm(
             "Left",
             SHOULDER_LEFT.x,
             SHOULDER_LEFT.y,
             leftShoulder,
             leftElbow,
-            leftWrist,
+            0,
             waveAmt > 0.04
           );
         } else {
-          // Tek-parça sprite yedeğinde bilek ayrı hareket edemez.
-          drawArm("armRight", SHOULDER_RIGHT.x, SHOULDER_RIGHT.y, -(ARM_OUT_ANGLE + armSway));
           const fallbackLeftAngle = lerp(ARM_OUT_ANGLE, WAVE_ANGLE, waveAmt);
           drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, fallbackLeftAngle);
         }
-
-        drawPart("torso", TORSO.x, TORSO.y, TORSO.w, 212);
-        drawPart("head", 119, 8, 242, 198, nod, 121, 176);
         ctx.restore();
       }
 
