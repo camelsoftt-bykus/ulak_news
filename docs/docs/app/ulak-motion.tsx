@@ -37,7 +37,7 @@ const FRONT_LEG_CROPS: Record<"legLeft" | "legRight", Crop> = {
   legRight: { x: 685, y: 470, w: 122, h: 245 },
 };
 
-// Ayrı üst kol, ön kol ve el kırpmaları; kaynak görsel 704 x 1524.
+// Ayrı üst kol, ön kol ve el kırpmaları; kaynak görsel 704 x 1524. Eklem pivotları kaynak parçaların merkezlerine göre ayarlanır.
 const WAVE_HAND_CROP: Crop = { x: 65, y: 410, w: 545, h: 700 };
 
 const RIG_CROPS: Record<RigPartName, Crop> = {
@@ -56,7 +56,7 @@ const ARM_PIVOTS: Record<ArmName, { x: number; y: number }> = {
 const RIG_SCALE = 0.56;
 const RIG_PIVOTS: Record<RigPartName, { x: number; y: number }> = {
   upperLeft: { x: 72, y: 29 }, upperRight: { x: 82, y: 29 },
-  foreLeft: { x: 39, y: 14 }, foreRight: { x: 39, y: 14 },
+  foreLeft: { x: 39, y: 29 }, foreRight: { x: 39, y: 29 },
   handLeft: { x: 41, y: 13 }, handRight: { x: 52, y: 13 },
 };
 
@@ -226,16 +226,17 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.translate(elbowLocal.x,elbowLocal.y);
       ctx.rotate((side === "Left" ? -0.10 : 0.10)+elbowBend);
       ctx.drawImage(fore,-fp.x*RIG_SCALE,-fp.y*RIG_SCALE,fore.width*RIG_SCALE,fore.height*RIG_SCALE);
-      ctx.translate(0,121*RIG_SCALE);
+      // Ön kolun iki eklem merkezi arasındaki kaynak mesafesi yaklaşık 101 px.
+      ctx.translate(0,101*RIG_SCALE);
       ctx.rotate(wristAngle);
       const waveHand = side === "Left" && variant === "farewell" && raisedHand ? waveHandSprite : null;
       if (waveHand) {
         // Yeni el, mevcut el sprite'ıyla aynı kutuya sığdırılır; bilek alt kenardan sabitlenir.
         const handWidth = hand.width * RIG_SCALE;
         const handHeight = hand.height * RIG_SCALE;
-        // Kaynak el görseli aşağı dönük; bilek pivotunda 180° çevirerek parmakları yukarı yönelt.
+        // Kaynak el görseli aşağı dönük; 180° döndürülür ve alt bilek ucu eklem merkezine sabitlenir.
         ctx.rotate(Math.PI);
-        ctx.drawImage(waveHand, -handWidth / 2, 0, handWidth, handHeight);
+        ctx.drawImage(waveHand, -handWidth / 2, -handHeight, handWidth, handHeight);
       } else {
         ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
       }
