@@ -55,7 +55,7 @@ const ARM_PIVOTS: Record<ArmName, { x: number; y: number }> = {
 };
 const RIG_SCALE = 0.56;
 const RIG_PIVOTS: Record<RigPartName, { x: number; y: number }> = {
-  upperLeft: { x: 72, y: 29 }, upperRight: { x: 29, y: 29 },
+  upperLeft: { x: 72, y: 29 }, upperRight: { x: 82, y: 29 },
   foreLeft: { x: 39, y: 14 }, foreRight: { x: 39, y: 14 },
   handLeft: { x: 41, y: 13 }, handRight: { x: 52, y: 13 },
 };
@@ -218,25 +218,15 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       const upper=rigSprites[upperName], fore=rigSprites[foreName], hand=rigSprites[handName];
       if (!upper || !fore || !hand) return;
       const up=RIG_PIVOTS[upperName], fp=RIG_PIVOTS[foreName], hp=RIG_PIVOTS[handName];
-      const elbowLocal = side === "Left" ? {x:-49*RIG_SCALE,y:91*RIG_SCALE} : {x:55*RIG_SCALE,y:91*RIG_SCALE};
+      const elbowLocal = side === "Left" ? {x:-49*RIG_SCALE,y:91*RIG_SCALE} : {x:0,y:91*RIG_SCALE};
       ctx.save();
-      // DEBUG (geçici): eklem konumlarını kaydet; karakter çizimi bittikten
-      // sonra üst katmanda göstereceğiz ki gövdenin arkasında kaybolmasın.
-      const debugJoint = (color: string) => {
-        if (variant !== "farewell") return;
-        const m = ctx.getTransform();
-        debugPoints.push({ x: m.e, y: m.f, color });
-      };
       ctx.translate(shoulderX,shoulderY);
       ctx.rotate(shoulderAngle);
-      debugJoint("#ff3030"); // Omuz: kırmızı
       ctx.drawImage(upper,-up.x*RIG_SCALE,-up.y*RIG_SCALE,upper.width*RIG_SCALE,upper.height*RIG_SCALE);
       ctx.translate(elbowLocal.x,elbowLocal.y);
-      debugJoint("#ffd400"); // Dirsek: sarı
       ctx.rotate((side === "Left" ? -0.10 : 0.10)+elbowBend);
       ctx.drawImage(fore,-fp.x*RIG_SCALE,-fp.y*RIG_SCALE,fore.width*RIG_SCALE,fore.height*RIG_SCALE);
       ctx.translate(0,121*RIG_SCALE);
-      debugJoint("#168cff"); // Bilek: mavi
       ctx.rotate(wristAngle);
       const waveHand = side === "Left" && variant === "farewell" && raisedHand ? waveHandSprite : null;
       if (waveHand) {
@@ -311,11 +301,8 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       ctx.restore();
     };
 
-    let debugPoints: Array<{ x: number; y: number; color: string }> = [];
-
     const render = (now: number, fixedTime?: number) => {
       if (disposed || readyCount !== ASSET_COUNT) return;
-      debugPoints = [];
       const t = fixedTime ?? (now - startedAt) / 1000;
       const welcome = variant === "welcome";
       const idle = !welcome && t >= 5.8;
@@ -415,22 +402,6 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         } else {
           const fallbackLeftAngle = lerp(ARM_OUT_ANGLE, WAVE_ANGLE, waveAmt);
           drawArm("armLeft", SHOULDER_LEFT.x, SHOULDER_LEFT.y, fallbackLeftAngle);
-        }
-        ctx.restore();
-      }
-
-      // DEBUG (geçici): sabit piksel boyutlu işaretçiler en üst katmanda çizilir.
-      if (variant === "farewell" && debugPoints.length) {
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        for (const point of debugPoints) {
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
-          ctx.fillStyle = point.color;
-          ctx.fill();
-          ctx.lineWidth = 1;
-          ctx.strokeStyle = "#202020";
-          ctx.stroke();
         }
         ctx.restore();
       }
