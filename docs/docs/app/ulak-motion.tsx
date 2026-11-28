@@ -220,13 +220,33 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
       const up=RIG_PIVOTS[upperName], fp=RIG_PIVOTS[foreName], hp=RIG_PIVOTS[handName];
       const elbowLocal = side === "Left" ? {x:-49*RIG_SCALE,y:91*RIG_SCALE} : {x:55*RIG_SCALE,y:91*RIG_SCALE};
       ctx.save();
+      // DEBUG (geçici): dönüştürülmüş eklem orijinlerini canvas pikselinde işaretle.
+      // getTransform() mevcut tüm ölçek/dönüşümleri içerir; setTransform yalnızca
+      // işaretçiyi sabit piksel boyutunda çizmek için kullanılır.
+      const debugJoint = (color: string) => {
+        if (variant !== "farewell") return;
+        const m = ctx.getTransform();
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.beginPath();
+        ctx.arc(m.e, m.f, 4, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "#202020";
+        ctx.stroke();
+        ctx.restore();
+      };
       ctx.translate(shoulderX,shoulderY);
       ctx.rotate(shoulderAngle);
+      debugJoint("#ff3030"); // Omuz: kırmızı
       ctx.drawImage(upper,-up.x*RIG_SCALE,-up.y*RIG_SCALE,upper.width*RIG_SCALE,upper.height*RIG_SCALE);
       ctx.translate(elbowLocal.x,elbowLocal.y);
+      debugJoint("#ffd400"); // Dirsek: sarı
       ctx.rotate((side === "Left" ? -0.10 : 0.10)+elbowBend);
       ctx.drawImage(fore,-fp.x*RIG_SCALE,-fp.y*RIG_SCALE,fore.width*RIG_SCALE,fore.height*RIG_SCALE);
       ctx.translate(0,121*RIG_SCALE);
+      debugJoint("#168cff"); // Bilek: mavi
       ctx.rotate(wristAngle);
       const waveHand = side === "Left" && variant === "farewell" && raisedHand ? waveHandSprite : null;
       if (waveHand) {
