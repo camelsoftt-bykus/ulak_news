@@ -233,7 +233,9 @@ export default function UlakMotion({ variant }: UlakMotionProps) {
         // Yeni el, mevcut el sprite'ıyla aynı kutuya sığdırılır; bilek alt kenardan sabitlenir.
         const handWidth = hand.width * RIG_SCALE;
         const handHeight = hand.height * RIG_SCALE;
-        ctx.drawImage(waveHand, -handWidth / 2, -handHeight, handWidth, handHeight);
+        // Kaynak el görseli aşağı dönük; bilek pivotunda 180° çevirerek parmakları yukarı yönelt.
+        ctx.rotate(Math.PI);
+        ctx.drawImage(waveHand, -handWidth / 2, 0, handWidth, handHeight);
       } else {
         ctx.drawImage(hand, -hp.x * RIG_SCALE, -hp.y * RIG_SCALE, hand.width * RIG_SCALE, hand.height * RIG_SCALE);
       }
